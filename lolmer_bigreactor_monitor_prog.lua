@@ -104,6 +104,7 @@ local loopTime = 1
 local adjustamount = 5
 local dataLogging = false
 local basecontrolrodlevel = nil
+local numRods = reactor.getNumberOfControlRods() - 1 -- Call once so that we don't have to keep calling it
 local curstoredenergypercent = 0 -- Current stored energy in %
 local rodpercentage = 0 -- For checking rod control level oustide of Display Bars
 local rodlastupdate = os.time() -- Last timestamp update for rod control level update
@@ -229,12 +230,11 @@ local function displayBars()
 	-- Decrease rod button: 22X, 4Y
 	-- Increase rod button: 28X, 4Y
 	
-	local rodamount = reactor.getNumberOfControlRods() - 1
 	local rodtotal = 0
-	for i=0, rodamount do
+	for i=0, numRods do
 		rodtotal = rodtotal + reactor.getControlRodLevel(i)
 	end
-	rodpercentage = math.ceil(rodtotal/(rodamount+1))
+	rodpercentage = math.ceil(rodtotal/(numRods+1))
 	
 	print("Control",23,3)
 	print("<     >",23,4)
@@ -279,10 +279,10 @@ local function displayBars()
 	local hottestControlRod = getHottestControlRod()
 	local coldestControlRod = getColdestControlRod()
 	print("Hottest Rod: "..hottestControlRod,2,10)
-	print("@ "..reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10)
+	print(reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10)
 	print("Coldest Rod: "..coldestControlRod,2,11)
-	print("@ "..reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11)
-	print("Fuel Rods: "..reactor.getNumberOfControlRods(),2,12)
+	print(reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11)
+	print("Fuel Rods: "..numRods,2,12)
 	print("Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12)
 end
 
@@ -321,7 +321,6 @@ end
 -- This function was added by Lolmer
 -- Return the index of the hottest Control Rod
 function getColdestControlRod()
-	local numRods = reactor.getNumberOfControlRods() - 1
 	local coldestRod = 0
 
 	for rodIndex=0, numRods do
@@ -336,7 +335,6 @@ end
 -- This function was added by Lolmer
 -- Return the index of the hottest Control Rod
 function getHottestControlRod()
-	local numRods = reactor.getNumberOfControlRods() - 1
 	local hottestRod = 0
 
 	for rodIndex=0, numRods do
@@ -359,10 +357,10 @@ function temperatureControl()
 		rodtimediff = math.abs(os.time() - rodlastupdate) -- Difference in rod control level update timestamp and now
 
 		-- Don't bring us to 100, that's effectively a shutdown
-		if (reactortemp > maxreactortemp) and (rodpercentage < 99) and (rodtimediff > 0.5) then
+		if (reactortemp > maxreactortemp) and (rodpercentage < 99) and (rodtimediff > 0.2) then
 			reactor.setControlRodLevel(getHottestControlRod(), rodpercentage + 1)
 			rodlastupdate = os.time() -- Last rod control update is now :)
-		elseif (reactortemp < minreactortemp) and (rodtimediff > 0.5) then
+		elseif (reactortemp < minreactortemp) and (rodtimediff > 0.2) then
 			reactor.setControlRodLevel(getColdestControlRod(), rodpercentage - 1)
 			rodlastupdate = os.time() -- Last rod control update is now :)
 		end
