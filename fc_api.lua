@@ -1,3 +1,5 @@
+-- This script is from http://pastebin.com/A9hcbZWe and is not mine
+
 function getDeviceSide(deviceType)
 	deviceType = deviceType:lower()
    
