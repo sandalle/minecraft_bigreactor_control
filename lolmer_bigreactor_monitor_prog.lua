@@ -78,8 +78,8 @@ end
 
 -- Then initialize the monitor
 local monitor = wrapThis("monitor")
-local monitorx, monitory = monitor.getSize()
-if monitorx ~= 29 or monitory ~= 12 then
+local monitorX, monitorY = monitor.getSize()
+if monitorX ~= 29 or monitorY ~= 12 then
 	error("Monitor is the wrong size! Needs to be 3x2.")
 end
 
@@ -98,93 +98,93 @@ if reactor == nil then
 end
 
 -- Some global variables
-local progver = "0.2.1"
-local progname = "EZ-NUKE ".. progver
+local progVer = "0.2.1"
+local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
-local adjustamount = 5
+local adjustAmount = 5
 local dataLogging = false
-local basecontrolrodlevel = nil
+local baseControlRodLevel = nil
 local numRods = reactor.getNumberOfControlRods() - 1 -- Call once so that we don't have to keep calling it
-local curstoredenergypercent = 0 -- Current stored energy in %
-local rodpercentage = 0 -- For checking rod control level oustide of Display Bars
-local rodlastupdate = os.time() -- Last timestamp update for rod control level update
-local reactortemp = 0 -- For checking reactor temperature outside of Display Bars
-local minstoredenergypercent = nil -- Max energy % to store before activate
-local maxstoredenergypercent = nil -- Max energy % to store before shutdown
-local minreactortemp = nil -- Minimum reactor temperature (^C) to maintain
-local maxreactortemp = nil -- Maximum reactor temperature (^C) to maintain
+local curStoredEnergyPercent = 0 -- Current stored energy in %
+local rodPercentage = 0 -- For checking rod control level oustide of Display Bars
+local rodLastUpdate = os.time() -- Last timestamp update for rod control level update
+local reactorTemp = 0 -- For checking reactor temperature outside of Display Bars
+local minStoredEnergyPercent = nil -- Max energy % to store before activate
+local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
+local minReactorTemp = nil -- Minimum reactor temperature (^C) to maintain
+local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
 
 --Load saved data if file exists
 file = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
 if file then
-	basecontrolrodlevel = file.readLine()
+	baseControlRodLevel = file.readLine()
 	-- The following values were added by Lolmer
-	minstoredenergypercent = file.readLine()
-	maxstoredenergypercent = file.readLine()
-	minreactortemp = file.readLine()
-	maxreactortemp = file.readLine()
+	minStoredEnergyPercent = file.readLine()
+	maxStoredEnergyPercent = file.readLine()
+	minReactorTemp = file.readLine()
+	maxReactorTemp = file.readLine()
 
 	-- If we succeeded in reading a string, convert it to a number
-	if basecontrolrodlevel ~= nil then
-		basecontrolrodlevel = tonumber(basecontrolrodlevel)
+	if baseControlRodLevel ~= nil then
+		baseControlRodLevel = tonumber(baseControlRodLevel)
 	end
 
-	if minstoredenergypercent ~= nil then
-		minstoredenergypercent = tonumber(minstoredenergypercent)
+	if minStoredEnergyPercent ~= nil then
+		minStoredEnergyPercent = tonumber(minStoredEnergyPercent)
 	end
 
-	if maxstoredenergypercent ~= nil then
-		maxstoredenergypercent = tonumber(maxstoredenergypercent)
+	if maxStoredEnergyPercent ~= nil then
+		maxStoredEnergyPercent = tonumber(maxStoredEnergyPercent)
 	end
 
-	if minreactortemp ~= nil then
-		minreactortemp = tonumber(minreactortemp)
+	if minReactorTemp ~= nil then
+		minReactorTemp = tonumber(minReactorTemp)
 	end
 
-	if maxreactortemp ~= nil then
-		maxreactortemp = tonumber(maxreactortemp)
+	if maxReactorTemp ~= nil then
+		maxReactorTemp = tonumber(maxReactorTemp)
 	end
 
 	file.close()
 end
 
 -- Set default values if we failed to read any of the above
-if basecontrolrodlevel == nil then
-	basecontrolrodlevel = 90
+if baseControlRodLevel == nil then
+	baseControlRodLevel = 90
 end
 
-if minstoredenergypercent == nil then
-	minstoredenergypercent = 15
+if minStoredEnergyPercent == nil then
+	minStoredEnergyPercent = 15
 end
 
-if maxstoredenergypercent == nil then
-	maxstoredenergypercent = 85
+if maxStoredEnergyPercent == nil then
+	maxStoredEnergyPercent = 85
 end
 
-if minreactortemp == nil then
-	minreactortemp = 850
+if minReactorTemp == nil then
+	minReactorTemp = 850
 end
 
-if maxreactortemp == nil then
-	maxreactortemp = 950
+if maxReactorTemp == nil then
+	maxReactorTemp = 950
 end
 
 --Save some stuff
 local function save()
 	file = fs.open("ReactorOptions", "w")
-	file.writeLine(rodpercentage)
+	file.writeLine(rodPercentage)
 	-- The following values were added by Lolmer
-	file.writeLine(minstoredenergypercent)
-	file.writeLine(maxstoredenergypercent)
-	file.writeLine(minreactortemp)
-	file.writeLine(maxreactortemp)
+	file.writeLine(minStoredEnergyPercent)
+	file.writeLine(maxStoredEnergyPercent)
+	file.writeLine(minReactorTemp)
+	file.writeLine(maxReactorTemp)
 	file.close()
 end
 
-reactor.setAllControlRodLevels(basecontrolrodlevel)
+reactor.setAllControlRodLevels(baseControlRodLevel)
 
-FC_API.clearMonitor(progname)
+FC_API.clearMonitor(progName)
 
 --Done initializing
 
@@ -210,70 +210,70 @@ local function displayBars()
 	
 	-- Draw some text
 	
-	fuelstring = "Fuel: "
-	tempstring = "Temp: "
-	energystring = "Producing: "
+	fuelString = "Fuel: "
+	tempString = "Temp: "
+	energyBufferString = "Producing: "
 	
-	local padding = math.max(string.len(fuelstring), string.len(tempstring),string.len(energystring))
+	local padding = math.max(string.len(fuelString), string.len(tempString),string.len(energyBufferString))
 	
-	fuelpercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
-	print(fuelstring,2,3)
-	print(fuelpercentage.." %",padding+2,3)
+	fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
+	print(fuelString,2,3)
+	print(fuelPercentage.." %",padding+2,3)
 	
-	energy = reactor.getEnergyProducedLastTick()
-	print(energystring,2,4)
-	print(math.ceil(energy).."RF/t",padding+2,4)
+	energyBuffer = reactor.getEnergyProducedLastTick()
+	print(energyBufferString,2,4)
+	print(math.ceil(energyBuffer).."RF/t",padding+2,4)
 	
-	reactortemp = reactor.getTemperature()
-	print(tempstring,2,5)
-	print(reactortemp.." C",padding+2,5)
+	reactorTemp = reactor.getTemperature()
+	print(tempString,2,5)
+	print(reactorTemp.." C",padding+2,5)
 	
 	-- Decrease rod button: 22X, 4Y
 	-- Increase rod button: 28X, 4Y
 	
-	local rodtotal = 0
+	local rodTotal = 0
 	for i=0, numRods do
-		rodtotal = rodtotal + reactor.getControlRodLevel(i)
+		rodTotal = rodTotal + reactor.getControlRodLevel(i)
 	end
-	rodpercentage = math.ceil(rodtotal/(numRods+1))
+	rodPercentage = math.ceil(rodTotal/(numRods+1))
 	
 	print("Control",23,3)
 	print("<     >",23,4)
-	print(rodpercentage,25,4)
+	print(rodPercentage,25,4)
 	print("percent",23,5)
 	
 	if (xClick == 23  and yClick == 4) then
 		--Decrease rod level by amount
-		newrodpercentage = rodpercentage - adjustamount
-		if newrodpercentage < 0 then
-			newrodpercentage = 0
+		newRodPercentage = rodPercentage - adjustAmount
+		if newRodPercentage < 0 then
+			newRodPercentage = 0
 		end
 
 		xClick, yClick = 0,0
-		reactor.setAllControlRodLevels(newrodpercentage)
+		reactor.setAllControlRodLevels(newRodPercentage)
 	end
 	
 	if (xClick == 28  and yClick == 4) then
 		--Increase rod level by amount
-		newrodpercentage = rodpercentage + adjustamount
-		if newrodpercentage > 100 then
-			newrodpercentage = 100
+		newRodPercentage = rodPercentage + adjustAmount
+		if newRodPercentage > 100 then
+			newRodPercentage = 100
 		end
 		xClick, yClick = 0,0
-		reactor.setAllControlRodLevels(newrodpercentage)
+		reactor.setAllControlRodLevels(newRodPercentage)
 	end
 
-	local energystorage = reactor.getEnergyStored()
-	curstoredenergypercent = math.floor(energystorage/10000000*100)
+	local energyBufferStorage = reactor.getEnergyStored()
+	curStoredEnergyPercent = math.floor(energyBufferStorage/10000000*100)
 	paintutils.drawLine(2, 8, 28, 8, colors.gray)
-	if curstoredenergypercent > 4 then
-		paintutils.drawLine(2, 8, math.floor(26*curstoredenergypercent/100)+2, 8, colors.yellow)
-	elseif curstoredenergypercent > 0 then
+	if curStoredEnergyPercent > 4 then
+		paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
+	elseif curStoredEnergyPercent > 0 then
 		paintutils.drawPixel(2,8,colors.yellow)
 	end
 	term.setBackgroundColor(colors.black)
 	print("Energy Buffer",2,7)
-	print(curstoredenergypercent, width-(string.len(curstoredenergypercent)+3),7)
+	print(curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7)
 	print("%",28,7)
 	term.setBackgroundColor(colors.black)
 
@@ -351,30 +351,30 @@ end
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
 -- wait an in-game half-hour for the temperature to stabalize before modifying again
 function temperatureControl()
-	local rodtimediff = 0
+	local rodTimeDiff = 0
 
 	-- No point modifying control rod levels for temperature if the reactor is offline
 	if reactor.getActive() then
-		rodtimediff = math.abs(os.time() - rodlastupdate) -- Difference in rod control level update timestamp and now
+		rodTimeDiff = math.abs(os.time() - rodLastUpdate) -- Difference in rod control level update timestamp and now
 
 		-- Don't bring us to 100, that's effectively a shutdown
-		if (reactortemp > maxreactortemp) and (rodpercentage < 99) and (rodtimediff > 0.2) then
-			-- If more than double our maximum temperature, incrase rodpercentage faster
-			if reactortemp > (2 * maxreactortemp) then
-				reactor.setControlRodLevel(getHottestControlRod(), rodpercentage + 10)
+		if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) and (rodTimeDiff > 0.2) then
+			-- If more than double our maximum temperature, incrase rodPercentage faster
+			if reactorTemp > (2 * maxReactorTemp) then
+				reactor.setControlRodLevel(getHottestControlRod(), rodPercentage + 10)
 			else
-				reactor.setControlRodLevel(getHottestControlRod(), rodpercentage + 1)
+				reactor.setControlRodLevel(getHottestControlRod(), rodPercentage + 1)
 			end
 
-			rodlastupdate = os.time() -- Last rod control update is now :)
-		elseif (reactortemp < minreactortemp) and (rodtimediff > 0.2) then
-			-- If less than half our minimum temperature, decrease rodpercentage faster
-			if reactortemp < (minreactortemp / 2) then
-				reactor.setControlRodLevel(getColdestControlRod(), rodpercentage - 10)
+			rodLastUpdate = os.time() -- Last rod control update is now :)
+		elseif (reactorTemp < minReactorTemp) and (rodTimeDiff > 0.2) then
+			-- If less than half our minimum temperature, decrease rodPercentage faster
+			if reactorTemp < (minReactorTemp / 2) then
+				reactor.setControlRodLevel(getColdestControlRod(), rodPercentage - 10)
 			else
-				reactor.setControlRodLevel(getColdestControlRod(), rodpercentage - 1)
+				reactor.setControlRodLevel(getColdestControlRod(), rodPercentage - 1)
 			end
-			rodlastupdate = os.time() -- Last rod control update is now :)
+			rodLastUpdate = os.time() -- Last rod control update is now :)
 		end
 	end
 end
@@ -382,16 +382,16 @@ end
 
 function main()
 	while not finished do
-		FC_API.clearMonitor(progname)
+		FC_API.clearMonitor(progName)
 
 		reactorStatus()
 
 		if reactor.getConnected() then
 			-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate	
-			-- First pass will have curstoredenergypercent=0 until displayBars() is run once
-			if curstoredenergypercent >= maxstoredenergypercent then
+			-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
+			if curStoredEnergyPercent >= maxStoredEnergyPercent then
 				reactor.setActive(false)
-			elseif curstoredenergypercent <= minstoredenergypercent then
+			elseif curStoredEnergyPercent <= minStoredEnergyPercent then
 				reactor.setActive(true)
 			end
 
