@@ -2,20 +2,29 @@
 	Program name: Lolmer's EZ-NUKE reactor control system
 	Version: v0.2.1
 	Programmer: Lolmer
-	Last update: 2014-02-17
+	Last update: 2014-02-18
 	Pastebin: http://pastebin.com/fguScPBQ
+
 	Description: 
 	This program controls a Big Reactors nuclear reactor
 	in Minecraft with a Computercraft computer, using Computercraft's
 	own wired modem connected to the reactors computer control port.
+
 	Resources:
+	This script is available from:
+		http://pastebin.com/fguScPBQ
+		https://github.com/sandalle/minecraft_bigreactor_control
+	Startup script is available from:
+		http://pastebin.com/ZTMzRLez
+		https://github.com/sandalle/minecraft_bigreactor_control
 	Other reactor control which I based my program on:
 		http://pastebin.com/aMAu4X5J (ScatmanJohn)
 		http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
-	A simpler Big Reactor control is available from:
-		http://pastebin.com/tFkhQLYn (IronClaymore)
 	FC API, required:
 		http://pastebin.com/A9hcbZWe
+	A simpler Big Reactor control is available from:
+		http://pastebin.com/tFkhQLYn (IronClaymore)
+
 	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 	Reactor Computer Port API: http://wiki.technicpack.net/index.php?title=Reactor_Computer_Port
 
