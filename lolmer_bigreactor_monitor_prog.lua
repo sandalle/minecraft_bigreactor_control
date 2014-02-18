@@ -98,7 +98,7 @@ end
 
 -- Some global variables
 local progver = "0.2.1"
-local progname = "EZ-NUKE Control".. progver
+local progname = "EZ-NUKE ".. progver
 local xClick, yClick = 0,0
 local loopTime = 1
 local adjustamount = 5
