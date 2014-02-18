@@ -20,6 +20,7 @@
 	Reactor Computer Port API: http://wiki.technicpack.net/index.php?title=Reactor_Computer_Port
 
 	ChangeLog:
+	0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
 	0.2.0 - Lolmer Edition :)
 		Add min/max stored energy percentage (default is 15%/85%), configurable via ReactorOptions file.
 		No reason to keep burning fuel if our power output is going nowhere. :)
@@ -302,6 +303,36 @@ function reactorStatus()
 end
 
 -- This function was added by Lolmer
+-- Return the index of the hottest Control Rod
+function getColdestControlRod()
+	local numRods = reactor.getNumberOfControlRods() - 1
+	local coldestRod = 0
+
+	for rodIndex=0, numRods do
+		if reactor.getTemperature(rodIndex) < reactor.getTemperature(coldestRod) then
+			coldestRod = rodIndex
+		end
+	end
+
+	return coldestRod
+end
+
+-- This function was added by Lolmer
+-- Return the index of the hottest Control Rod
+function getHottestControlRod()
+	local numRods = reactor.getNumberOfControlRods() - 1
+	local hottestRod = 0
+
+	for rodIndex=0, numRods do
+		if reactor.getTemperature(rodIndex) > reactor.getTemperature(hottestRod) then
+			hottestRod = rodIndex
+		end
+	end
+
+	return hottestRod
+end
+
+-- This function was added by Lolmer
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
 -- wait an in-game half-hour for the temperature to stabalize before modifying again
 function temperatureControl()
@@ -313,10 +344,10 @@ function temperatureControl()
 
 		-- Don't bring us to 100, that's effectively a shutdown
 		if (reactortemp > maxreactortemp) and (rodpercentage < 99) and (rodtimediff > 0.5) then
-			reactor.setAllControlRodLevels(rodpercentage + 1)
+			reactor.setControlRodLevel(getHottestControlRod(), rodpercentage + 1)
 			rodlastupdate = os.time() -- Last rod control update is now :)
 		elseif (reactortemp < minreactortemp) and (rodtimediff > 0.5) then
-			reactor.setAllControlRodLevels(rodpercentage - 1)
+			reactor.setControlRodLevel(getColdestControlRod(), rodpercentage - 1)
 			rodlastupdate = os.time() -- Last rod control update is now :)
 		end
 	end
