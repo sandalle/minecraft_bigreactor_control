@@ -32,6 +32,7 @@
 
 	ChangeLog:
 	0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
+		"<" Rod Control buttons was off by one (to the left)
 	0.2.0 - Lolmer Edition :)
 		Add min/max stored energy percentage (default is 15%/85%), configurable via ReactorOptions file.
 		No reason to keep burning fuel if our power output is going nowhere. :)
@@ -241,7 +242,7 @@ local function displayBars()
 	print(rodpercentage,25,4)
 	print("percent",23,5)
 	
-	if (xClick == 22  and yClick == 4) then
+	if (xClick == 23  and yClick == 4) then
 		--Decrease rod level by amount
 		newrodpercentage = rodpercentage - adjustamount
 		if newrodpercentage < 0 then
