@@ -272,7 +272,7 @@ local function displayBars()
 		paintutils.drawPixel(2,8,colors.yellow)
 	end
 	term.setBackgroundColor(colors.black)
-	print("Energy",2,7)
+	print("Energy Buffer",2,7)
 	print(curstoredenergypercent, width-(string.len(curstoredenergypercent)+3),7)
 	print("%",28,7)
 	term.setBackgroundColor(colors.black)
