@@ -279,11 +279,11 @@ local function displayBars()
 
 	local hottestControlRod = getHottestControlRod()
 	local coldestControlRod = getColdestControlRod()
-	print("Hottest Rod: "..hottestControlRod,2,10)
+	print("Hottest Rod: "..(hottestControlRod + 1),2,10) -- numRods index starts at 0
 	print(reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10)
-	print("Coldest Rod: "..coldestControlRod,2,11)
+	print("Coldest Rod: "..(coldestControlRod + 1),2,11) -- numRods index starts at 0
 	print(reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11)
-	print("Fuel Rods: "..numRods,2,12)
+	print("Fuel Rods: "..(numRods + 1),2,12) -- numRods index starts at 0
 	print("Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12)
 end
 
