@@ -10,6 +10,8 @@
 	in Minecraft with a Computercraft computer, using Computercraft's
 	own wired modem connected to the reactors computer control port.
 
+	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
+
 	Resources:
 	This script is available from:
 		http://pastebin.com/fguScPBQ
@@ -25,8 +27,8 @@
 	A simpler Big Reactor control is available from:
 		http://pastebin.com/tFkhQLYn (IronClaymore)
 
-	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 	Reactor Computer Port API: http://wiki.technicpack.net/index.php?title=Reactor_Computer_Port
+	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
 	0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
