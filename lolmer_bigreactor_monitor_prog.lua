@@ -1,6 +1,6 @@
 --[[
 	Program name: Lolmer's EZ-NUKE reactor control system
-	Version: v0.2.0
+	Version: v0.2.1
 	Programmer: Lolmer
 	Last update: 2014-02-17
 	Pastebin: http://pastebin.com/fguScPBQ
@@ -29,8 +29,6 @@
 		Add Waste and number of Control/Fuel Rods to displayBards()
 
 	TODO:
-		Test controller individual rod control for individual rod temperature based on overall reactor temperator
-		Instead of lowering all control rods, lower just the hottest one and see if the temperature lowers enough.
 		Add Fuel consumption metric to display - No such API. :(
 ]]--
 
@@ -88,7 +86,7 @@ if reactor == nil then
 end
 
 -- Some global variables
-local progver = "0.2.0"
+local progver = "0.2.1"
 local progname = "EZ-NUKE Control".. progver
 local xClick, yClick = 0,0
 local loopTime = 1
@@ -266,6 +264,8 @@ local function displayBars()
 	print(curstoredenergypercent, width-(string.len(curstoredenergypercent)+3),7)
 	print("%",28,7)
 	term.setBackgroundColor(colors.black)
+	print("Hottest Rod: "..getHottestControlRod().." "..reactor.getTemperature(getHottestControlRod).." C",2,10)
+	print("Coldest Rod: "..getColdestControlRod().." "..reactor.getTemperature(getColdestControlRod).." C",2,11)
 	print("Fuel Rods: "..reactor.getNumberOfControlRods(),2,12)
 	print("Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12)
 end
