@@ -210,21 +210,21 @@ local function displayBars()
 	
 	-- Draw some text
 	
-	fuelString = "Fuel: "
-	tempString = "Temp: "
-	energyBufferString = "Producing: "
+	local fuelString = "Fuel: "
+	local tempString = "Temp: "
+	local energyBufferString = "Producing: "
 	
 	local padding = math.max(string.len(fuelString), string.len(tempString),string.len(energyBufferString))
 	
-	fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
+	local fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
 	print(fuelString,2,3)
 	print(fuelPercentage.." %",padding+2,3)
 	
-	energyBuffer = reactor.getEnergyProducedLastTick()
+	local energyBuffer = reactor.getEnergyProducedLastTick()
 	print(energyBufferString,2,4)
 	print(math.ceil(energyBuffer).."RF/t",padding+2,4)
 	
-	reactorTemp = reactor.getTemperature()
+	local reactorTemp = reactor.getTemperature()
 	print(tempString,2,5)
 	print(reactorTemp.." C",padding+2,5)
 	
