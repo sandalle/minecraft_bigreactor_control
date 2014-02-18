@@ -358,10 +358,21 @@ function temperatureControl()
 
 		-- Don't bring us to 100, that's effectively a shutdown
 		if (reactortemp > maxreactortemp) and (rodpercentage < 99) and (rodtimediff > 0.2) then
-			reactor.setControlRodLevel(getHottestControlRod(), rodpercentage + 1)
+			-- If more than double our maximum temperature, incrase rodpercentage faster
+			if reactortemp > (2 * maxreactortemp) then
+				reactor.setControlRodLevel(getHottestControlRod(), rodpercentage + 10)
+			else
+				reactor.setControlRodLevel(getHottestControlRod(), rodpercentage + 1)
+			end
+
 			rodlastupdate = os.time() -- Last rod control update is now :)
 		elseif (reactortemp < minreactortemp) and (rodtimediff > 0.2) then
-			reactor.setControlRodLevel(getColdestControlRod(), rodpercentage - 1)
+			-- If less than half our minimum temperature, decrease rodpercentage faster
+			if reactortemp < (minreactortemp / 2) then
+				reactor.setControlRodLevel(getColdestControlRod(), rodpercentage - 10)
+			else
+				reactor.setControlRodLevel(getColdestControlRod(), rodpercentage - 1)
+			end
 			rodlastupdate = os.time() -- Last rod control update is now :)
 		end
 	end
