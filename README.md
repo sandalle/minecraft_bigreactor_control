@@ -39,7 +39,7 @@ Minecraft BigReactor Computercraft Control Program
 	Requirements:
 		Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 		Computer or Advanced Computer
-		Modem (not wireless) connecting the Computer to both the Advanced Monitor and Reactor Computer Port.
+		Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
 
 	Resources:
 		This script is available from:
