@@ -402,7 +402,7 @@ local function displayBars(barParams)
 	end
 
 	monitor.paintutils.drawLine(2, 8, 28, 8, colors.gray)
-	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
+	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent{reactorIndex}
 	if curStoredEnergyPercent > 4 then
 		monitor.paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
 	elseif curStoredEnergyPercent > 0 then
@@ -414,8 +414,8 @@ local function displayBars(barParams)
 	print{"%",28,7,monitorIndex}
 	monitor.setBackgroundColor(colors.black)
 
-	local hottestControlRod = getHottestControlRod(reactorIndex)
-	local coldestControlRod = getColdestControlRod(reactorIndex)
+	local hottestControlRod = getHottestControlRod{reactorIndex}
+	local coldestControlRod = getColdestControlRod{reactorIndex}
 	print{"Hottest Rod: "..(hottestControlRod + 1),2,10,monitorIndex} -- numRods index starts at 0
 	print{reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10,monitorIndex}
 	print{"Coldest Rod: "..(coldestControlRod + 1),2,11,monitorIndex} -- numRods index starts at 0
@@ -541,7 +541,7 @@ function temperatureControl(reactorParams)
 		if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) and (rodTimeDiff > 0.2) then
 			-- If more than double our maximum temperature, incrase rodPercentage faster
 			if reactorTemp > (2 * maxReactorTemp) then
-				local hottestControlRod = getHottestControlRod()
+				local hottestControlRod = getHottestControlRod{reactorIndex}
 
 				-- Check bounds, Big Reactor doesn't do this for us. :)
 				if (reactor.getControlRodLevel(hottestControlRod) + 10) > 99 then
@@ -550,7 +550,7 @@ function temperatureControl(reactorParams)
 					reactor.setControlRodLevel(hottestControlRod, rodPercentage + 10)
 				end
 			else
-				local hottestControlRod = getHottestControlRod()
+				local hottestControlRod = getHottestControlRod{reactorIndex}
 
 				-- Check bounds, Big Reactor doesn't do this for us. :)
 				if (reactor.getControlRodLevel(hottestControlRod) + 1) > 99 then
@@ -564,7 +564,7 @@ function temperatureControl(reactorParams)
 		elseif (reactorTemp < minReactorTemp) and (rodTimeDiff > 0.2) then
 			-- If less than half our minimum temperature, decrease rodPercentage faster
 			if reactorTemp < (minReactorTemp / 2) then
-				local coldestControlRod = getColdestControlRod()
+				local coldestControlRod = getColdestControlRod{reactorIndex}
 
 				-- Check bounds, Big Reactor doesn't do this for us. :)
 				if (reactor.getControlRodLevel(coldestControlRod) - 10) < 0 then
@@ -573,7 +573,7 @@ function temperatureControl(reactorParams)
 					reactor.setControlRodLevel(coldestControlRod, rodPercentage - 10)
 				end
 			else
-				local coldestControlRod = getColdestControlRod()
+				local coldestControlRod = getColdestControlRod{reactorIndex}
 
 				-- Check bounds, Big Reactor doesn't do this for us. :)
 				if (reactor.getControlRodLevel(coldestControlRod) - 1) < 0 then
@@ -603,12 +603,12 @@ function main()
 		for monitorIndex = 1, #monitorList do
 			for reactorIndex = 1, #reactorList do
 				printCentered{progName,monitorIndex}
-				reactorStatus(reactorIndex, monitorIndex)
+				reactorStatus{reactorIndex, monitorIndex}
 
 				reactor = reactorList[reactorIndex]
 
 				if reactor.getConnected() then
-					local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
+					local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent{reactorIndex}
 
 					-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
 					-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
@@ -619,8 +619,8 @@ function main()
 						reactor.setActive(true)
 					end
 
-					temperatureControl(reactorIndex)
-					displayBars(reactorIndex,monitorIndex)
+					temperatureControl{reactorIndex}
+					displayBars{reactorIndex,monitorIndex}
 					sleep(loopTime)
 					saveReactorOptions()
 				end
