@@ -72,9 +72,11 @@
 		- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/
 		  and http://computercraft.info/wiki/Monitor
 		- May just iterate through peripheral.getNames() looking for "monitor_#" and "BigReactors-Reactor_#"
+		- Save parameters per reactor instead of one global set for all reactors
 		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 		Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
+
 
 ]]--
 
@@ -85,69 +87,79 @@ local xClick, yClick = 0,0
 local loopTime = 1
 local adjustAmount = 5
 local dataLogging = false
+local autoStart = {} -- Array for automatically starting reactors
+-- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
-local autoStart = true -- Auto-start reactor when needed (e.g. program startup) by default
-local numRods = 0 -- Number of control rods at start
-local curStoredEnergyPercent = 0 -- Current stored energy in %
 local rodPercentage = 0 -- For checking rod control level oustide of Display Bars
 local rodLastUpdate = os.time() -- Last timestamp update for rod control level update
-local reactorTemp = 0 -- For checking reactor temperature outside of Display Bars
 local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
 local minReactorTemp = nil -- Minimum reactor temperature (^C) to maintain
 local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
-local monitorList = {} -- Empty monitor list array
+-- End multi-reactor cleanup section
+local monitorList = {} -- Empty monitor array
+local reactorList = {} -- Empty reactor array
 
-print{"Initializing program..."};
+term.write("Initializing program...");
+
+-- File needs to exist for append "a" later and zero it out if it already exists
+local logFile = fs.open("reactorcontrol.log", "w")
+if logFile then
+	logFile.writeLine("Minecraft time: Day "..os.day().." at "..textutils.formatTime(os.time(),true))
+	logFile.close()
+else
+	error("Could not open reactorcontrol.log for writing")
+end
 
 -- Helper functions
 
--- File needs to exist for append "a" and zero it out if it already exists
-logFile = fs.open("reactorcontrol.log", "w")
-
 local function print(printParams)
 	-- Default to xPos=1, yPos=1, and first monitor
-	setmetatable(printParams,{__index={xPos=1, yPos=1, monitor=1}})
-	local printString, xPos, yPos, monitor =
+	setmetatable(printParams,{__index={xPos=1, yPos=1, monitorIndex=1}})
+	local printString, xPos, yPos, monitorIndex =
 		printParams[1] or printParams.printString,
 		printParams[2] or printParams.xPos,
 		printParams[3] or printParams.yPos,
-		printParams[4] or printParams.monitor
+		printParams[4] or printParams.monitorIndex
+
+	-- Make sure we have the latest list of monitors
+	findMonitors()
 
 	-- For now, just print everything to all monitors
-	for monitor = 1, #monitorList do
-		monitorList[monitor].setCursorPos(xPos, yPos)
-		monitorList[monitor].write(printString)
+	for monitorIndex = 1, #monitorList do
+		monitorList[monitorIndex].setCursorPos(xPos, yPos)
+		monitorList[monitorIndex].write(printString)
 	end
 end
 
--- Replaces the one from FC_API allowing for multi-monitor support
+-- Replaces the one from FC_API (http://pastebin.com/A9hcbZWe) and adding multi-monitor support
 local function printCentered(printParams)
 	-- Default to yPos=1 and first monitor
-	setmetatable(printParams,{__index={yPos=1, monitor=1}})
-	local printString, xPos, yPos, monitor =
+	setmetatable(printParams,{__index={yPos=1, monitorIndex=1}})
+	local printString, xPos, yPos, monitorIndex =
 		printParams[1] or printParams.printString,
 		printParams[2] or printParams.xPos,
 		printParams[3] or printParams.yPos,
-		printParams[4] or printParams.monitor
+		printParams[4] or printParams.monitorIndex
 
-	local width, height = monitorList[monitor].getSize()
-	monitorList[monitor].setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) , yPos)
-	monitorList[monitor].clearLine()
-	monitorList[monitor].write(printString)
+	-- Make sure we have the latest list of monitors
+	findMonitors()
+
+	local width, height = monitorList[monitorIndex].getSize()
+	monitorList[monitorIndex].setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) , yPos)
+	monitorList[monitorIndex].clearLine()
+	monitorList[monitorIndex].write(printString)
 end
 
 local function printLog(printStr)
-	logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
+	local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
 	if logFile then
 		logFile.writeLine(printStr)
 		logFile.close()
 	else
-		error("Cannot open logFile reactorcontrol.log for append!")
+		error("Cannot open logFile reactorcontrol.log for appending!")
 	end
 end
-
--- End helper functions
 
 -- Return a list of all connected (including via wired modems) devices of "deviceType"
 local function getDevices(deviceType)
@@ -161,7 +173,7 @@ local function getDevices(deviceType)
 	for peripheralIndex = 1, #peripheralList do
 		printLog("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \""..peripheralList[peripheralIndex].."\".")
 		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
-			printLog("Attaching "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \"deviceList["..deviceIndex.."]\".")
+			printLog("Assigning "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] with device index \"["..deviceIndex.."]\".")
 			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
 			deviceIndex = deviceIndex + 1
 		end
@@ -170,97 +182,119 @@ local function getDevices(deviceType)
 	return deviceList
 end
 
+-- End helper functions
+
 -- Then initialize the monitors
-monitorList = getDevices("monitor")
+local function findMonitors()
+	printLog("Finding monitors...")
+	monitorList = getDevices("monitor")
 
-for monitorIndex = 1, #monitorList do
-	local monitorX, monitorY = monitorList[monitorIndex].getSize()
+	if #monitorList == 0 then
+		printLog("No monitors found!")
+		error("Can't find any monitors!")
+	else
+		for monitorIndex = 1, #monitorList do
+			local monitorX, monitorY = monitorList[monitorIndex].getSize()
 
-	-- Clear all monitors
-	monitorList[monitorIndex].clear()
-	monitorList[monitorIndex].setCursorPos(1,1)
+			-- Clear all monitors
+			monitorList[monitorIndex].clear()
+			monitorList[monitorIndex].setCursorPos(1,1)
 
-	if monitorX ~= 29 or monitorY ~= 12 then
-		printLog("Removing monitor "..monitorIndex.." for incorrect size")
-		monitorList[monitorIndex].write("Monitor is the wrong size!")
-		monitorList[monitorIndex].setCursorPos(1,2)
-		monitorList[monitorIndex].write("Needs to be 3x2.")
---[[		table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
-		if monitorIndex == #monitorList then	-- If we're at the end already, break from loop
-			break
-		else
-			monitorIndex = monitorIndex - 1 -- We just removed an element
-		end ]]--
+			if monitorX ~= 29 or monitorY ~= 12 then
+				printLog("Removing monitor "..monitorIndex.." for incorrect size")
+				monitorList[monitorIndex].write("Monitor is the wrong size!")
+				monitorList[monitorIndex].setCursorPos(1,2)
+				monitorList[monitorIndex].write("Needs to be 3x2.")
+--[[
+				table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
+				if monitorIndex == #monitorList then	-- If we're at the end already, break from loop
+					break
+				else
+					monitorIndex = monitorIndex - 1 -- We just removed an element
+				end
+]]--
+			end
+		end
 	end
 end
 
--- Let's connect to the reactor peripheral
-local reactorList = getDevices("BigReactors-Reactor")
-local reactor = nil
-if table.getn(reactorList) == 0 then
-	error("Can't find any reactors.")
-else
-	-- Placeholder for now
-	reactor = reactorList[1]
+-- Initialize all Big Reactors
+local function findReactors()
+	printLog("Finding reactors...")
+	reactorList = getDevices("BigReactors-Reactor")
+
+	if #reactorList == 0 then
+		printLog("No reactors found!")
+		error("Can't find any reactors!")
+	else  -- Placeholder
+		for reactorIndex = 1, #reactorList do
+			local reactor = reactorList[reactorIndex]
+			reactor.setAllControlRodLevels(baseControlRodLevel)
+			autoStart[reactorIndex] = true -- Auto-start reactor when needed (e.g. program startup) by default
+		end
+	end
 end
 
---Load saved data if reactorOptions file exists
-reactorOptions = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
-if reactorOptions then
-	baseControlRodLevel = reactorOptions.readLine()
-	-- The following values were added by Lolmer
-	minStoredEnergyPercent = reactorOptions.readLine()
-	maxStoredEnergyPercent = reactorOptions.readLine()
-	minReactorTemp = reactorOptions.readLine()
-	maxReactorTemp = reactorOptions.readLine()
+-- Load saved reactor parameters if ReactorOptions file exists
+local function loadReactorOptions()
+	reactorOptions = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
 
-	-- If we succeeded in reading a string, convert it to a number
-	if baseControlRodLevel ~= nil then
-		baseControlRodLevel = tonumber(baseControlRodLevel)
+	if reactorOptions then
+		baseControlRodLevel = reactorOptions.readLine()
+		-- The following values were added by Lolmer
+		minStoredEnergyPercent = reactorOptions.readLine()
+		maxStoredEnergyPercent = reactorOptions.readLine()
+		minReactorTemp = reactorOptions.readLine()
+		maxReactorTemp = reactorOptions.readLine()
+
+		-- If we succeeded in reading a string, convert it to a number
+		if baseControlRodLevel ~= nil then
+			baseControlRodLevel = tonumber(baseControlRodLevel)
+		end
+
+		if minStoredEnergyPercent ~= nil then
+			minStoredEnergyPercent = tonumber(minStoredEnergyPercent)
+		end
+
+		if maxStoredEnergyPercent ~= nil then
+			maxStoredEnergyPercent = tonumber(maxStoredEnergyPercent)
+		end
+
+		if minReactorTemp ~= nil then
+			minReactorTemp = tonumber(minReactorTemp)
+		end
+
+		if maxReactorTemp ~= nil then
+			maxReactorTemp = tonumber(maxReactorTemp)
+		end
+
+		reactorOptions.close()
 	end
 
-	if minStoredEnergyPercent ~= nil then
-		minStoredEnergyPercent = tonumber(minStoredEnergyPercent)
+	-- Set default values if we failed to read any of the above
+	if baseControlRodLevel == nil then
+		baseControlRodLevel = 90
 	end
 
-	if maxStoredEnergyPercent ~= nil then
-		maxStoredEnergyPercent = tonumber(maxStoredEnergyPercent)
+	if minStoredEnergyPercent == nil then
+		minStoredEnergyPercent = 15
 	end
 
-	if minReactorTemp ~= nil then
-		minReactorTemp = tonumber(minReactorTemp)
+	if maxStoredEnergyPercent == nil then
+		maxStoredEnergyPercent = 85
 	end
 
-	if maxReactorTemp ~= nil then
-		maxReactorTemp = tonumber(maxReactorTemp)
+	if minReactorTemp == nil then
+		minReactorTemp = 850
 	end
 
-	reactorOptions.close()
+	if maxReactorTemp == nil then
+		maxReactorTemp = 950
+	end
 end
 
--- Set default values if we failed to read any of the above
-if baseControlRodLevel == nil then
-	baseControlRodLevel = 90
-end
-
-if minStoredEnergyPercent == nil then
-	minStoredEnergyPercent = 15
-end
-
-if maxStoredEnergyPercent == nil then
-	maxStoredEnergyPercent = 85
-end
-
-if minReactorTemp == nil then
-	minReactorTemp = 850
-end
-
-if maxReactorTemp == nil then
-	maxReactorTemp = 950
-end
-
---Save some stuff
-local function save()
+-- Save our reactor parameters
+local function saveReactorOptions()
 	reactorOptions = fs.open("ReactorOptions", "w") -- See http://computercraft.info/wiki/Fs.open
 	reactorOptions.writeLine(rodPercentage)
 	-- The following values were added by Lolmer
@@ -271,30 +305,56 @@ local function save()
 	reactorOptions.close()
 end
 
-reactor.setAllControlRodLevels(baseControlRodLevel)
+-- Return current energy buffer in a specific reactor by %
+local function getReactorStoredEnergyBufferPercent(reactorParams)
+	-- Default to first reactor and first monitor
+	setmetatable(reactorParams,{__index={reactorIndex=1}})
+	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
-printCentered{progName}
+	-- Make sure we have the latest list of reactors
+	findReactors()
 
---Done initializing
+	local reactor = reactorList[reactorIndex]
 
-local function displayBars()
+	local energyBufferStorage = reactor.getEnergyStored()
+	return (math.floor(energyBufferStorage/100000)) -- 10000000*100
+end
+
+local function displayBars(barParams)
+	-- Default to first reactor and first monitor
+	setmetatable(barParams,{__index={reactorIndex=1, monitorIndex=1}})
+	local reactorIndex, monitorIndex =
+		barParams[1] or barParams.reactorIndex,
+		barParams[2] or barParams.monitorIndex
+
+	-- Make sure we have the latest list of monitors
+	findMonitors()
+
+	-- Make sure we have the latest list of reactors
+	findReactors()
+
+	local monitor = monitorList[monitorIndex]
+	local reactor = reactorList[reactorIndex]
+
+    local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
+
 	-- Draw some cool lines
-	term.setBackgroundColor(colors.black)
-	local width, height = term.getSize()
+	monitor.setBackgroundColor(colors.black)
+	local width, height = monitor.getSize()
 
 	for i=3, 5 do
-		term.setCursorPos(22, i)
-		term.write("|")
+		monitor.setCursorPos(22, i)
+		monitor.write("|")
 	end
 
 	for i=1, width do
-		term.setCursorPos(i, 2)
-		term.write("-")
+		monitor.setCursorPos(i, 2)
+		monitor.write("-")
 	end
 
 	for i=1, width do
-		term.setCursorPos(i, 6)
-		term.write("-")
+		monitor.setCursorPos(i, 6)
+		monitor.write("-")
 	end
 
 	-- Draw some text
@@ -306,16 +366,16 @@ local function displayBars()
 	local padding = math.max(string.len(fuelString), string.len(tempString),string.len(energyBufferString))
 
 	local fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
-	print{fuelString,2,3}
-	print{fuelPercentage.." %",padding+2,3}
+	print{fuelString,2,3,monitorIndex}
+	print{fuelPercentage.." %",padding+2,3,monitorIndex}
 
 	local energyBuffer = reactor.getEnergyProducedLastTick()
-	print{energyBufferString,2,4}
-	print{math.ceil(energyBuffer).."RF/t",padding+2,4}
+	print{energyBufferString,2,4,monitorIndex}
+	print{math.ceil(energyBuffer).."RF/t",padding+2,4,monitorIndex}
 
 	local reactorTemp = reactor.getTemperature()
-	print{tempString,2,5}
-	print{reactorTemp.." C",padding+2,5}
+	print{tempString,2,5,monitorIndex}
+	print{reactorTemp.." C",padding+2,5,monitorIndex}
 
 	-- Decrease rod button: 22X, 4Y
 	-- Increase rod button: 28X, 4Y
@@ -326,10 +386,10 @@ local function displayBars()
 	end
 	rodPercentage = math.ceil(rodTotal/(numRods+1))
 
-	print{"Control",23,3}
-	print{"<     >",23,4}
-	print{rodPercentage,25,4}
-	print{"percent",23,5}
+	print{"Control",23,3,monitorIndex}
+	print{"<     >",23,4,monitorIndex}
+	print{rodPercentage,25,4,monitorIndex}
+	print{"percent",23,5,monitorIndex}
 
 	if (xClick == 23  and yClick == 4) then
 		--Decrease rod level by amount
@@ -352,44 +412,58 @@ local function displayBars()
 		reactor.setAllControlRodLevels(newRodPercentage)
 	end
 
-	local energyBufferStorage = reactor.getEnergyStored()
-	curStoredEnergyPercent = math.floor(energyBufferStorage/100000) -- 10000000*100
-	paintutils.drawLine(2, 8, 28, 8, colors.gray)
+	monitor.paintutils.drawLine(2, 8, 28, 8, colors.gray)
+	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
 	if curStoredEnergyPercent > 4 then
-		paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
+		monitor.paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
 	elseif curStoredEnergyPercent > 0 then
-		paintutils.drawPixel(2,8,colors.yellow)
+		monitor.paintutils.drawPixel(2,8,colors.yellow)
 	end
-	term.setBackgroundColor(colors.black)
-	print{"Energy Buffer",2,7}
-	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7}
-	print{"%",28,7}
-	term.setBackgroundColor(colors.black)
+	monitor.setBackgroundColor(colors.black)
+	print{"Energy Buffer",2,7,monitorIndex}
+	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
+	print{"%",28,7,monitorIndex}
+	monitor.setBackgroundColor(colors.black)
 
-	local hottestControlRod = getHottestControlRod()
-	local coldestControlRod = getColdestControlRod()
-	print{"Hottest Rod: "..(hottestControlRod + 1),2,10} -- numRods index starts at 0
-	print{reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10}
-	print{"Coldest Rod: "..(coldestControlRod + 1),2,11} -- numRods index starts at 0
-	print{reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11}
-	print{"Fuel Rods: "..(numRods + 1),2,12} -- numRods index starts at 0
-	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12}
+	local hottestControlRod = getHottestControlRod(reactorIndex)
+	local coldestControlRod = getColdestControlRod(reactorIndex)
+	print{"Hottest Rod: "..(hottestControlRod + 1),2,10,monitorIndex} -- numRods index starts at 0
+	print{reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10,monitorIndex}
+	print{"Coldest Rod: "..(coldestControlRod + 1),2,11,monitorIndex} -- numRods index starts at 0
+	print{reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11,monitorIndex}
+	print{"Fuel Rods: "..(numRods + 1),2,12,monitorIndex} -- numRods index starts at 0
+	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12,monitorIndex}
 end
 
 
-function reactorStatus()
-	local width, height = term.getSize()
+function reactorStatus(statusParams)
+	-- Default to first reactor and first monitor
+	setmetatable(statusParams,{__index={reactorIndex=1, monitorIndex=1}})
+	local reactorIndex, monitorIndex =
+		statusParams[1] or statusParams.reactorIndex,
+		statusParams[2] or statusParams.monitorIndex
+
+	-- Make sure we have the latest list of monitors
+	findMonitors()
+
+	-- Make sure we have the latest list of reactors
+	findReactors()
+
+	local monitor = monitorList[monitorIndex]
+	local reactor = reactorList[reactorIndex]
+
+	local width, height = monitor.getSize()
 	local reactorStatus = ""
 
-    numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer (*cough*mechaet*cough*)
+    local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	if reactor.getConnected() then
 		if reactor.getActive() then
 			reactorStatus = "ONLINE"
-			term.setTextColor(colors.green)
+			monitor.setTextColor(colors.green)
 		else
 			reactorStatus = "OFFLINE"
-			term.setTextColor(colors.red)
+			monitor.setTextColor(colors.red)
 		end
 
 		if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
@@ -399,24 +473,34 @@ function reactorStatus()
 
 				-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
 				if not reactor.getActive() then
-					autoStart = false
+					autoStart[reactorIndex] = false
 				end
 			end
 		end
 
 	else
 		reactorStatus = "DISCONNECTED"
-		term.setTextColor(colors.red)
+		monitor.setTextColor(colors.red)
 	end
 
-	print{reactorStatus, width - string.len(reactorStatus) - 1, 1}
-	term.setTextColor(colors.white)
+	print{reactorStatus, width - string.len(reactorStatus) - 1, 1, monitorIndex}
+	monitor.setTextColor(colors.white)
 end
 
 -- This function was added by Lolmer
 -- Return the index of the hottest Control Rod
-function getColdestControlRod()
+function getColdestControlRod(reactorParams)
+	-- Default to first reactor
+	setmetatable(reactorParams,{__index={reactorIndex=1}})
+	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
+
+	-- Make sure we have the latest list of reactors
+	findReactors()
+
+	local reactor = reactorList[reactorIndex]
+
 	local coldestRod = 0
+	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	for rodIndex=0, numRods do
 		if reactor.getTemperature(rodIndex) < reactor.getTemperature(coldestRod) then
@@ -429,8 +513,18 @@ end
 
 -- This function was added by Lolmer
 -- Return the index of the hottest Control Rod
-function getHottestControlRod()
+function getHottestControlRod(reactorParams)
+	-- Default to first reactor
+	setmetatable(reactorParams,{__index={reactorIndex=1}})
+	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
+
+	-- Make sure we have the latest list of reactors
+	findReactors()
+
+	local reactor = reactorList[reactorIndex]
+
 	local hottestRod = 0
+	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	for rodIndex=0, numRods do
 		if reactor.getTemperature(rodIndex) > reactor.getTemperature(hottestRod) then
@@ -444,8 +538,17 @@ end
 -- This function was added by Lolmer
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
 -- wait an in-game half-hour for the temperature to stabalize before modifying again
-function temperatureControl()
+function temperatureControl(reactorParams)
+	-- Default to first reactor
+	setmetatable(reactorParams,{__index={reactorIndex=1}})
+	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
+
+	-- Make sure we have the latest list of reactors
+	findReactors()
+
+	local reactor = reactorList[reactorIndex]
 	local rodTimeDiff = 0
+	local reactorTemp = reactor.getTemperature()
 
 	-- No point modifying control rod levels for temperature if the reactor is offline
 	if reactor.getActive() then
@@ -504,25 +607,39 @@ end
 
 
 function main()
+	-- Load reactor parameters and initialize systems
+	loadReactorOptions()
+
+	-- Get our initial list of connected monitors and reactors
+	findMonitors()
+	findReactors()
+
 	while not finished do
-		printCentered{progName}
+		for monitorIndex = 1, #monitorList do
+			for reactorIndex = 1, #reactorList do
+				printCentered{progName,monitorIndex}
+				reactorStatus(reactorIndex, monitorIndex)
 
-		reactorStatus()
+				local reactor = reactorList[reactorIndex]
 
-		if reactor.getConnected() then
-			-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
-			-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
-			if curStoredEnergyPercent >= maxStoredEnergyPercent then
-				reactor.setActive(false)
-			-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
-			elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and autoStart then
-				reactor.setActive(true)
+				if reactor.getConnected() then
+					local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
+
+					-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
+					-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
+					if curStoredEnergyPercent >= maxStoredEnergyPercent then
+						reactor.setActive(false)
+					-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
+					elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and autoStart[reactorIndex] then
+						reactor.setActive(true)
+					end
+
+					temperatureControl(reactorIndex)
+					displayBars(reactorIndex,monitorIndex)
+					sleep(loopTime)
+					saveReactorOptions()
+				end
 			end
-
-			temperatureControl()
-			displayBars()
-			sleep(loopTime)
-			save()
 		end
 	end
 end
@@ -534,10 +651,11 @@ function eventHandler()
 		if event == "monitor_touch" then
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
 			-- Draw debug stuff
-			--print{"Monitor touch X: "..xClick.." Y: "..yClick, 1, 10}
+			--print{"Monitor touch X: "..xClick.." Y: "..yClick, 1, 10, monitorIndex}
+		-- What is this even for if we aren't looking for a monitor?
 		elseif event == "mouse_click" and not monitorList[1] then
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
-			--print{"Mouse click X: "..xClick.." Y: "..yClick, 1, 11}
+			--print{"Mouse click X: "..xClick.." Y: "..yClick, 1, 11, monitorIndex}
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
 			if ch == "q" then
@@ -555,5 +673,6 @@ while not finished do
 	sleep(loopTime)
 end
 
+-- Clear up after an exit
 term.clear()
 term.setCursorPos(1,1)
