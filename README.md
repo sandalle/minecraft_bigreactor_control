@@ -60,6 +60,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.2.3
+	- Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
+
 - 0.2.2
 	- Do not auto-start the reactor if it was manually powered off (autoStart=false)
 

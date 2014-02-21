@@ -1,6 +1,6 @@
 --[[
 	Program name: Lolmer's EZ-NUKE reactor control system
-	Version: v0.2.2
+	Version: v0.2.3
 	Programmer: Lolmer
 	Last update: 2014-02-20
 	Pastebin: http://pastebin.com/fguScPBQ
@@ -47,6 +47,7 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
+	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
 	0.2.2 - Do not auto-start the reactor if it was manually powered off (autoStart=false)
 	0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
 		"<" Rod Control buttons was off by one (to the left)
@@ -390,19 +391,48 @@ function temperatureControl()
 		if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) and (rodTimeDiff > 0.2) then
 			-- If more than double our maximum temperature, incrase rodPercentage faster
 			if reactorTemp > (2 * maxReactorTemp) then
-				reactor.setControlRodLevel(getHottestControlRod(), rodPercentage + 10)
+				local hottestControlRod = getHottestControlRod()
+
+				-- Check bounds, Big Reactor doesn't do this for us. :)
+				if (reactor.getControlRodLevel(hottestControlRod) + 10) > 99 then
+					reactor.setControlRodLevel(hottestControlRod, 99)
+				else
+					reactor.setControlRodLevel(hottestControlRod, rodPercentage + 10)
+				end
 			else
-				reactor.setControlRodLevel(getHottestControlRod(), rodPercentage + 1)
+				local hottestControlRod = getHottestControlRod()
+
+				-- Check bounds, Big Reactor doesn't do this for us. :)
+				if (reactor.getControlRodLevel(hottestControlRod) + 1) > 99 then
+					reactor.setControlRodLevel(hottestControlRod, 99)
+				else
+					reactor.setControlRodLevel(hottestControlRod, rodPercentage + 1)
+				end
 			end
 
 			rodLastUpdate = os.time() -- Last rod control update is now :)
 		elseif (reactorTemp < minReactorTemp) and (rodTimeDiff > 0.2) then
 			-- If less than half our minimum temperature, decrease rodPercentage faster
 			if reactorTemp < (minReactorTemp / 2) then
-				reactor.setControlRodLevel(getColdestControlRod(), rodPercentage - 10)
+				local coldestControlRod = getColdestControlRod()
+
+				-- Check bounds, Big Reactor doesn't do this for us. :)
+				if (reactor.getControlRodLevel(coldestControlRod) - 10) < 0 then
+					reactor.setControlRodLevel(coldestControlRod, 0)
+				else
+					reactor.setControlRodLevel(coldestControlRod, rodPercentage - 10)
+				end
 			else
-				reactor.setControlRodLevel(getColdestControlRod(), rodPercentage - 1)
+				local coldestControlRod = getColdestControlRod()
+
+				-- Check bounds, Big Reactor doesn't do this for us. :)
+				if (reactor.getControlRodLevel(coldestControlRod) - 1) < 0 then
+					reactor.setControlRodLevel(coldestControlRod, 0)
+				else
+					reactor.setControlRodLevel(coldestControlRod, rodPercentage - 1)
+				end
 			end
+
 			rodLastUpdate = os.time() -- Last rod control update is now :)
 		end
 	end
