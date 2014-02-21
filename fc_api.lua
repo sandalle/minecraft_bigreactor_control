@@ -2,7 +2,7 @@
 
 function getDeviceSide(deviceType)
 	deviceType = deviceType:lower()
-   
+
 	for i, side in pairs(rs.getSides()) do
 		if (peripheral.isPresent(side)) then
 			if (string.lower(peripheral.getType(side)) == deviceType) then
@@ -10,7 +10,7 @@ function getDeviceSide(deviceType)
 			end
 		end
 	end
-   
+
 	return nil;
 end
 
@@ -72,14 +72,14 @@ function clearMonitor(str)
 	local gap = 2
 	term.clear()
 	local width, height = term.getSize()
-	
+
 	printCentered(str, 1)
 
 	for i=1, width do
 		term.setCursorPos(i, gap)
 		term.write("-")
-	end		
-	
+	end
+
 	term.setCursorPos(1, gap+1)
 end
 

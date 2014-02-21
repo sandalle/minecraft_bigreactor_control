@@ -5,7 +5,7 @@
 	Last update: 2014-02-20
 	Pastebin: http://pastebin.com/fguScPBQ
 
-	Description: 
+	Description:
 	This program controls a Big Reactors nuclear reactor
 	in Minecraft with a Computercraft computer, using Computercraft's
 	own wired modem connected to the reactors computer control port.
@@ -85,7 +85,7 @@ function wrapThis(thing)
                 wrapped = peripheral.wrap(thing.."_"..f)
                 f = f + 1
         end
- 
+
         if wrapped == nil then
                 side = getDeviceSide(thing)
                 if side ~= nil then
@@ -100,7 +100,7 @@ end
 
 local function print(str, x, y)
 	term.setCursorPos(x, y)
-	term.write(str)	
+	term.write(str)
 end
 -- Done helper functions
 
@@ -226,51 +226,51 @@ local function displayBars()
 		term.setCursorPos(22, i)
 		term.write("|")
 	end
-	
+
 	for i=1, width do
 		term.setCursorPos(i, 2)
 		term.write("-")
 	end
-	
+
 	for i=1, width do
 		term.setCursorPos(i, 6)
 		term.write("-")
 	end
-	
+
 	-- Draw some text
-	
+
 	local fuelString = "Fuel: "
 	local tempString = "Temp: "
 	local energyBufferString = "Producing: "
-	
+
 	local padding = math.max(string.len(fuelString), string.len(tempString),string.len(energyBufferString))
-	
+
 	local fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
 	print(fuelString,2,3)
 	print(fuelPercentage.." %",padding+2,3)
-	
+
 	local energyBuffer = reactor.getEnergyProducedLastTick()
 	print(energyBufferString,2,4)
 	print(math.ceil(energyBuffer).."RF/t",padding+2,4)
-	
+
 	local reactorTemp = reactor.getTemperature()
 	print(tempString,2,5)
 	print(reactorTemp.." C",padding+2,5)
-	
+
 	-- Decrease rod button: 22X, 4Y
 	-- Increase rod button: 28X, 4Y
-	
+
 	local rodTotal = 0
 	for i=0, numRods do
 		rodTotal = rodTotal + reactor.getControlRodLevel(i)
 	end
 	rodPercentage = math.ceil(rodTotal/(numRods+1))
-	
+
 	print("Control",23,3)
 	print("<     >",23,4)
 	print(rodPercentage,25,4)
 	print("percent",23,5)
-	
+
 	if (xClick == 23  and yClick == 4) then
 		--Decrease rod level by amount
 		newRodPercentage = rodPercentage - adjustAmount
@@ -281,7 +281,7 @@ local function displayBars()
 		xClick, yClick = 0,0
 		reactor.setAllControlRodLevels(newRodPercentage)
 	end
-	
+
 	if (xClick == 28  and yClick == 4) then
 		--Increase rod level by amount
 		newRodPercentage = rodPercentage + adjustAmount
@@ -328,7 +328,7 @@ function reactorStatus()
 			reactorStatus = "OFFLINE"
 			term.setTextColor(colors.red)
 		end
-		
+
 		if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
 			if yClick == 1 then
 				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
@@ -339,12 +339,12 @@ function reactorStatus()
 					autoStart = false
 				end
 			end
-		end	
+		end
 
 	else
 		reactorStatus = "DISCONNECTED"
 		term.setTextColor(colors.red)
-	end	
+	end
 
 	print(reactorStatus, width - string.len(reactorStatus) - 1, 1)
 	term.setTextColor(colors.white)
@@ -447,7 +447,7 @@ function main()
 		reactorStatus()
 
 		if reactor.getConnected() then
-			-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate	
+			-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
 			-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
 			if curStoredEnergyPercent >= maxStoredEnergyPercent then
 				reactor.setActive(false)
@@ -467,7 +467,7 @@ end
 function eventHandler()
 	while not finished do
 		event, arg1, arg2, arg3 = os.pullEvent()
-		
+
 		if event == "monitor_touch" then
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
 			-- Draw debug stuff
@@ -480,7 +480,7 @@ function eventHandler()
 			if ch == "q" then
 				finished = true
 			elseif ch == "r" then
-				finished = true	
+				finished = true
 				os.reboot()
 			end
 		end

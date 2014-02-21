@@ -3,7 +3,7 @@
 	Last update: 2014-02-20
 	Pastebin: http://pastebin.com/ZTMzRLez
 
-	Description: 
+	Description:
 	This program controls a Big Reactors nuclear reactor
 	in Minecraft with a Computercraft computer, using Computercraft's
 	own wired modem connected to the reactors computer control port.
