@@ -1,6 +1,6 @@
 --[[
 	Program name: Lolmer's EZ-NUKE reactor control system
-	Version: v0.2.4
+	Version: v0.2.5
 	Programmer: Lolmer
 	Last update: 2014-02-20
 	Pastebin: http://pastebin.com/fguScPBQ
@@ -47,7 +47,7 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
-	0.2.x - Add multi-monitor support!
+	0.2.5 - Add multi-monitor support! Sends one reactor's data to all monitors.
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -70,6 +70,7 @@
 		- May just iterate through peripheral.getNames() looking for "monitor_#" and "BigReactors-Reactor_#"
 		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
+		Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 
 ]]--
 
@@ -147,7 +148,7 @@ if reactor == nil then
 end
 
 -- Some global variables
-local progVer = "0.2.4"
+local progVer = "0.2.5"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
