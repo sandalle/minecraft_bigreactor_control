@@ -43,7 +43,7 @@
 	A simpler Big Reactor control program is available from:
 		http://pastebin.com/tFkhQLYn (IronClaymore)
 
-	Reactor Computer Port API: http://wiki.technicpack.net/index.php?title=Reactor_Computer_Port
+	Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
