@@ -48,6 +48,8 @@
 
 	ChangeLog:
 	0.2.5 - Add multi-monitor support! Sends one reactor's data to all monitors.
+		print function now takes table to support optional specified monitor
+		Set "numRods" every cycle for some people (mechaet)
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -74,79 +76,6 @@
 
 ]]--
 
-print("Initializing program...");
-
-if not os.loadAPI("FC_API") then
-    error("Missing FC_API")
-end
---Done loading API
-
-function wrapThis(thing)
-        local wrapped, f = nil, 0
-        while wrapped == nil and f <= 100 do
-                wrapped = peripheral.wrap(thing.."_"..f)
-                f = f + 1
-        end
-
-        if wrapped == nil then
-                side = FC_API.getDeviceSide(thing)
-                if side ~= nil then
-                        return peripheral.wrap(side)
-                else
-                        return nil
-                end
-        else
-                return wrapped
-        end
-end
-
-local function print(str, x, y)
-	term.setCursorPos(x, y)
-	term.write(str)
-end
--- Done helper functions
-
--- Return a list of all connected (including via wired modems) devices of "deviceType"
-function getDevices(deviceType)
-	local deviceName = nil
-	local deviceIndex = 0
-	local deviceList = {} -- Empty array, which grows as we need
-	local peripheralList = peripheral.getNames() -- Get table of connected peripherals
-
-	deviceType = deviceType:lower() -- Make sure we're matching case here
-
-	for peripheralIndex = 1, #peripheralList do
-		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
-			term.write("Attaching "..peripheral.getType(peripheralList[peripheralIndex]).." attached as \""..peripheralList[peripheralIndex].."\".")
-			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
-			deviceIndex = deviceIndex + 1
-		end
-	end
-
-	return deviceList
-end
-
--- Then initialize the monitors
-local monitorList = getDevices("monitor")
-local monitorX, monitorY = monitorList[0].getSize()
-if monitorX ~= 29 or monitorY ~= 12 then
-	error("Monitor is the wrong size! Needs to be 3x2.")
-end
-
-if  monitorList[0] then
-	--error("No Monitor Attached")
-	term.clear()
-	term.setCursorPos(1,1)
-	term.write("Display redirected to Monitor")
-	term.redirect(monitorList[0])
-end
-
--- Let's connect to the reactor peripheral
-local reactor = wrapThis("BigReactors-Reactor")
-if reactor == nil then
-	error("Can't find reactor.")
-end
-
 -- Some global variables
 local progVer = "0.2.5"
 local progName = "EZ-NUKE ".. progVer
@@ -156,7 +85,7 @@ local adjustAmount = 5
 local dataLogging = false
 local baseControlRodLevel = nil
 local autoStart = true -- Auto-start reactor when needed (e.g. program startup) by default
-local numRods = reactor.getNumberOfControlRods() - 1 -- Call once so that we don't have to keep calling it
+local numRods = 0 -- Number of control rods at start
 local curStoredEnergyPercent = 0 -- Current stored energy in %
 local rodPercentage = 0 -- For checking rod control level oustide of Display Bars
 local rodLastUpdate = os.time() -- Last timestamp update for rod control level update
@@ -165,6 +94,90 @@ local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
 local minReactorTemp = nil -- Minimum reactor temperature (^C) to maintain
 local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
+local monitorList = {} -- Empty monitor list array
+
+print{"Initializing program..."};
+
+if not os.loadAPI("FC_API") then
+    error("Missing FC_API")
+end
+--Done loading API
+
+local function print(printParams)
+	setmetatable(printParams,{__index={xPos=1, yPos=1, monitor=1}})
+	local printString, xPos, yPos, monitor =
+		printParams[1] or printParams.printString,
+		printParams[2] or printParams.xPos,
+		printParams[3] or printParams.yPos,
+		printParams[4] or printParams.monitor
+
+	-- For now, just print everything to all monitors
+	for monitor = 1, #monitorList do
+		monitorList[monitor].setCursorPos(xPos, yPos)
+		monitorList[monitor].write(printString)
+	end
+end
+-- Done helper functions
+
+-- Return a list of all connected (including via wired modems) devices of "deviceType"
+function getDevices(deviceType)
+	local deviceName = nil
+	local deviceIndex = 1
+	local deviceList = {} -- Empty array, which grows as we need
+	local peripheralList = peripheral.getNames() -- Get table of connected peripherals
+
+	deviceType = deviceType:lower() -- Make sure we're matching case here
+
+	for peripheralIndex = 1, #peripheralList do
+		term.setCursorPos(1,peripheralIndex + 7)
+		term.write("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \""..peripheralList[peripheralIndex].."\".")
+		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
+			term.setCursorPos(1,deviceIndex + 13)
+			term.write("Attaching "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \"deviceList["..deviceIndex.."]\".")
+			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
+			deviceIndex = deviceIndex + 1
+		end
+	end
+
+	return deviceList
+end
+
+-- Then initialize the monitors
+monitorList = getDevices("monitor")
+
+for monitorIndex = 1, #monitorList do
+	local monitorX, monitorY = monitorList[monitorIndex].getSize()
+
+	if monitorX ~= 29 or monitorY ~= 12 then
+		monitorList[monitorIndex].setCursorPos(1,1)
+		monitorList[monitorIndex].write("Monitor is the wrong size!")
+		monitorList[monitorIndex].setCursorPos(1,2)
+		monitorList[monitorIndex].write("Needs to be 3x2.")
+--[[		table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
+		if monitorIndex == #monitorList then	-- If we're at the end already, break from loop
+			break
+		else
+			monitorIndex = monitorIndex - 1 -- We just removed an element
+		end ]]--
+	end
+end
+
+if  monitorList[1] then
+	-- term.clear()
+	term.setCursorPos(1,1)
+	term.write("Display redirected to Monitor(s)")
+	term.redirect(monitorList[1])
+end
+
+-- Let's connect to the reactor peripheral
+local reactorList = getDevices("BigReactors-Reactor")
+local reactor = nil
+if table.getn(reactorList) == 0 then
+	error("Can't find any reactors.")
+else
+	-- Placeholder for now
+	reactor = reactorList[1]
+end
 
 --Load saved data if file exists
 file = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
@@ -268,16 +281,16 @@ local function displayBars()
 	local padding = math.max(string.len(fuelString), string.len(tempString),string.len(energyBufferString))
 
 	local fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
-	print(fuelString,2,3)
-	print(fuelPercentage.." %",padding+2,3)
+	print{fuelString,2,3}
+	print{fuelPercentage.." %",padding+2,3}
 
 	local energyBuffer = reactor.getEnergyProducedLastTick()
-	print(energyBufferString,2,4)
-	print(math.ceil(energyBuffer).."RF/t",padding+2,4)
+	print{energyBufferString,2,4}
+	print{math.ceil(energyBuffer).."RF/t",padding+2,4}
 
 	local reactorTemp = reactor.getTemperature()
-	print(tempString,2,5)
-	print(reactorTemp.." C",padding+2,5)
+	print{tempString,2,5}
+	print{reactorTemp.." C",padding+2,5}
 
 	-- Decrease rod button: 22X, 4Y
 	-- Increase rod button: 28X, 4Y
@@ -288,10 +301,10 @@ local function displayBars()
 	end
 	rodPercentage = math.ceil(rodTotal/(numRods+1))
 
-	print("Control",23,3)
-	print("<     >",23,4)
-	print(rodPercentage,25,4)
-	print("percent",23,5)
+	print{"Control",23,3}
+	print{"<     >",23,4}
+	print{rodPercentage,25,4}
+	print{"percent",23,5}
 
 	if (xClick == 23  and yClick == 4) then
 		--Decrease rod level by amount
@@ -323,25 +336,28 @@ local function displayBars()
 		paintutils.drawPixel(2,8,colors.yellow)
 	end
 	term.setBackgroundColor(colors.black)
-	print("Energy Buffer",2,7)
-	print(curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7)
-	print("%",28,7)
+	print{"Energy Buffer",2,7}
+	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7}
+	print{"%",28,7}
 	term.setBackgroundColor(colors.black)
 
 	local hottestControlRod = getHottestControlRod()
 	local coldestControlRod = getColdestControlRod()
-	print("Hottest Rod: "..(hottestControlRod + 1),2,10) -- numRods index starts at 0
-	print(reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10)
-	print("Coldest Rod: "..(coldestControlRod + 1),2,11) -- numRods index starts at 0
-	print(reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11)
-	print("Fuel Rods: "..(numRods + 1),2,12) -- numRods index starts at 0
-	print("Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12)
+	print{"Hottest Rod: "..(hottestControlRod + 1),2,10} -- numRods index starts at 0
+	print{reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10}
+	print{"Coldest Rod: "..(coldestControlRod + 1),2,11} -- numRods index starts at 0
+	print{reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11}
+	print{"Fuel Rods: "..(numRods + 1),2,12} -- numRods index starts at 0
+	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12}
 end
 
 
 function reactorStatus()
 	local width, height = term.getSize()
 	local reactorStatus = ""
+
+    numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer (*cough*mechaet*cough*)
+
 	if reactor.getConnected() then
 		if reactor.getActive() then
 			reactorStatus = "ONLINE"
@@ -368,7 +384,7 @@ function reactorStatus()
 		term.setTextColor(colors.red)
 	end
 
-	print(reactorStatus, width - string.len(reactorStatus) - 1, 1)
+	print{reactorStatus, width - string.len(reactorStatus) - 1, 1}
 	term.setTextColor(colors.white)
 end
 
@@ -493,10 +509,10 @@ function eventHandler()
 		if event == "monitor_touch" then
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
 			-- Draw debug stuff
-			--print("Monitor touch X: "..xClick.." Y: "..yClick, 1, 10)
-		elseif event == "mouse_click" and not monitorList[0] then
+			--print{"Monitor touch X: "..xClick.." Y: "..yClick, 1, 10}
+		elseif event == "mouse_click" and not monitorList[1] then
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
-			--print("Mouse click X: "..xClick.." Y: "..yClick, 1, 11)
+			--print{"Mouse click X: "..xClick.." Y: "..yClick, 1, 11}
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
 			if ch == "q" then
@@ -514,8 +530,8 @@ while not finished do
 	sleep(loopTime)
 end
 
-term.clear()
+--term.clear()
 term.setCursorPos(1,1)
 FC_API.restoreNativeTerminal()
-term.clear()
+--term.clear()
 term.setCursorPos(1,1)
