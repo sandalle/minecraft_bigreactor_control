@@ -311,10 +311,12 @@ local function getReactorStoredEnergyBufferPercent(reactorParams)
 	setmetatable(reactorParams,{__index={reactorIndex=1}})
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
+	local reactor = nil
+
 	-- Make sure we have the latest list of reactors
 	findReactors()
 
-	local reactor = reactorList[reactorIndex]
+	reactor = reactorList[reactorIndex]
 
 	local energyBufferStorage = reactor.getEnergyStored()
 	return (math.floor(energyBufferStorage/100000)) -- 10000000*100
@@ -327,14 +329,17 @@ local function displayBars(barParams)
 		barParams[1] or barParams.reactorIndex,
 		barParams[2] or barParams.monitorIndex
 
-	-- Make sure we have the latest list of monitors
-	findMonitors()
+	local reactor = nil
+	local monitor = nil
 
 	-- Make sure we have the latest list of reactors
 	findReactors()
 
-	local monitor = monitorList[monitorIndex]
-	local reactor = reactorList[reactorIndex]
+	-- Make sure we have the latest list of monitors
+	findMonitors()
+
+	monitor = monitorList[monitorIndex]
+	reactor = reactorList[reactorIndex]
 
     local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
@@ -443,14 +448,17 @@ function reactorStatus(statusParams)
 		statusParams[1] or statusParams.reactorIndex,
 		statusParams[2] or statusParams.monitorIndex
 
-	-- Make sure we have the latest list of monitors
-	findMonitors()
+	local reactor = nil
+	local monitor = nil
 
 	-- Make sure we have the latest list of reactors
 	findReactors()
 
-	local monitor = monitorList[monitorIndex]
-	local reactor = reactorList[reactorIndex]
+	-- Make sure we have the latest list of monitors
+	findMonitors()
+
+	monitor = monitorList[monitorIndex]
+	reactor = reactorList[reactorIndex]
 
 	local width, height = monitor.getSize()
 	local reactorStatus = ""
@@ -494,10 +502,12 @@ function getColdestControlRod(reactorParams)
 	setmetatable(reactorParams,{__index={reactorIndex=1}})
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
+	local reactor = nil
+
 	-- Make sure we have the latest list of reactors
 	findReactors()
 
-	local reactor = reactorList[reactorIndex]
+	reactor = reactorList[reactorIndex]
 
 	local coldestRod = 0
 	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
@@ -518,10 +528,12 @@ function getHottestControlRod(reactorParams)
 	setmetatable(reactorParams,{__index={reactorIndex=1}})
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
+	local reactor = nil
+
 	-- Make sure we have the latest list of reactors
 	findReactors()
 
-	local reactor = reactorList[reactorIndex]
+	reactor = reactorList[reactorIndex]
 
 	local hottestRod = 0
 	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
@@ -543,10 +555,12 @@ function temperatureControl(reactorParams)
 	setmetatable(reactorParams,{__index={reactorIndex=1}})
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
+	local reactor = nil
+
 	-- Make sure we have the latest list of reactors
 	findReactors()
 
-	local reactor = reactorList[reactorIndex]
+	reactor = reactorList[reactorIndex]
 	local rodTimeDiff = 0
 	local reactorTemp = reactor.getTemperature()
 
@@ -610,6 +624,8 @@ function main()
 	-- Load reactor parameters and initialize systems
 	loadReactorOptions()
 
+	local reactor = nil
+
 	-- Get our initial list of connected monitors and reactors
 	findMonitors()
 	findReactors()
@@ -620,7 +636,7 @@ function main()
 				printCentered{progName,monitorIndex}
 				reactorStatus(reactorIndex, monitorIndex)
 
-				local reactor = reactorList[reactorIndex]
+				reactor = reactorList[reactorIndex]
 
 				if reactor.getConnected() then
 					local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
