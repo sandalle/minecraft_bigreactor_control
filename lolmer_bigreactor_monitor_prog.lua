@@ -50,6 +50,7 @@
 	0.2.5 - Add multi-monitor support! Sends one reactor's data to all monitors.
 		print function now takes table to support optional specified monitor
 		Set "numRods" every cycle for some people (mechaet)
+		Don't redirect terminal output with multiple monitor support
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -148,8 +149,11 @@ monitorList = getDevices("monitor")
 for monitorIndex = 1, #monitorList do
 	local monitorX, monitorY = monitorList[monitorIndex].getSize()
 
+	-- Clear all monitors
+	monitorList[monitorIndex].clear()
+	monitorList[monitorIndex].setCursorPos(1,1)
+
 	if monitorX ~= 29 or monitorY ~= 12 then
-		monitorList[monitorIndex].setCursorPos(1,1)
 		monitorList[monitorIndex].write("Monitor is the wrong size!")
 		monitorList[monitorIndex].setCursorPos(1,2)
 		monitorList[monitorIndex].write("Needs to be 3x2.")
@@ -160,13 +164,6 @@ for monitorIndex = 1, #monitorList do
 			monitorIndex = monitorIndex - 1 -- We just removed an element
 		end ]]--
 	end
-end
-
-if  monitorList[1] then
-	-- term.clear()
-	term.setCursorPos(1,1)
-	term.write("Display redirected to Monitor(s)")
-	term.redirect(monitorList[1])
 end
 
 -- Let's connect to the reactor peripheral

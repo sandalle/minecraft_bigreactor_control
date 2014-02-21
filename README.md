@@ -64,6 +64,7 @@ ChangeLog
 	- Add multi-monitor support! Sends one reactor's data to all monitors.
 	- print function now takes table to support optional specified monitor
 	- Set "numRods" every cycle for some people (mechaet)
+	- Don't redirect terminal output with multiple monitor support
 
 - 0.2.4
 	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
