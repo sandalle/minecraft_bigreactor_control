@@ -34,22 +34,23 @@ Resources
 
 	https://github.com/sandalle/minecraft_bigreactor_control
 
-- Startup script is available from:
+- Start-up script is available from:
 
 	http://pastebin.com/ZTMzRLez
 
 	https://github.com/sandalle/minecraft_bigreactor_control
 
-- Other reactor control which I based my program on:
+- Other reactor control program which I based my program on:
 
 	http://pastebin.com/aMAu4X5J (ScatmanJohn)
 
 	http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
 
-- FC API, required:
+- FC API (REQUIRED, I did not write this):
+
 	http://pastebin.com/A9hcbZWe
 
-- A simpler Big Reactor control is available from:
+- A simpler Big Reactor control program is available from:
 
 	http://pastebin.com/tFkhQLYn (IronClaymore)
 
