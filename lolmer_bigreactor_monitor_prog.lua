@@ -47,6 +47,7 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
+	0.2.x - Add multi-monitor support!
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -62,8 +63,7 @@
 
 	TODO:
 		Add Fuel consumption metric to display - No such API for easy access. :(
-		Support multiple reactors and multiple monitors.
-		- If one reactor, display same output to all monitors
+		Support multiple reactors
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
 		- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/
 		  and http://computercraft.info/wiki/Monitor
@@ -110,12 +110,14 @@ function getDevices(deviceType)
 	local deviceName = nil
 	local deviceIndex = 0
 	local deviceList = {} -- Empty array, which grows as we need
+	local peripheralList = peripheral.getNames() -- Get table of connected peripherals
 
-	deviceType = string.lower(deviceType) -- Make sure we're matching case here
+	deviceType = deviceType:lower() -- Make sure we're matching case here
 
-	for deviceName in peripheral.getNames() do
-		if (string.lower(deviceName) == deviceType) then
-			deviceList[deviceIndex] = peripheral.wrap(deviceName)
+	for peripheralIndex = 1, #peripheralList do
+		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
+			term.write("Attaching "..peripheral.getType(peripheralList[peripheralIndex]).." attached as \""..peripheralList[peripheralIndex].."\".")
+			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
 			deviceIndex = deviceIndex + 1
 		end
 	end

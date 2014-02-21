@@ -60,6 +60,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.2.x
+	- Add multi-monitor support! Sends one reactor's data to all monitors.
+
 - 0.2.4
 	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 	- Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
