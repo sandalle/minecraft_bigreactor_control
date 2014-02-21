@@ -15,6 +15,7 @@
 		ReactorOptions is read on start and then current values are saved every program cycle.
 		Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
 		Auto-adjusts individual control rods (based on hottest/coldest) to maintain temperature.
+		Will display reactor data to all attached monitors of correct dimensions.
 
 	Default values:
 		Rod Control: 90% (Let's start off safe and then power up as we can)
@@ -38,8 +39,6 @@
 	Other reactor control program which I based my program on:
 		http://pastebin.com/aMAu4X5J (ScatmanJohn)
 		http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
-	FC API (REQUIRED, I did not write this):
-		http://pastebin.com/A9hcbZWe
 	A simpler Big Reactor control program is available from:
 		http://pastebin.com/tFkhQLYn (IronClaymore)
 
@@ -52,6 +51,7 @@
 		Set "numRods" every cycle for some people (mechaet)
 		Don't redirect terminal output with multiple monitor support
 		Log troubleshooting data to reactorcontrol.log
+		FC_API no longer used
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -100,13 +100,10 @@ local monitorList = {} -- Empty monitor list array
 
 print{"Initializing program..."};
 
-if not os.loadAPI("FC_API") then
-    error("Missing FC_API")
-end
---Done loading API
-
 -- Helper functions
-logFile = fs.open("reactorcontrol.log", "w") -- File needs to exist for append "a" and zero it out if it already exists
+
+-- File needs to exist for append "a" and zero it out if it already exists
+logFile = fs.open("reactorcontrol.log", "w")
 
 local function print(printParams)
 	-- Default to xPos=1, yPos=1, and first monitor
@@ -125,7 +122,7 @@ local function print(printParams)
 end
 
 -- Replaces the one from FC_API allowing for multi-monitor support
-function printCentered(printParams)
+local function printCentered(printParams)
 	-- Default to yPos=1 and first monitor
 	setmetatable(printParams,{__index={yPos=1, monitor=1}})
 	local printString, xPos, yPos, monitor =
@@ -140,7 +137,7 @@ function printCentered(printParams)
 	monitorList[monitor].write(printString)
 end
 
-function printLog(printStr)
+local function printLog(printStr)
 	logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
 	if logFile then
 		logFile.writeLine(printStr)
@@ -150,10 +147,10 @@ function printLog(printStr)
 	end
 end
 
--- Done helper functions
+-- End helper functions
 
 -- Return a list of all connected (including via wired modems) devices of "deviceType"
-function getDevices(deviceType)
+local function getDevices(deviceType)
 	local deviceName = nil
 	local deviceIndex = 1
 	local deviceList = {} -- Empty array, which grows as we need
@@ -276,7 +273,6 @@ end
 
 reactor.setAllControlRodLevels(baseControlRodLevel)
 
---FC_API.clearMonitor(progName)
 printCentered{progName}
 
 --Done initializing
@@ -509,7 +505,6 @@ end
 
 function main()
 	while not finished do
-		--FC_API.clearMonitor(progName)
 		printCentered{progName}
 
 		reactorStatus()
@@ -560,8 +555,5 @@ while not finished do
 	sleep(loopTime)
 end
 
---term.clear()
-term.setCursorPos(1,1)
---FC_API.restoreNativeTerminal()
---term.clear()
+term.clear()
 term.setCursorPos(1,1)

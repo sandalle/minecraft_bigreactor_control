@@ -19,7 +19,6 @@
 		Computer or Advanced Computer
 		Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
 
-
 	This script is available from:
 		http://pastebin.com/ZTMzRLez
 		https://github.com/sandalle/minecraft_bigreactor_control
@@ -28,8 +27,6 @@
 	Other reactor control which I based my program on:
 		http://pastebin.com/aMAu4X5J (ScatmanJohn)
 		http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
-	FC API, required:
-		http://pastebin.com/A9hcbZWe
 	A simpler Big Reactor control is available from:
 		http://pastebin.com/tFkhQLYn (IronClaymore)
 
@@ -43,8 +40,7 @@ shell.run("rm", "reactorcontrol")
 shell.run("pastebin", "get", "fguScPBQ", "reactorcontrol")
 
 -- Remove any prior, possibly old, versions of "FC_API"
+-- No longer used
 shell.run("rm", "FC_API")
--- Download http://pastebin.com/A9hcbZWe and name "FC_API"
-shell.run("pastebin", "get", "A9hcbZWe", "FC_API")
 
 shell.run("reactorcontrol")

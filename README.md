@@ -11,6 +11,7 @@ Features
 - ReactorOptions is read on start and then current values are saved every program cycle.
 - Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
 - Auto-adjusts individual control rods (based on hottest/coldest) to maintain temperature.
+- Will display reactor data to all attached monitors of correct dimensions.
 
 Default values
 ----------------------------
@@ -46,10 +47,6 @@ Resources
 
 	http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
 
-- FC API (REQUIRED, I did not write this):
-
-	http://pastebin.com/A9hcbZWe
-
 - A simpler Big Reactor control program is available from:
 
 	http://pastebin.com/tFkhQLYn (IronClaymore)
@@ -66,6 +63,7 @@ ChangeLog
 	- Set "numRods" every cycle for some people (mechaet)
 	- Don't redirect terminal output with multiple monitor support
 	- Log troubleshooting data to reactorcontrol.log
+	- FC_API no longer used
 
 - 0.2.4
 	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
