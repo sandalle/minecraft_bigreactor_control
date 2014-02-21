@@ -28,6 +28,8 @@
 		Support multiple reactors and multiple monitors.
 		- If one reactor, display same output to all monitors
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
+		- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/
+		  and http://computercraft.info/wiki/Monitor
 		Add support for direct attached monitors and computers
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 
