@@ -28,11 +28,14 @@ Minecraft BigReactor Computercraft Control Program
 		Maximum Temperature: 950^C (Will lower control rods above this value)
 
 	TODO:
-		Add Fuel consumption metric to display - No such API. :(
+		Add Fuel consumption metric to display - No such API for easy access. :(
 		Support multiple reactors and multiple monitors.
 		- If one reactor, display same output to all monitors
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
+		- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/
+		  and http://computercraft.info/wiki/Monitor
 		Add support for direct attached monitors and computers
+		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 
 	Requirements:
