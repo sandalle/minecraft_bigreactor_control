@@ -122,9 +122,6 @@ local function print(printParams)
 		printParams[3] or printParams.yPos,
 		printParams[4] or printParams.monitorIndex
 
-	-- Make sure we have the latest list of monitors
-	findMonitors()
-
 	-- For now, just print everything to all monitors
 	for monitorIndex = 1, #monitorList do
 		monitorList[monitorIndex].setCursorPos(xPos, yPos)
@@ -141,9 +138,6 @@ local function printCentered(printParams)
 		printParams[2] or printParams.xPos,
 		printParams[3] or printParams.yPos,
 		printParams[4] or printParams.monitorIndex
-
-	-- Make sure we have the latest list of monitors
-	findMonitors()
 
 	local width, height = monitorList[monitorIndex].getSize()
 	monitorList[monitorIndex].setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) , yPos)
@@ -312,10 +306,6 @@ local function getReactorStoredEnergyBufferPercent(reactorParams)
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
 	local reactor = nil
-
-	-- Make sure we have the latest list of reactors
-	findReactors()
-
 	reactor = reactorList[reactorIndex]
 
 	local energyBufferStorage = reactor.getEnergyStored()
@@ -331,12 +321,6 @@ local function displayBars(barParams)
 
 	local reactor = nil
 	local monitor = nil
-
-	-- Make sure we have the latest list of reactors
-	findReactors()
-
-	-- Make sure we have the latest list of monitors
-	findMonitors()
 
 	monitor = monitorList[monitorIndex]
 	reactor = reactorList[reactorIndex]
@@ -451,12 +435,6 @@ function reactorStatus(statusParams)
 	local reactor = nil
 	local monitor = nil
 
-	-- Make sure we have the latest list of reactors
-	findReactors()
-
-	-- Make sure we have the latest list of monitors
-	findMonitors()
-
 	monitor = monitorList[monitorIndex]
 	reactor = reactorList[reactorIndex]
 
@@ -504,9 +482,6 @@ function getColdestControlRod(reactorParams)
 
 	local reactor = nil
 
-	-- Make sure we have the latest list of reactors
-	findReactors()
-
 	reactor = reactorList[reactorIndex]
 
 	local coldestRod = 0
@@ -529,9 +504,6 @@ function getHottestControlRod(reactorParams)
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
 	local reactor = nil
-
-	-- Make sure we have the latest list of reactors
-	findReactors()
 
 	reactor = reactorList[reactorIndex]
 
@@ -556,9 +528,6 @@ function temperatureControl(reactorParams)
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
 	local reactor = nil
-
-	-- Make sure we have the latest list of reactors
-	findReactors()
 
 	reactor = reactorList[reactorIndex]
 	local rodTimeDiff = 0
