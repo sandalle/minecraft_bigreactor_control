@@ -466,4 +466,3 @@ term.setCursorPos(1,1)
 FC_API.restoreNativeTerminal()
 term.clear()
 term.setCursorPos(1,1)
-
