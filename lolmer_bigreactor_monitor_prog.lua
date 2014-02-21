@@ -1,6 +1,6 @@
 --[[
 	Program name: Lolmer's EZ-NUKE reactor control system
-	Version: v0.2.1
+	Version: v0.2.2
 	Programmer: Lolmer
 	Last update: 2014-02-18
 	Pastebin: http://pastebin.com/fguScPBQ
@@ -28,7 +28,6 @@
 		Support multiple reactors and multiple monitors.
 		- If one reactor, display same output to all monitors
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
-		Offline mode needs to override temperature/energy buffer code.
 		Add support for direct attached monitors and computers
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 
@@ -56,6 +55,7 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
+	0.2.2 - Do not auto-start the reactor if it was manually powered off (autoStart=false)
 	0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
 		"<" Rod Control buttons was off by one (to the left)
 	0.2.0 - Lolmer Edition :)
@@ -120,13 +120,14 @@ if reactor == nil then
 end
 
 -- Some global variables
-local progVer = "0.2.1"
+local progVer = "0.2.2"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
 local adjustAmount = 5
 local dataLogging = false
 local baseControlRodLevel = nil
+local autoStart = true -- Auto-start reactor when needed (e.g. program startup) by default
 local numRods = reactor.getNumberOfControlRods() - 1 -- Call once so that we don't have to keep calling it
 local curStoredEnergyPercent = 0 -- Current stored energy in %
 local rodPercentage = 0 -- For checking rod control level oustide of Display Bars
@@ -318,25 +319,27 @@ function reactorStatus()
 			reactorStatus = "ONLINE"
 			term.setTextColor(colors.green)
 		else
-			if autoStart then
-				reactor.setActive(true)
-			end
 			reactorStatus = "OFFLINE"
 			term.setTextColor(colors.red)
 		end
 		
 		if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
-			if yClick == 1 and not autoStart then
-				reactor.setActive(not reactor.getActive())
+			if yClick == 1 then
+				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
 				xClick, yClick = 0,0
+
+				-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
+				if not reactor.getActive() then
+					autoStart = false
+				end
 			end
 		end	
-		
+
 	else
 		reactorStatus = "DISCONNECTED"
 		term.setTextColor(colors.red)
 	end	
-	
+
 	print(reactorStatus, width - string.len(reactorStatus) - 1, 1)
 	term.setTextColor(colors.white)
 end
@@ -413,7 +416,8 @@ function main()
 			-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
 			if curStoredEnergyPercent >= maxStoredEnergyPercent then
 				reactor.setActive(false)
-			elseif curStoredEnergyPercent <= minStoredEnergyPercent then
+			-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
+			elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and autoStart then
 				reactor.setActive(true)
 			end
 
