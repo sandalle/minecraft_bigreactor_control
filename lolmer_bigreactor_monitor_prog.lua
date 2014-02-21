@@ -105,19 +105,37 @@ local function print(str, x, y)
 end
 -- Done helper functions
 
--- Then initialize the monitor
-local monitor = wrapThis("monitor")
-local monitorX, monitorY = monitor.getSize()
+-- Return a list of all connected (including via wired modems) devices of "deviceType"
+function getDevices(deviceType)
+	local deviceName = nil
+	local deviceIndex = 0
+	local deviceList = {} -- Empty array, which grows as we need
+
+	deviceType = string.lower(deviceType) -- Make sure we're matching case here
+
+	for deviceName in peripheral.getNames() do
+		if (string.lower(deviceName) == deviceType) then
+			deviceList[deviceIndex] = peripheral.wrap(deviceName)
+			deviceIndex = deviceIndex + 1
+		end
+	end
+
+	return deviceList
+end
+
+-- Then initialize the monitors
+local monitorList = getDevices("monitor")
+local monitorX, monitorY = monitorList[0].getSize()
 if monitorX ~= 29 or monitorY ~= 12 then
 	error("Monitor is the wrong size! Needs to be 3x2.")
 end
 
-if  monitor then
+if  monitorList[0] then
 	--error("No Monitor Attached")
 	term.clear()
 	term.setCursorPos(1,1)
 	term.write("Display redirected to Monitor")
-	term.redirect(monitor)
+	term.redirect(monitorList[0])
 end
 
 -- Let's connect to the reactor peripheral
@@ -473,7 +491,7 @@ function eventHandler()
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
 			-- Draw debug stuff
 			--print("Monitor touch X: "..xClick.." Y: "..yClick, 1, 10)
-		elseif event == "mouse_click" and not monitor then
+		elseif event == "mouse_click" and not monitorList[0] then
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
 			--print("Mouse click X: "..xClick.." Y: "..yClick, 1, 11)
 		elseif event == "char" and not inManualMode then
