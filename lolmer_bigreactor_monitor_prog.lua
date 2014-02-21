@@ -51,6 +51,7 @@
 		print function now takes table to support optional specified monitor
 		Set "numRods" every cycle for some people (mechaet)
 		Don't redirect terminal output with multiple monitor support
+		Log troubleshooting data to reactorcontrol.log
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -104,7 +105,11 @@ if not os.loadAPI("FC_API") then
 end
 --Done loading API
 
+-- Helper functions
+logFile = fs.open("reactorcontrol.log", "w") -- File needs to exist for append "a" and zero it out if it already exists
+
 local function print(printParams)
+	-- Default to xPos=1, yPos=1, and first monitor
 	setmetatable(printParams,{__index={xPos=1, yPos=1, monitor=1}})
 	local printString, xPos, yPos, monitor =
 		printParams[1] or printParams.printString,
@@ -118,6 +123,33 @@ local function print(printParams)
 		monitorList[monitor].write(printString)
 	end
 end
+
+-- Replaces the one from FC_API allowing for multi-monitor support
+function printCentered(printParams)
+	-- Default to yPos=1 and first monitor
+	setmetatable(printParams,{__index={yPos=1, monitor=1}})
+	local printString, xPos, yPos, monitor =
+		printParams[1] or printParams.printString,
+		printParams[2] or printParams.xPos,
+		printParams[3] or printParams.yPos,
+		printParams[4] or printParams.monitor
+
+	local width, height = monitorList[monitor].getSize()
+	monitorList[monitor].setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) , yPos)
+	monitorList[monitor].clearLine()
+	monitorList[monitor].write(printString)
+end
+
+function printLog(printStr)
+	logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
+	if logFile then
+		logFile.writeLine(printStr)
+		logFile.close()
+	else
+		error("Cannot open logFile reactorcontrol.log for append!")
+	end
+end
+
 -- Done helper functions
 
 -- Return a list of all connected (including via wired modems) devices of "deviceType"
@@ -130,11 +162,9 @@ function getDevices(deviceType)
 	deviceType = deviceType:lower() -- Make sure we're matching case here
 
 	for peripheralIndex = 1, #peripheralList do
-		term.setCursorPos(1,peripheralIndex + 7)
-		term.write("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \""..peripheralList[peripheralIndex].."\".")
+		printLog("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \""..peripheralList[peripheralIndex].."\".")
 		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
-			term.setCursorPos(1,deviceIndex + 13)
-			term.write("Attaching "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \"deviceList["..deviceIndex.."]\".")
+			printLog("Attaching "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \"deviceList["..deviceIndex.."]\".")
 			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
 			deviceIndex = deviceIndex + 1
 		end
@@ -154,6 +184,7 @@ for monitorIndex = 1, #monitorList do
 	monitorList[monitorIndex].setCursorPos(1,1)
 
 	if monitorX ~= 29 or monitorY ~= 12 then
+		printLog("Removing monitor "..monitorIndex.." for incorrect size")
 		monitorList[monitorIndex].write("Monitor is the wrong size!")
 		monitorList[monitorIndex].setCursorPos(1,2)
 		monitorList[monitorIndex].write("Needs to be 3x2.")
@@ -176,15 +207,15 @@ else
 	reactor = reactorList[1]
 end
 
---Load saved data if file exists
-file = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
-if file then
-	baseControlRodLevel = file.readLine()
+--Load saved data if reactorOptions file exists
+reactorOptions = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
+if reactorOptions then
+	baseControlRodLevel = reactorOptions.readLine()
 	-- The following values were added by Lolmer
-	minStoredEnergyPercent = file.readLine()
-	maxStoredEnergyPercent = file.readLine()
-	minReactorTemp = file.readLine()
-	maxReactorTemp = file.readLine()
+	minStoredEnergyPercent = reactorOptions.readLine()
+	maxStoredEnergyPercent = reactorOptions.readLine()
+	minReactorTemp = reactorOptions.readLine()
+	maxReactorTemp = reactorOptions.readLine()
 
 	-- If we succeeded in reading a string, convert it to a number
 	if baseControlRodLevel ~= nil then
@@ -207,7 +238,7 @@ if file then
 		maxReactorTemp = tonumber(maxReactorTemp)
 	end
 
-	file.close()
+	reactorOptions.close()
 end
 
 -- Set default values if we failed to read any of the above
@@ -233,19 +264,20 @@ end
 
 --Save some stuff
 local function save()
-	file = fs.open("ReactorOptions", "w")
-	file.writeLine(rodPercentage)
+	reactorOptions = fs.open("ReactorOptions", "w") -- See http://computercraft.info/wiki/Fs.open
+	reactorOptions.writeLine(rodPercentage)
 	-- The following values were added by Lolmer
-	file.writeLine(minStoredEnergyPercent)
-	file.writeLine(maxStoredEnergyPercent)
-	file.writeLine(minReactorTemp)
-	file.writeLine(maxReactorTemp)
-	file.close()
+	reactorOptions.writeLine(minStoredEnergyPercent)
+	reactorOptions.writeLine(maxStoredEnergyPercent)
+	reactorOptions.writeLine(minReactorTemp)
+	reactorOptions.writeLine(maxReactorTemp)
+	reactorOptions.close()
 end
 
 reactor.setAllControlRodLevels(baseControlRodLevel)
 
-FC_API.clearMonitor(progName)
+--FC_API.clearMonitor(progName)
+printCentered{progName}
 
 --Done initializing
 
@@ -477,7 +509,8 @@ end
 
 function main()
 	while not finished do
-		FC_API.clearMonitor(progName)
+		--FC_API.clearMonitor(progName)
+		printCentered{progName}
 
 		reactorStatus()
 
@@ -529,6 +562,6 @@ end
 
 --term.clear()
 term.setCursorPos(1,1)
-FC_API.restoreNativeTerminal()
+--FC_API.restoreNativeTerminal()
 --term.clear()
 term.setCursorPos(1,1)
