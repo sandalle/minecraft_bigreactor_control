@@ -1,6 +1,6 @@
 --[[
 	Programmer: Lolmer
-	Last update: 2014-02-18
+	Last update: 2014-02-20
 	Pastebin: http://pastebin.com/ZTMzRLez
 
 	Description: 

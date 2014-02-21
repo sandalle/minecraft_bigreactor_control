@@ -2,7 +2,7 @@
 	Program name: Lolmer's EZ-NUKE reactor control system
 	Version: v0.2.2
 	Programmer: Lolmer
-	Last update: 2014-02-18
+	Last update: 2014-02-20
 	Pastebin: http://pastebin.com/fguScPBQ
 
 	Description: 
