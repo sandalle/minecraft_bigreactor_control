@@ -32,7 +32,6 @@ Minecraft BigReactor Computercraft Control Program
 		Support multiple reactors and multiple monitors.
 		- If one reactor, display same output to all monitors
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
-		Offline mode needs to override temperature/energy buffer code.
 		Add support for direct attached monitors and computers
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 
@@ -61,6 +60,7 @@ Minecraft BigReactor Computercraft Control Program
 
 ChangeLog
 ============================
+0.2.2 - Do not auto-start the reactor if it was manually powered off (autoStart=false)
 0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
 	"<" Rod Control buttons was off by one (to the left)
 
