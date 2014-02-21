@@ -60,6 +60,10 @@ Resources
 
 ChangeLog
 ============================
+- 0.2.4
+	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
+	- Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
+
 - 0.2.3
 	- Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
 
@@ -84,6 +88,5 @@ TODO
 	- If one reactor, display same output to all monitors
 	- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
 	- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/ and http://computercraft.info/wiki/Monitor
-- Add support for direct attached monitors and computers
 - Add min/max RF/t output and have it override temperature concerns (maybe?)
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!

@@ -1,6 +1,6 @@
 --[[
 	Program name: Lolmer's EZ-NUKE reactor control system
-	Version: v0.2.3
+	Version: v0.2.4
 	Programmer: Lolmer
 	Last update: 2014-02-20
 	Pastebin: http://pastebin.com/fguScPBQ
@@ -47,7 +47,8 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
-	0.2.x - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
+	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
+		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
 	0.2.2 - Do not auto-start the reactor if it was manually powered off (autoStart=false)
 	0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
@@ -66,7 +67,6 @@
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
 		- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/
 		  and http://computercraft.info/wiki/Monitor
-		Add support for direct attached monitors and computers
 		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 
@@ -87,7 +87,7 @@ function wrapThis(thing)
         end
 
         if wrapped == nil then
-                side = getDeviceSide(thing)
+                side = FC_API.getDeviceSide(thing)
                 if side ~= nil then
                         return peripheral.wrap(side)
                 else
@@ -126,7 +126,7 @@ if reactor == nil then
 end
 
 -- Some global variables
-local progVer = "0.2.3"
+local progVer = "0.2.4"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
