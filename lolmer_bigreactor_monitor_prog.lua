@@ -20,8 +20,8 @@
 		Rod Control: 90% (Let's start off safe and then power up as we can)
 		Minimum Energy Buffer: 15% (will power on below this value)
 		Maximum Energy Buffer: 85% (will power off above this value)
-		Minimum Temperature: 850^C (Will raise control rods below this value)
-		Maximum Temperature: 950^C (Will lower control rods above this value)
+		Minimum Temperature: 850^C (will raise control rods below this value)
+		Maximum Temperature: 950^C (will lower control rods above this value)
 
 	TODO:
 		Add Fuel consumption metric to display - No such API for easy access. :(
