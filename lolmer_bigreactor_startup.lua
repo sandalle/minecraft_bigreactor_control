@@ -9,6 +9,10 @@
 	own wired modem connected to the reactors computer control port.
 
 	Save this file as "startup" on your computer for it to auto-start on Computer boot.
+	To easily get this file into your Computercraft Computer, run the following (includes prompts).
+	> rm startup
+	> lua
+	lua> shell.run("pastebin", "get", "ZTMzRLez", "startup")
 
 	Requirements:
 		Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
