@@ -125,7 +125,7 @@ if reactor == nil then
 end
 
 -- Some global variables
-local progVer = "0.2.2"
+local progVer = "0.2.3"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
