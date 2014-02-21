@@ -47,6 +47,7 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
+	0.2.x - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
 	0.2.2 - Do not auto-start the reactor if it was manually powered off (autoStart=false)
 	0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
@@ -292,7 +293,7 @@ local function displayBars()
 	end
 
 	local energyBufferStorage = reactor.getEnergyStored()
-	curStoredEnergyPercent = math.floor(energyBufferStorage/10000000*100)
+	curStoredEnergyPercent = math.floor(energyBufferStorage/100000) -- 10000000*100
 	paintutils.drawLine(2, 8, 28, 8, colors.gray)
 	if curStoredEnergyPercent > 4 then
 		paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
