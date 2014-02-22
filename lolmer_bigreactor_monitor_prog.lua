@@ -51,7 +51,7 @@
 		Set "numRods" every cycle for some people (mechaet)
 		Don't redirect terminal output with multiple monitor support
 		Log troubleshooting data to reactorcontrol.log
-		FC_API no longer used
+		FC_API no longer used (copied and modified what I needed)
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -122,27 +122,72 @@ local function print(printParams)
 		printParams[3] or printParams.yPos,
 		printParams[4] or printParams.monitorIndex
 
-	-- For now, just print everything to all monitors
-	for monitorIndex = 1, #monitorList do
-		monitorList[monitorIndex].setCursorPos(xPos, yPos)
-		monitorList[monitorIndex].write(printString)
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in print() was not a valid monitor")
+		return -- Invalid monitorIndex
 	end
+
+	monitor.setCursorPos(xPos, yPos)
+	monitor.write(printString)
 end
 
 -- Replaces the one from FC_API (http://pastebin.com/A9hcbZWe) and adding multi-monitor support
 local function printCentered(printParams)
 	-- Default to yPos=1 and first monitor
 	setmetatable(printParams,{__index={yPos=1, monitorIndex=1}})
-	local printString, xPos, yPos, monitorIndex =
+	local printString, yPos, monitorIndex =
 		printParams[1] or printParams.printString,
-		printParams[2] or printParams.xPos,
-		printParams[3] or printParams.yPos,
-		printParams[4] or printParams.monitorIndex
+		printParams[2] or printParams.yPos,
+		printParams[3] or printParams.monitorIndex
 
-	local width, height = monitorList[monitorIndex].getSize()
-	monitorList[monitorIndex].setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) , yPos)
-	monitorList[monitorIndex].clearLine()
-	monitorList[monitorIndex].write(printString)
+	printLog("monitorIndex = "..monitorIndex)
+	printLog("monitorList["..monitorIndex.."] with printCentered()")
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in printCentered() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	local width, height = monitor.getSize()
+	monitor.setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) , yPos)
+	monitor.clearLine()
+	monitor.write(printString)
+end
+
+-- Replaces the one from FC_API (http://pastebin.com/A9hcbZWe) and adding multi-monitor support
+local function clearMonitor(monitorParams)
+	-- Default first monitor
+	setmetatable(monitorParams,{__index={monitorIndex=1}})
+	local printString, monitorIndex =
+		monitorParams[1] or monitorParams.printString,
+		monitorParams[2] or monitorParams.monitorIndex
+
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in clearMonitor() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	local gap = 2
+	monitor.clear()
+	local width, height = monitor.getSize()
+
+	printLog("clearMonitor calling printCentered with monitorIndex="..monitorIndex)
+	printCentered{printString, 1, monitorIndex}
+
+	for i=1, width do
+		monitor.setCursorPos(i, gap)
+		monitor.write("-")
+	end
+
+	monitor.setCursorPos(1, gap+1)
 end
 
 local function printLog(printStr)
@@ -165,9 +210,11 @@ local function getDevices(deviceType)
 	deviceType = deviceType:lower() -- Make sure we're matching case here
 
 	for peripheralIndex = 1, #peripheralList do
-		printLog("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \""..peripheralList[peripheralIndex].."\".")
+		-- Log every device found
+		-- printLog("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] attached as \""..peripheralList[peripheralIndex].."\".")
 		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
-			printLog("Assigning "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] with device index \"["..deviceIndex.."]\".")
+			-- Log devices found which match deviceType and which device index we give them
+			printLog("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] with device index \"["..deviceIndex.."] attached as \""..peripheralList[peripheralIndex].."\".")
 			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
 			deviceIndex = deviceIndex + 1
 		end
@@ -188,17 +235,27 @@ local function findMonitors()
 		error("Can't find any monitors!")
 	else
 		for monitorIndex = 1, #monitorList do
-			local monitorX, monitorY = monitorList[monitorIndex].getSize()
+			local monitor = nil
+			monitor = monitorList[monitorIndex]
+
+			if not monitor then
+				printLog("monitorList["..monitorIndex.."] in findMonitors() was not a valid monitor")
+				break -- Invalid monitorIndex
+			end
+
+			local monitorX, monitorY = monitor.getSize()
+			printLog("Verifying monitor["..monitorIndex.."] is of size x:"..monitorX.." by y:"..monitorY)
 
 			-- Clear all monitors
-			monitorList[monitorIndex].clear()
-			monitorList[monitorIndex].setCursorPos(1,1)
+			--clearMonitor{progName, monitorIndex}
+			monitor.clear()
+			monitor.setCursorPos(1,1)
 
 			if monitorX ~= 29 or monitorY ~= 12 then
 				printLog("Removing monitor "..monitorIndex.." for incorrect size")
-				monitorList[monitorIndex].write("Monitor is the wrong size!")
-				monitorList[monitorIndex].setCursorPos(1,2)
-				monitorList[monitorIndex].write("Needs to be 3x2.")
+				monitor.write("Monitor is the wrong size!")
+				monitor.setCursorPos(1,2)
+				monitor.write("Needs to be 3x2.")
 --[[
 				table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
 				if monitorIndex == #monitorList then	-- If we're at the end already, break from loop
@@ -222,9 +279,17 @@ local function findReactors()
 		error("Can't find any reactors!")
 	else  -- Placeholder
 		for reactorIndex = 1, #reactorList do
-			local reactor = reactorList[reactorIndex]
+			local reactor = nil
+			reactor = reactorList[reactorIndex]
+
+			if not reactor then
+				printLog("reactorList["..reactorIndex.."] in findReactors() was not a valid Big Reactor")
+				return -- Invalid monitorIndex
+			end
+
 			reactor.setAllControlRodLevels(baseControlRodLevel)
-			autoStart[reactorIndex] = true -- Auto-start reactor when needed (e.g. program startup) by default
+			-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
+			autoStart[reactorIndex] = autoStart[reactorIndex] or true
 		end
 	end
 end
@@ -308,6 +373,11 @@ local function getReactorStoredEnergyBufferPercent(reactorParams)
 	local reactor = nil
 	reactor = reactorList[reactorIndex]
 
+	if not reactor then
+		printLog("reactorList["..reactorIndex.."] in getReactorStoredEnergyBufferPercent() was not a valid Big Reactor")
+		return -- Invalid monitorIndex
+	end
+
 	local energyBufferStorage = reactor.getEnergyStored()
 	return (math.floor(energyBufferStorage/100000)) -- 10000000*100
 end
@@ -319,11 +389,21 @@ local function displayBars(barParams)
 		barParams[1] or barParams.reactorIndex,
 		barParams[2] or barParams.monitorIndex
 
-	local reactor = nil
+	-- Grab current monitor
 	local monitor = nil
-
 	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in displayBars() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current reactor
+	local reactor = nil
 	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactorList["..reactorIndex.."] in displayBars() was not a valid Big Reactor")
+		return -- Invalid monitorIndex
+	end
 
     local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
@@ -401,13 +481,19 @@ local function displayBars(barParams)
 		reactor.setAllControlRodLevels(newRodPercentage)
 	end
 
-	monitor.paintutils.drawLine(2, 8, 28, 8, colors.gray)
 	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent{reactorIndex}
+
+	-- Draw stored energy buffer bar
+	--monitor.paintutils.drawLine(2, 8, 28, 8, colors.gray)
+
+--[[ Currently broken with multi-monitor/-reactor changes :(
 	if curStoredEnergyPercent > 4 then
 		monitor.paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
 	elseif curStoredEnergyPercent > 0 then
 		monitor.paintutils.drawPixel(2,8,colors.yellow)
 	end
+--]]
+
 	monitor.setBackgroundColor(colors.black)
 	print{"Energy Buffer",2,7,monitorIndex}
 	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
@@ -432,11 +518,21 @@ function reactorStatus(statusParams)
 		statusParams[1] or statusParams.reactorIndex,
 		statusParams[2] or statusParams.monitorIndex
 
-	local reactor = nil
+	-- Grab current monitor
 	local monitor = nil
-
 	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in reactorStatus() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current reactor
+	local reactor = nil
 	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactorList["..reactorIndex.."] in reactorStatus() was not a valid Big Reactor")
+		return -- Invalid monitorIndex
+	end
 
 	local width, height = monitor.getSize()
 	local reactorStatus = ""
@@ -481,8 +577,11 @@ function getColdestControlRod(reactorParams)
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
 	local reactor = nil
-
 	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactorList["..reactorIndex.."] in getColdestControlRod() was not a valid Big Reactor")
+		return -- Invalid monitorIndex
+	end
 
 	local coldestRod = 0
 	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
@@ -506,6 +605,10 @@ function getHottestControlRod(reactorParams)
 	local reactor = nil
 
 	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactorList["..reactorIndex.."] in getHottestControlRod() was not a valid Big Reactor")
+		return -- Invalid monitorIndex
+	end
 
 	local hottestRod = 0
 	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
@@ -528,8 +631,12 @@ function temperatureControl(reactorParams)
 	local reactorIndex = reactorParams[1] or reactorParams.reactorIndex
 
 	local reactor = nil
-
 	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactorList["..reactorIndex.."] in temperatureControl() was not a valid Big Reactor")
+		return -- Invalid monitorIndex
+	end
+
 	local rodTimeDiff = 0
 	local reactorTemp = reactor.getTemperature()
 
@@ -593,19 +700,27 @@ function main()
 	-- Load reactor parameters and initialize systems
 	loadReactorOptions()
 
-	local reactor = nil
-
-	-- Get our initial list of connected monitors and reactors
-	findMonitors()
-	findReactors()
-
 	while not finished do
+		local reactor = nil
+		-- Get our initial list of connected monitors and reactors
+		-- and initialize every cycle in case the connected devices change
+		findMonitors()
+		findReactors()
+
 		for monitorIndex = 1, #monitorList do
+			printLog("main calling clearMonitor with progName="..progName.." and monitorIndex="..monitorIndex)
+			--clearMonitor{progName, monitorIndex} -- Clear monitor and draw borders
+
 			for reactorIndex = 1, #reactorList do
-				printCentered{progName,monitorIndex}
+				printLog("main calling printCentered with progName="..progName.." and monitorIndex="..monitorIndex)
+				--printCentered{progName, 1, monitorIndex}
 				reactorStatus{reactorIndex, monitorIndex}
 
 				reactor = reactorList[reactorIndex]
+				if not reactor then
+					printLog("reactorList["..reactorIndex.."] in main() was not a valid Big Reactor")
+					break -- Invalid monitorIndex
+				end
 
 				if reactor.getConnected() then
 					local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent{reactorIndex}

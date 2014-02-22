@@ -63,7 +63,7 @@ ChangeLog
 	- Set "numRods" every cycle for some people (mechaet)
 	- Don't redirect terminal output with multiple monitor support
 	- Log troubleshooting data to reactorcontrol.log
-	- FC_API no longer used
+	- FC_API no longer used (copied and modified what I needed)
 
 - 0.2.4
 	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
