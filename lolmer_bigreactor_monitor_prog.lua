@@ -627,16 +627,18 @@ local function displayBars(barParams)
 
 	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
 
+	-- PaintUtils only outputs to term., not monitor.
+	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
+	term.redirect(monitor)
 	-- Draw stored energy buffer bar
-	monitor.paintutils.drawLine(2, 8, 28, 8, colors.gray)
+	paintutils.drawLine(2, 8, 28, 8, colors.gray)
 
--- Currently broken with multi-monitor/-reactor changes :(
 	if curStoredEnergyPercent > 4 then
-		monitor.paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
+		paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
 	elseif curStoredEnergyPercent > 0 then
-		monitor.paintutils.drawPixel(2,8,colors.yellow)
+		paintutils.drawPixel(2,8,colors.yellow)
 	end
---
+	term.restore()
 
 	monitor.setBackgroundColor(colors.black)
 	print{"Energy Buffer",2,7,monitorIndex}
