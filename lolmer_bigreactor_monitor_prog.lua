@@ -118,6 +118,17 @@ end
 -- Helper functions
 
 
+local function printLog(printStr)
+	local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
+	if logFile then
+		logFile.writeLine(printStr)
+		logFile.close()
+	else
+		error("Cannot open logFile reactorcontrol.log for appending!")
+	end
+end
+
+
 local function print(printParams)
 	-- Default to xPos=1, yPos=1, and first monitor
 	setmetatable(printParams,{__index={xPos=1, yPos=1, monitorIndex=1}})
@@ -179,17 +190,6 @@ local function clearMonitor(printString, monitorIndex)
 	end
 
 	monitor.setCursorPos(1, gap+1)
-end
-
-
-local function printLog(printStr)
-	local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
-	if logFile then
-		logFile.writeLine(printStr)
-		logFile.close()
-	else
-		error("Cannot open logFile reactorcontrol.log for appending!")
-	end
 end
 
 
@@ -293,102 +293,6 @@ local function findReactors()
 end
 
 
--- Load saved reactor parameters if ReactorOptions file exists
-local function loadReactorOptions()
-	local reactorOptions = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
-
-	if reactorOptions then
-		baseControlRodLevel = reactorOptions.readLine()
-		-- The following values were added by Lolmer
-		minStoredEnergyPercent = reactorOptions.readLine()
-		maxStoredEnergyPercent = reactorOptions.readLine()
-		minReactorTemp = reactorOptions.readLine()
-		maxReactorTemp = reactorOptions.readLine()
-
-		-- If we succeeded in reading a string, convert it to a number
-		if baseControlRodLevel ~= nil then
-			baseControlRodLevel = tonumber(baseControlRodLevel)
-		end
-
-		if minStoredEnergyPercent ~= nil then
-			minStoredEnergyPercent = tonumber(minStoredEnergyPercent)
-		end
-
-		if maxStoredEnergyPercent ~= nil then
-			maxStoredEnergyPercent = tonumber(maxStoredEnergyPercent)
-		end
-
-		if minReactorTemp ~= nil then
-			minReactorTemp = tonumber(minReactorTemp)
-		end
-
-		if maxReactorTemp ~= nil then
-			maxReactorTemp = tonumber(maxReactorTemp)
-		end
-
-		reactorOptions.close()
-	end
-
-	-- Set default values if we failed to read any of the above
-	if baseControlRodLevel == nil then
-		baseControlRodLevel = 90
-	end
-
-	if minStoredEnergyPercent == nil then
-		minStoredEnergyPercent = 15
-	end
-
-	if maxStoredEnergyPercent == nil then
-		maxStoredEnergyPercent = 85
-	end
-
-	if minReactorTemp == nil then
-		minReactorTemp = 850
-	end
-
-	if maxReactorTemp == nil then
-		maxReactorTemp = 950
-	end
-end
-
-
--- Save our reactor parameters
-local function saveReactorOptions()
-	local reactorOptions = fs.open("ReactorOptions", "w") -- See http://computercraft.info/wiki/Fs.open
-
-	-- If we can save the files, save them
-	if reactorOptions then
-		term.setCursorPos(2,5)
-		term.write("#reactorList="..#reactorList)
-		term.setCursorPos(2,6)
-		local reactorIndex = 1
-		reactorOptions.writeLine(getControlRodPercentage(reactorIndex)) -- Store just the first reactor for now
-		-- The following values were added by Lolmer
-		reactorOptions.writeLine(minStoredEnergyPercent)
-		reactorOptions.writeLine(maxStoredEnergyPercent)
-		reactorOptions.writeLine(minReactorTemp)
-		reactorOptions.writeLine(maxReactorTemp)
-		reactorOptions.close()
-	else
-		printLog("Failed to open file ReactorOptions for writing!")
-	end
-end
-
-
--- Return current energy buffer in a specific reactor by %
-local function getReactorStoredEnergyBufferPercent(reactorIndex)
-	local reactor = nil
-	reactor = reactorList[reactorIndex]
-	if not reactor then
-		printLog("reactorList["..reactorIndex.."] in getReactorStoredEnergyBufferPercent() was not a valid Big Reactor")
-		return -- Invalid reactorIndex
-	end
-
-	local energyBufferStorage = reactor.getEnergyStored()
-	return (math.floor(energyBufferStorage/100000)) -- 10000000*100
-end
-
-
 -- This function gets the average control rod percentage for a given reactor
 local function getControlRodPercentage(reactorIndex)
 	-- Grab current reactor
@@ -407,8 +311,21 @@ local function getControlRodPercentage(reactorIndex)
 	end
  
 	local rodPercentage = 0
-	rodPercentage = math.ceil(rodTotal/(numRods+1))
-	return rodPercentage
+	return (math.ceil(rodTotal/(numRods+1)))
+end
+
+
+-- Return current energy buffer in a specific reactor by %
+local function getReactorStoredEnergyBufferPercent(reactorIndex)
+	local reactor = nil
+	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactorList["..reactorIndex.."] in getReactorStoredEnergyBufferPercent() was not a valid Big Reactor")
+		return -- Invalid reactorIndex
+	end
+
+	local energyBufferStorage = reactor.getEnergyStored()
+	return (math.floor(energyBufferStorage/100000)) -- 10000000*100
 end
 
 
@@ -526,6 +443,88 @@ local function temperatureControl(reactorIndex)
 end
 
 
+-- Load saved reactor parameters if ReactorOptions file exists
+local function loadReactorOptions()
+	local reactorOptions = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
+
+	if reactorOptions then
+		baseControlRodLevel = reactorOptions.readLine()
+		-- The following values were added by Lolmer
+		minStoredEnergyPercent = reactorOptions.readLine()
+		maxStoredEnergyPercent = reactorOptions.readLine()
+		minReactorTemp = reactorOptions.readLine()
+		maxReactorTemp = reactorOptions.readLine()
+
+		-- If we succeeded in reading a string, convert it to a number
+		if baseControlRodLevel ~= nil then
+			baseControlRodLevel = tonumber(baseControlRodLevel)
+		end
+
+		if minStoredEnergyPercent ~= nil then
+			minStoredEnergyPercent = tonumber(minStoredEnergyPercent)
+		end
+
+		if maxStoredEnergyPercent ~= nil then
+			maxStoredEnergyPercent = tonumber(maxStoredEnergyPercent)
+		end
+
+		if minReactorTemp ~= nil then
+			minReactorTemp = tonumber(minReactorTemp)
+		end
+
+		if maxReactorTemp ~= nil then
+			maxReactorTemp = tonumber(maxReactorTemp)
+		end
+
+		reactorOptions.close()
+	end
+
+	-- Set default values if we failed to read any of the above
+	if baseControlRodLevel == nil then
+		baseControlRodLevel = 90
+	end
+
+	if minStoredEnergyPercent == nil then
+		minStoredEnergyPercent = 15
+	end
+
+	if maxStoredEnergyPercent == nil then
+		maxStoredEnergyPercent = 85
+	end
+
+	if minReactorTemp == nil then
+		minReactorTemp = 850
+	end
+
+	if maxReactorTemp == nil then
+		maxReactorTemp = 950
+	end
+end
+
+
+-- Save our reactor parameters
+local function saveReactorOptions()
+	local reactorOptions = fs.open("ReactorOptions", "w") -- See http://computercraft.info/wiki/Fs.open
+
+	-- If we can save the files, save them
+	if reactorOptions then
+		term.setCursorPos(2,5)
+		term.write("#reactorList="..#reactorList)
+		term.setCursorPos(2,6)
+		local reactorIndex = 1
+		reactorOptions.writeLine(getControlRodPercentage(reactorIndex)) -- Store just the first reactor for now
+		-- The following values were added by Lolmer
+		reactorOptions.writeLine(minStoredEnergyPercent)
+		reactorOptions.writeLine(maxStoredEnergyPercent)
+		reactorOptions.writeLine(minReactorTemp)
+		reactorOptions.writeLine(maxReactorTemp)
+		reactorOptions.close()
+	else
+		printLog("Failed to open file ReactorOptions for writing!")
+	end
+end
+
+
 local function displayBars(barParams)
 	-- Default to first reactor and first monitor
 	setmetatable(barParams,{__index={reactorIndex=1, monitorIndex=1}})
@@ -625,13 +624,13 @@ local function displayBars(barParams)
 		reactor.setAllControlRodLevels(newRodPercentage)
 	end
 
-	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
-
 	-- PaintUtils only outputs to term., not monitor.
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
 	term.redirect(monitor)
 	-- Draw stored energy buffer bar
 	paintutils.drawLine(2, 8, 28, 8, colors.gray)
+
+	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
 
 	if curStoredEnergyPercent > 4 then
 		paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
