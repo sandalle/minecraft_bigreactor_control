@@ -290,7 +290,9 @@ local function findReactors()
 			reactor.setAllControlRodLevels(baseControlRodLevel)
 			rodLastUpdate[reactorIndex] = os.time()
 			-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
-			autoStart[reactorIndex] = autoStart[reactorIndex] or true
+			if #autoStart < #reactorList then
+				autoStart[reactorIndex] = true
+			end
 		end
 	end
 end
