@@ -514,9 +514,6 @@ local function saveReactorOptions()
 
 	-- If we can save the files, save them
 	if reactorOptions then
-		term.setCursorPos(2,5)
-		term.write("#reactorList="..#reactorList)
-		term.setCursorPos(2,6)
 		local reactorIndex = 1
 		reactorOptions.writeLine(getControlRodPercentage(reactorIndex)) -- Store just the first reactor for now
 		-- The following values were added by Lolmer
