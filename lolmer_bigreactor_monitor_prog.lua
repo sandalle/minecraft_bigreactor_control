@@ -245,11 +245,6 @@ local function findMonitors()
 			local monitorX, monitorY = monitor.getSize()
 			printLog("Verifying monitor["..monitorIndex.."] is of size x:"..monitorX.." by y:"..monitorY)
 
-			-- Clear all monitors
-			clearMonitor(progName, monitorIndex)
-			monitor.clear()
-			monitor.setCursorPos(1,1)
-
 			if monitorX ~= 29 or monitorY ~= 12 then
 				printLog("Removing monitor "..monitorIndex.." for incorrect size")
 				monitor.write("Monitor is the wrong size!")
