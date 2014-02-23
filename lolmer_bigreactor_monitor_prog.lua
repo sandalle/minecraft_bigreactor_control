@@ -87,7 +87,7 @@ local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
 local adjustAmount = 5
-local dataLogging = false
+local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
 -- End multi-reactor cleanup section
@@ -106,12 +106,13 @@ term.write("Initializing program...")
 
 
 -- File needs to exist for append "a" later and zero it out if it already exists
+-- Always initalize this file to avoid confusion with old files and the latest run
 local logFile = fs.open("reactorcontrol.log", "w")
 if logFile then
 	logFile.writeLine("Minecraft time: Day "..os.day().." at "..textutils.formatTime(os.time(),true))
 	logFile.close()
 else
-	error("Could not open reactorcontrol.log for writing")
+	error("Could not open file reactorcontrol.log for writing")
 end
 
 
@@ -119,12 +120,14 @@ end
 
 
 local function printLog(printStr)
-	local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
-	if logFile then
-		logFile.writeLine(printStr)
-		logFile.close()
-	else
-		error("Cannot open logFile reactorcontrol.log for appending!")
+	if debugMode then
+		local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
+		if logFile then
+			logFile.writeLine(printStr)
+			logFile.close()
+		else
+			error("Cannot open file reactorcontrol.log for appending!")
+		end
 	end
 end
 
