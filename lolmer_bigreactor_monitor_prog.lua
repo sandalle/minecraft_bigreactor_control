@@ -103,6 +103,7 @@ local monitorList = {} -- Empty monitor array
 local reactorList = {} -- Empty reactor array
 
 
+term.clear()
 term.setCursorPos(2,1)
 term.write("Initializing program...")
 
@@ -227,6 +228,9 @@ end
 
 -- Then initialize the monitors
 local function findMonitors()
+	-- Empty out old list of monitors
+	monitorList = {}
+
 	printLog("Finding monitors...")
 	monitorList = getDevices("monitor")
 
@@ -247,18 +251,21 @@ local function findMonitors()
 			printLog("Verifying monitor["..monitorIndex.."] is of size x:"..monitorX.." by y:"..monitorY)
 
 			if monitorX ~= 29 or monitorY ~= 12 then
+				term.redirect(monitor)
+				monitor.clear()
 				printLog("Removing monitor "..monitorIndex.." for incorrect size")
-				monitor.write("Monitor is the wrong size!")
 				monitor.setCursorPos(1,2)
-				monitor.write("Needs to be 3x2.")
---[[ Untested
+				write("Monitor is the wrong size!\n")
+				write("Needs to be 3x2.")
+				term.restore()
+
 				table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
 				if monitorIndex == #monitorList then	-- If we're at the end already, break from loop
 					break
 				else
 					monitorIndex = monitorIndex - 1 -- We just removed an element
 				end
-]]--
+
 			end
 		end
 	end
@@ -267,6 +274,9 @@ end
 
 -- Initialize all Big Reactors
 local function findReactors()
+	-- Empty out old list of reactors
+	reactorList = {}
+
 	printLog("Finding reactors...")
 	reactorList = getDevices("BigReactors-Reactor")
 
