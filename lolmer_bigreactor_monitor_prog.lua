@@ -16,6 +16,7 @@
 		Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
 		Auto-adjusts individual control rods (based on hottest/coldest) to maintain temperature.
 		Will display reactor data to all attached monitors of correct dimensions.
+		Dynamically detect and add/remove monitors as they are connected to the network.
 
 	Default values:
 		Rod Control: 90% (Let's start off safe and then power up as we can)
