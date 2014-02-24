@@ -29,6 +29,8 @@
 		Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 		Computer or Advanced Computer
 		Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
+		Big Reactors (http://www.big-reactors.com/) 0.3
+		Computercraft (http://computercraft.info/) 1.57+
 
 	Resources:
 	This script is available from:
@@ -54,6 +56,8 @@
 		Log troubleshooting data to reactorcontrol.log
 		FC_API no longer used (copied and modified what I needed)
 		Multi-reactor support is theoretically implemented, but it is UNTESTED!
+		Updated for Big Reactor 0.3 (no longer works with 0.2)
+		BR getFuelTemperature() now returns many significant digits, just use math.ceil()
 	0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
 		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 	0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
@@ -78,7 +82,6 @@
 		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 		Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-
 
 ]]--
 
@@ -295,7 +298,12 @@ local function findReactors()
 
 			-- For now, initialize all reactors to the same baseControlRodLevel
 			reactor.setAllControlRodLevels(baseControlRodLevel)
-			rodLastUpdate[reactorIndex] = os.time()
+
+			-- Initialize rod update timestamp if number of reactors has changed or initial startup
+			if #rodLastUpdate < #reactorList then
+				rodLastUpdate[reactorIndex] = os.time()
+			end
+
 			-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
 			if #autoStart < #reactorList then
 				autoStart[reactorIndex] = true
@@ -354,7 +362,7 @@ local function getColdestControlRod(reactorIndex)
 	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	for rodIndex=0, numRods do
-		if reactor.getTemperature(rodIndex) < reactor.getTemperature(coldestRod) then
+		if reactor.getFuelTemperature(rodIndex) < reactor.getFuelTemperature(coldestRod) then
 			coldestRod = rodIndex
 		end
 	end
@@ -376,7 +384,7 @@ local function getHottestControlRod(reactorIndex)
 	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	for rodIndex=0, numRods do
-		if reactor.getTemperature(rodIndex) > reactor.getTemperature(hottestRod) then
+		if reactor.getFuelTemperature(rodIndex) > reactor.getFuelTemperature(hottestRod) then
 			hottestRod = rodIndex
 		end
 	end
@@ -397,7 +405,7 @@ local function temperatureControl(reactorIndex)
 
 	local rodPercentage = getControlRodPercentage(reactorIndex)
 	local rodTimeDiff = 0
-	local reactorTemp = reactor.getTemperature()
+	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 
 	-- No point modifying control rod levels for temperature if the reactor is offline
 	if reactor.getActive() then
@@ -594,7 +602,7 @@ local function displayBars(barParams)
 	print{energyBufferString,2,4,monitorIndex}
 	print{math.ceil(energyBuffer).."RF/t",padding+2,4,monitorIndex}
 
-	local reactorTemp = reactor.getTemperature()
+	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 	print{tempString,2,5,monitorIndex}
 	print{reactorTemp.." C",padding+2,5,monitorIndex}
 
@@ -657,9 +665,9 @@ local function displayBars(barParams)
 	local hottestControlRod = getHottestControlRod(reactorIndex)
 	local coldestControlRod = getColdestControlRod(reactorIndex)
 	print{"Hottest Rod: "..(hottestControlRod + 1),2,10,monitorIndex} -- numRods index starts at 0
-	print{reactor.getTemperature(hottestControlRod).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10,monitorIndex}
+	print{math.ceil(reactor.getFuelTemperature(hottestControlRod)).."^C".." "..reactor.getControlRodLevel(hottestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),10,monitorIndex}
 	print{"Coldest Rod: "..(coldestControlRod + 1),2,11,monitorIndex} -- numRods index starts at 0
-	print{reactor.getTemperature(coldestControlRod).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11,monitorIndex}
+	print{math.ceil(reactor.getFuelTemperature(coldestControlRod)).."^C".." "..reactor.getControlRodLevel(coldestControlRod).."%",width-(string.len(reactor.getWasteAmount())+8),11,monitorIndex}
 	print{"Fuel Rods: "..(numRods + 1),2,12,monitorIndex} -- numRods index starts at 0
 	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12,monitorIndex}
 end
