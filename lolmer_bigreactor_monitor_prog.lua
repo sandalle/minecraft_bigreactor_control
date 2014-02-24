@@ -617,11 +617,6 @@ local function displayBars(barParams)
 	end
 	local rodPercentage = getControlRodPercentage(reactorIndex)
 
-	print{"Control",23,3,monitorIndex}
-	print{"<     >",23,4,monitorIndex}
-	print{rodPercentage,25,4,monitorIndex}
-	print{"percent",23,5,monitorIndex}
-
 	if (xClick == 23  and yClick == 4) then
 		--Decrease rod level by amount
 		newRodPercentage = rodPercentage - adjustAmount
@@ -631,6 +626,7 @@ local function displayBars(barParams)
 
 		xClick, yClick = 0,0
 		reactor.setAllControlRodLevels(newRodPercentage)
+		baseControlRodLevel = newRodPercentage
 	end
 
 	if (xClick == 28  and yClick == 4) then
@@ -641,7 +637,13 @@ local function displayBars(barParams)
 		end
 		xClick, yClick = 0,0
 		reactor.setAllControlRodLevels(newRodPercentage)
+		baseControlRodLevel = newRodPercentage
 	end
+
+	print{"Control",23,3,monitorIndex}
+	print{"<     >",23,4,monitorIndex}
+	print{rodPercentage,25,4,monitorIndex}
+	print{"percent",23,5,monitorIndex}
 
 	-- PaintUtils only outputs to term., not monitor.
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
