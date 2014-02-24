@@ -70,6 +70,7 @@ ChangeLog
 	- Multi-reactor support is theoretically implemented, but it is UNTESTED!
 	- Updated for Big Reactor 0.3 (no longer works with 0.2)
 	- BR getFuelTemperature() now returns many significant digits, just use math.ceil()
+	- BR 0.3 removed individual rod temperatures, now it's only reactor-level temperature
 
 - 0.2.4
 	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
