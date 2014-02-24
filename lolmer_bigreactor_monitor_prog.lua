@@ -49,7 +49,7 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 
 	ChangeLog:
-	0.2.5 - Add multi-monitor support! Sends one reactor's data to all monitors.
+	0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
 		print function now takes table to support optional specified monitor
 		Set "numRods" every cycle for some people (mechaet)
 		Don't redirect terminal output with multiple monitor support
