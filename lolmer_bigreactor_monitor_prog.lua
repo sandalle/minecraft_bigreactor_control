@@ -47,6 +47,7 @@
 
 	Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
+	Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
 
 	ChangeLog:
 	0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
@@ -82,6 +83,7 @@
 		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 		Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
+		BR 0.3: mechaet|work | the getCasingTemperature call is only needed for active-cooled reactors which none of you have 
 
 ]]--
 
