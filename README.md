@@ -5,7 +5,7 @@ Description
 ----------------------------
 This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port.
 
-This program was designed to work with the mods and versions installed on NST Diet
+This program was designed to work with the mods and versions installed on Never Stop Toasting (NST) Diet
 - http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
 - Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
@@ -113,8 +113,8 @@ TODO
 - Support multiple reactors
 	- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
 	- Save parameters per reactor instead of one global set for all reactors
+	- Allow for a monitor (first monitor would be good) to display compressed info from all reactors (Rhonyn)
 - Add min/max RF/t output and have it override temperature concerns (maybe?)
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-- Add BR 0.3 Turbine control support
-- Add BR 0.3 active-cooled reactor support
+- Add BR 0.3 active-cooled Turbine control support
