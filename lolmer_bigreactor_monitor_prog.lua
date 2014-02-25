@@ -49,8 +49,10 @@
 	Computercraft API: http://computercraft.info/wiki/Category:APIs
 	Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
 	Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
+	Big Reactors API: http://big-reactors.com/cc_api.html
 
 	ChangeLog:
+	0.3.1 - Add fuel consumption per tick to display
 	0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
 		print function now takes table to support optional specified monitor
 		Set "numRods" every cycle for some people (mechaet)
@@ -75,7 +77,6 @@
 		Add Waste and number of Control/Fuel Rods to displayBards()
 
 	TODO:
-		Add Fuel consumption metric to display - No such API for easy access. :(
 		Support multiple reactors
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
 		- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/
@@ -127,6 +128,50 @@ end
 
 
 -- Helper functions
+
+
+-- round() function from
+-- http://www.computercraft.info/forums2/index.php?/topic/4023-lua-printformat-with-floating-point-numbers/page__view__findpost__p__31037
+local function round(num, places)
+	num = tostring(num)
+	local inc = false
+
+	-- Make sure decimal is a valid integer for later arithmetic
+	local decimal = string.find(num, "%.") or 0
+
+	if (num:len() - decimal) <= places then
+		return tonumber(num)
+	end --already rounded, nothing to do.
+
+	local digit = tonumber(num:sub(decimal + places + 1))
+	num = num:sub(1, decimal + places)
+
+	if digit <= 4 then
+		return tonumber(num)
+	end --no incrementation needed, return truncated number
+
+	local newNum = ""
+	for i=num:len(), 1, -1 do
+			digit = tonumber(num:sub(i))
+			if digit == 9 then
+					if i > 1 then
+							newNum = "0"..newNum
+					else
+							newNum = "10"..newNum
+					end
+			elseif digit == nil then
+					newNum = "."..newNum
+			else
+					if i > 1 then
+							newNum = num:sub(1,i-1)..(digit + 1)..newNum
+					else
+							newNum = (digit + 1)..newNum
+					end
+					return tonumber(newNum) --No more 9s found, so we are done incrementing. Copy remaining digits, then return number.
+			end
+	end
+	return tonumber(newNum)
+end
 
 
 local function printLog(printStr)
@@ -623,6 +668,7 @@ local function displayBars(barParams)
 	print{"%",28,7,monitorIndex}
 	monitor.setBackgroundColor(colors.black)
 
+	print{"Fuel consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,11,monitorIndex}
 	print{"Fuel Rods: "..(numRods + 1),2,12,monitorIndex} -- numRods index starts at 0
 	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12,monitorIndex}
 end

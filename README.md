@@ -60,6 +60,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.1
+	- 0.3.1 - Add fuel consumption per tick to display
+
 - 0.3.0
 	- Add multi-monitor support! Sends one reactor's data to all monitors.
 	- print function now takes table to support optional specified monitor
@@ -95,7 +98,6 @@ ChangeLog
 
 TODO
 ============================
-- Add Fuel consumption metric to display - No such API for easy access. :(
 - Support multiple reactors
 	- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
 	- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/ and http://computercraft.info/wiki/Monitor
