@@ -14,9 +14,9 @@
 		Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
 		ReactorOptions is read on start and then current values are saved every program cycle.
 		Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
-		Auto-adjusts individual control rods (based on hottest/coldest) to maintain temperature.
+		Auto-adjusts control rods per reactor to maintain temperature.
 		Will display reactor data to all attached monitors of correct dimensions.
-		Dynamically detect and add/remove monitors as they are connected to the network.
+		Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
 
 	Default values:
 		Rod Control: 90% (Let's start off safe and then power up as we can)
@@ -79,14 +79,12 @@
 	TODO:
 		Support multiple reactors
 		- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
-		- See http://www.computercraft.info/forums2/index.php?/topic/14831-multiple-monitors/
-		  and http://computercraft.info/wiki/Monitor
-		- May just iterate through peripheral.getNames() looking for "monitor_#" and "BigReactors-Reactor_#"
 		- Save parameters per reactor instead of one global set for all reactors
 		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 		Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-		BR 0.3: mechaet|work | the getCasingTemperature call is only needed for active-cooled reactors which none of you have 
+		Add BR 0.3 Turbine control support
+		Add BR 0.3 active-cooled reactor support
 
 ]]--
 
