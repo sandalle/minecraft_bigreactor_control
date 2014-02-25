@@ -1,6 +1,6 @@
 --[[
 	Programmer: Lolmer
-	Last update: 2014-02-20
+	Last update: 2014-02-24
 	Pastebin: http://pastebin.com/ZTMzRLez
 
 	Description:
@@ -9,7 +9,7 @@
 	own wired modem connected to the reactors computer control port.
 
 	Save this file as "startup" on your computer for it to auto-start on Computer boot.
-	To easily get this file into your Computercraft Computer, run the following (includes prompts).
+	To easily get this file into your Computercraft Computer, run the following after right-clicking on your Computercraft computer (includes prompts).
 	> rm startup
 	> lua
 	lua> shell.run("pastebin", "get", "ZTMzRLez", "startup")
