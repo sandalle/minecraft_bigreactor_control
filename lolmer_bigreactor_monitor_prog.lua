@@ -1,6 +1,6 @@
 --[[
 	Program name: Lolmer's EZ-NUKE reactor control system
-	Version: v0.3.0
+	Version: v0.3.1
 	Programmer: Lolmer
 	Last update: 2014-02-24
 	Pastebin: http://pastebin.com/fguScPBQ
@@ -90,7 +90,7 @@
 
 
 -- Some global variables
-local progVer = "0.3.0"
+local progVer = "0.3.1"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
