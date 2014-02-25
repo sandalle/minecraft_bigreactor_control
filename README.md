@@ -57,6 +57,9 @@ Resources
 - Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
 
 - Computercraft API: http://computercraft.info/wiki/Category:APIs
+- Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
+- Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
+- Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog
 ============================
