@@ -1,6 +1,6 @@
 --[[
 	Program name: Lolmer's EZ-NUKE reactor control system
-	Version: v0.3.1
+	Version: v0.3.2
 	Programmer: Lolmer
 	Last update: 2014-02-24
 	Pastebin: http://pastebin.com/fguScPBQ
@@ -17,6 +17,7 @@
 		Auto-adjusts control rods per reactor to maintain temperature.
 		Will display reactor data to all attached monitors of correct dimensions.
 		Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
+		Disable rod auto-adjust by right-clicking between the rod control buttons "<" and ">"
 
 	Default values:
 		Rod Control: 90% (Let's start off safe and then power up as we can)
@@ -52,6 +53,7 @@
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 	ChangeLog:
+	0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 	0.3.1 - Add fuel consumption per tick to display
 	0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
 		print function now takes table to support optional specified monitor
@@ -85,12 +87,13 @@
 		Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 		Add BR 0.3 Turbine control support
 		Add BR 0.3 active-cooled reactor support
+		Allow for a monitor (first monitor would be good) to display compressed info from all reactors (Rhonyn)
 
 ]]--
 
 
 -- Some global variables
-local progVer = "0.3.1"
+local progVer = "0.3.2"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
@@ -98,6 +101,7 @@ local adjustAmount = 5
 local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
+local reactorRodOverride = false -- Empty rod override for reactors
 -- End multi-reactor cleanup section
 local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
@@ -107,7 +111,6 @@ local autoStart = {} -- Array for automatically starting reactors
 local rodLastUpdate = {} -- Last timestamp update for rod control level update per reactor
 local monitorList = {} -- Empty monitor array
 local reactorList = {} -- Empty reactor array
-
 
 term.clear()
 term.setCursorPos(2,1)
@@ -476,6 +479,7 @@ local function loadReactorOptions()
 		maxStoredEnergyPercent = reactorOptions.readLine()
 		minReactorTemp = reactorOptions.readLine()
 		maxReactorTemp = reactorOptions.readLine()
+		reactorRodOverride = reactorOptions.readLine() -- Should be string "true" or "false"
 
 		-- If we succeeded in reading a string, convert it to a number
 		if baseControlRodLevel ~= nil then
@@ -496,6 +500,12 @@ local function loadReactorOptions()
 
 		if maxReactorTemp ~= nil then
 			maxReactorTemp = tonumber(maxReactorTemp)
+		end
+
+		if reactorRodOverride == "true" then
+			reactorRodOverride = true
+		else
+			reactorRodOverride = false
 		end
 
 		reactorOptions.close()
@@ -537,6 +547,7 @@ local function saveReactorOptions()
 		reactorOptions.writeLine(maxStoredEnergyPercent)
 		reactorOptions.writeLine(minReactorTemp)
 		reactorOptions.writeLine(maxReactorTemp)
+		reactorOptions.writeLine(reactorRodOverride)
 		reactorOptions.close()
 	else
 		printLog("Failed to open file ReactorOptions for writing!")
@@ -629,6 +640,7 @@ local function displayBars(barParams)
 		baseControlRodLevel = newRodPercentage
 	end
 
+
 	if (xClick == 28  and yClick == 4) then
 		--Increase rod level by amount
 		newRodPercentage = rodPercentage + adjustAmount
@@ -665,6 +677,19 @@ local function displayBars(barParams)
 	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
 	print{"%",28,7,monitorIndex}
 	monitor.setBackgroundColor(colors.black)
+
+	-- Print rod override status
+	local reactorRodOverrideStatus = ""
+
+	if not reactorRodOverride then
+		reactorRodOverrideStatus = "Enabled"
+		monitor.setTextColor(colors.green)
+	else
+		reactorRodOverrideStatus = "Disabled"
+		monitor.setTextColor(colors.red)
+	end
+	print{"Rod Auto-adjust: "..reactorRodOverrideStatus,2,10,monitorIndex}
+	monitor.setTextColor(colors.white)
 
 	print{"Fuel consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,11,monitorIndex}
 	print{"Fuel Rods: "..(numRods + 1),2,12,monitorIndex} -- numRods index starts at 0
@@ -712,13 +737,19 @@ local function reactorStatus(statusParams)
 		if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
 			if yClick == 1 then
 				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
-				xClick, yClick = 0,0
+				xClick, yClick = 0,0 -- Reset click after we register it
 
 				-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
 				if not reactor.getActive() then
 					autoStart[reactorIndex] = false
 				end
 			end
+		end
+
+		-- Allow disabling rod level auto-adjust and only manual rod level control
+		if (xClick > 23 and xClick < 28) and yClick == 4 then
+			reactorRodOverride = not reactorRodOverride -- Toggle reactor rod override status
+			xClick, yClick = 0,0 -- Reset click after we register it
 		end
 
 	else
@@ -768,7 +799,11 @@ function main()
 						reactor.setActive(true)
 					end
 
-					temperatureControl(reactorIndex)
+					-- Don't try to auto-adjust control rods if manual control is requested
+					if not reactorRodOverride then
+						temperatureControl(reactorIndex)
+					end
+
 					displayBars{reactorIndex,monitorIndex}
 					sleep(loopTime)
 					saveReactorOptions()
