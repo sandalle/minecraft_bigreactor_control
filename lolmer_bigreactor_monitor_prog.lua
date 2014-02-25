@@ -10,6 +10,10 @@
 	in Minecraft with a Computercraft computer, using Computercraft's
 	own wired modem connected to the reactors computer control port.
 
+	This program was designed to work with the mods and versions installed on Never Stop Toasting (NST) Diet
+	http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
+	Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
+
 	Features:
 		Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
 		ReactorOptions is read on start and then current values are saved every program cycle.
@@ -85,7 +89,7 @@
 		Add min/max RF/t output and have it override temperature concerns (maybe?)
 		Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 		Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-		Add BR 0.3 Turbine control support
+		Add BR 0.3 Turbine control support (see https://twitter.com/ErogenousBeef/status/437663302403891200/photo/1/large)
 		Add BR 0.3 active-cooled reactor support
 		Allow for a monitor (first monitor would be good) to display compressed info from all reactors (Rhonyn)
 

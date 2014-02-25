@@ -5,6 +5,11 @@ Description
 ----------------------------
 This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port.
 
+This program was designed to work with the mods and versions installed on NST Diet
+- http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
+- Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
+
+
 Features
 ----------------------------
 - Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
