@@ -181,10 +181,10 @@ local function round(num, places)
 							newNum = (digit + 1)..newNum
 					end
 					return tonumber(newNum) --No more 9s found, so we are done incrementing. Copy remaining digits, then return number.
-			end
-	end
+			end -- if digit == 9 then
+	end -- for i=num:len(), 1, -1 do
 	return tonumber(newNum)
-end
+end -- function round(num, places
 
 
 local function printLog(printStr)
@@ -204,7 +204,7 @@ local function printLog(printStr)
 			error("Cannot open file reactorcontrol.log for appending!")
 		end -- if logFile then
 	end -- if debugMode then
-end -- local function printLog(printStr)
+end -- function printLog(printStr)
 
 
 local function print(printParams)
@@ -226,7 +226,7 @@ local function print(printParams)
 
 	monitor.setCursorPos(xPos, yPos)
 	monitor.write(printString)
-end
+end -- function print(printParams)
 
 
 -- Replaces the one from FC_API (http://pastebin.com/A9hcbZWe) and adding multi-monitor support
@@ -244,7 +244,7 @@ local function printCentered(printString, yPos, monitorIndex)
 	monitor.clearLine()
 	monitor.write(printString)
 	print{"M"..monitorIndex, 1, 1, monitorIndex}
-end
+end -- function printCentered(printString, yPos, monitorIndex)
 
 
 -- Replaces the one from FC_API (http://pastebin.com/A9hcbZWe) and adding multi-monitor support
@@ -270,7 +270,7 @@ local function clearMonitor(printString, monitorIndex)
 	end
 
 	monitor.setCursorPos(1, gap+1)
-end
+end -- function clearMonitor(printString, monitorIndex)
 
 
 -- Return a list of all connected (including via wired modems) devices of "deviceType"
@@ -291,10 +291,10 @@ local function getDevices(deviceType)
 			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
 			deviceIndex = deviceIndex + 1
 		end
-	end
+	end -- for peripheralIndex = 1, #peripheralList do
 
 	return deviceList
-end
+end -- function getDevices(deviceType)
 
 -- Draw a line across the entire x-axis
 local function drawLine(yPos,monitorIndex)
@@ -312,7 +312,7 @@ local function drawLine(yPos,monitorIndex)
 		monitor.setCursorPos(i, yPos)
 		monitor.write("-")
 	end
-end
+end -- function drawLine(yPos,monitorIndex)
 
 
 -- Display a solid bar of specified color
@@ -330,7 +330,7 @@ local function drawBar(startXPos, startYPos,endXPos,endYPos,color,monitorIndex)
 	term.redirect(monitor)
 	paintutils.drawLine(startXPos, startYPos, endXPos, endYPos, color)
 	term.restore()
-end
+end -- function drawBar(startXPos, startYPos,endXPos,endYPos,color,monitorIndex)
 
 
 -- End helper functions
@@ -407,23 +407,19 @@ local function findReactors()
 			-- For now, initialize reactors to the same baseControlRodLevel
 			if #newReactorList ~= #reactorList then
 				reactor.setAllControlRodLevels(baseControlRodLevel)
-			end
 
 			-- Initialize rod update timestamp if number of reactors has changed or initial startup
-			if #newReactorList ~= #reactorList then
 				rodLastUpdate[reactorIndex] = os.time()
-			end
 
 			-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
-			if #newReactorList ~= #reactorList then
 				autoStart[reactorIndex] = true
-			end
-		end
-	end
+			end -- if #newReactorList ~= #reactorList then
+		end -- for reactorIndex = 1, #newReactorList do
+	end -- if #newReactorList == 0 then
 
 	-- Overwrite old reactor list with the now updated list
 	reactorList = newReactorList
-end
+end -- function findReactors()
 
 
 -- Initialize all Big Reactors - Turbines
