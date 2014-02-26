@@ -17,8 +17,10 @@ Features
 - Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
 - Auto-adjusts control rods per reactor to maintain temperature.
 - Will display reactor data to all attached monitors of correct dimensions.
-- Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
+	- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+	- Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
 - Disable rod auto-adjust by right-clicking between the rod control buttons "<" and ">"
+
 
 Default values
 ----------------------------
@@ -71,6 +73,9 @@ ChangeLog
 ============================
 - 0.3.2
 	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
+	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
+	- Display monitor number i top left of each monitor as "M#" to help find which monitor is which.
+	- Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
 
 - 0.3.1
 	- Add fuel consumption per tick to display
