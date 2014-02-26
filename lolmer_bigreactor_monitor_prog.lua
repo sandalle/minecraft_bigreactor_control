@@ -442,12 +442,12 @@ local function findTurbines()
 				printLog("turbineList["..turbineIndex.."] is not a valid Big Reactors Turbine")
 				return -- Invalid turbineIndex
 			end
-		end
-	end
+		end -- for turbineIndex = 1, #newTurbineList do
+	end -- if #newTurbineList == 0 then
 
 	-- Overwrite old turbine list with the now updated list
 	turbineList = newTurbineList
-end
+end -- function findTurbines()
 
 
 -- This function gets the average control rod percentage for a given reactor
@@ -469,7 +469,7 @@ local function getControlRodPercentage(reactorIndex)
  
 	local rodPercentage = 0
 	return (math.ceil(rodTotal/(numRods+1)))
-end
+end -- function getControlRodPercentage(reactorIndex)
 
 
 -- Return current energy buffer in a specific reactor by %
@@ -483,7 +483,7 @@ local function getReactorStoredEnergyBufferPercent(reactorIndex)
 
 	local energyBufferStorage = reactor.getEnergyStored()
 	return (math.floor(energyBufferStorage/100000)) -- 10000000*100
-end
+end -- function getReactorStoredEnergyBufferPercent(reactorIndex)
 
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
@@ -521,7 +521,7 @@ local function temperatureControl(reactorIndex)
 				else
 					reactor.setAllControlRodLevels(rodPercentage + 1)
 				end
-			end
+			end -- if reactorTemp > (2 * maxReactorTemp) then
 
 			rodLastUpdate[reactorIndex] = os.time() -- Last rod control update is now :)
 		elseif (reactorTemp < minReactorTemp) and (rodTimeDiff > 0.2) then
@@ -540,13 +540,13 @@ local function temperatureControl(reactorIndex)
 				else
 					reactor.setAllControlRodLevels(rodPercentage - 1)
 				end
-			end
+			end -- if reactorTemp < (minReactorTemp / 2) then
 
 			rodLastUpdate[reactorIndex] = os.time() -- Last rod control update is now :)
 			baseControlRodLevel = rodPercentage
-		end
-	end
-end
+		end -- if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) and (rodTimeDiff > 0.2) then
+	end -- if reactor.getActive() then
+end -- function temperatureControl(reactorIndex)
 
 
 -- Load saved reactor parameters if ReactorOptions file exists
@@ -590,7 +590,7 @@ local function loadReactorOptions()
 		end
 
 		reactorOptions.close()
-	end
+	end -- if reactorOptions then
 
 	-- Set default values if we failed to read any of the above
 	if baseControlRodLevel == nil then
@@ -612,7 +612,7 @@ local function loadReactorOptions()
 	if maxReactorTemp == nil then
 		maxReactorTemp = 950
 	end
-end
+end -- function loadReactorOptions()
 
 
 -- Save our reactor parameters
@@ -632,8 +632,8 @@ local function saveReactorOptions()
 		reactorOptions.close()
 	else
 		printLog("Failed to open file ReactorOptions for writing!")
-	end
-end
+	end -- if reactorOptions then
+end -- function saveReactorOptions()
 
 
 local function displayReactorBars(barParams)
@@ -712,7 +712,7 @@ local function displayReactorBars(barParams)
 		xClick, yClick = 0,0
 		reactor.setAllControlRodLevels(newRodPercentage)
 		baseControlRodLevel = newRodPercentage
-	end
+	end -- if (xClick == 23  and yClick == 4) then
 
 
 	if (xClick == 28  and yClick == 4) then
@@ -724,7 +724,7 @@ local function displayReactorBars(barParams)
 		xClick, yClick = 0,0
 		reactor.setAllControlRodLevels(newRodPercentage)
 		baseControlRodLevel = newRodPercentage
-	end
+	end -- if (xClick == 28  and yClick == 4) then
 
 	print{"Control",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
@@ -746,7 +746,7 @@ local function displayReactorBars(barParams)
 	elseif curStoredEnergyPercent > 0 then
 		--paintutils.drawPixel(2,8,colors.yellow)
 		drawBar(2,8,colors.yellow,monitorIndex)
-	end
+	end -- if curStoredEnergyPercent > 4 then
 	term.restore()
 
 	monitor.setBackgroundColor(colors.black)
@@ -766,7 +766,7 @@ local function displayReactorBars(barParams)
 	else
 		reactorRodOverrideStatus = "Disabled"
 		monitor.setTextColor(colors.red)
-	end
+	end -- if not reactorRodOverride then
 
 	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
@@ -781,7 +781,7 @@ local function displayReactorBars(barParams)
 	print{"Consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,11,monitorIndex}
 	print{"Rods: "..(numRods + 1),2,12,monitorIndex} -- numRods index starts at 0
 	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12,monitorIndex}
-end
+end -- function displayReactorBars(barParams)
 
 
 local function reactorStatus(statusParams)
@@ -819,7 +819,7 @@ local function reactorStatus(statusParams)
 		else
 			reactorStatus = "OFFLINE"
 			monitor.setTextColor(colors.red)
-		end
+		end -- if reactor.getActive() then
 
 		if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
 			if yClick == 1 then
@@ -830,8 +830,8 @@ local function reactorStatus(statusParams)
 				if not reactor.getActive() then
 					autoStart[reactorIndex] = false
 				end
-			end
-		end
+			end -- if yClick == 1 then
+		end -- if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
 
 		-- Allow disabling rod level auto-adjust and only manual rod level control
 		if (xClick > 23 and xClick < 28) and yClick == 4 then
@@ -842,11 +842,11 @@ local function reactorStatus(statusParams)
 	else
 		reactorStatus = "DISCONNECTED"
 		monitor.setTextColor(colors.red)
-	end
+	end -- if reactor.getConnected() then
 
 	print{reactorStatus, width - string.len(reactorStatus) - 1, 1, monitorIndex}
 	monitor.setTextColor(colors.white)
-end
+end -- function reactorStatus(statusParams)
 
 
 -- Display all found reactors' status to monitor 1
@@ -890,7 +890,7 @@ local function displayAllStatus()
 			totalEnergy = totalEnergy + turbine.getEnergyStored()
 			totalTurbineRF = totalTurbineRF + turbine.getEnergyProducedLastTick()
 		end -- if turbine.getConnected() then
-	end
+	end -- for turbineIndex = 1, #turbineList do
 
 	print{"Reactors online/found: "..onlineReactor.."/"..#reactorList,2,3,1}
 	print{"Turbines online/found: "..onlineTurbine.."/"..#turbineList,2,4,1}
@@ -899,7 +899,7 @@ local function displayAllStatus()
 	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,7,1}
 	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,8,1}
 	print{"Buffer: "..totalEnergy.."/"..(((1000000*#reactorList)+(1000000*#turbineList))).." RF",2,12,1}
-end
+end -- function displayAllStatus()
 
 -- Get turbine status
 local function turbineStatus(statusParams)
@@ -908,7 +908,7 @@ local function turbineStatus(statusParams)
 	local reactorIndex, monitorIndex =
 		statusParams[1] or statusParams.reactorIndex,
 		statusParams[2] or statusParams.monitorIndex
-end
+end -- function turbineStatus(statusParams)
 
 
 function main()
@@ -968,10 +968,10 @@ function main()
 			end -- if #reactorList > 1 and monitorIndex == 1 then
 		end -- for monitorIndex = 1, #monitorList do
 	end -- while not finished do
-end
+end -- main()
 
 
-function eventHandler()
+local function eventHandler()
 	while not finished do
 		event, arg1, arg2, arg3 = os.pullEvent()
 
@@ -991,17 +991,17 @@ function eventHandler()
 				elseif ch == "r" then
 					finished = true
 					os.reboot()
-				end
-			end
-		end
-	end
-end
+				end -- if ch == "q" then
+			end -- if event == "monitor_touch" then
+		end -- for monitorIndex = 1, #monitorList do
+	end -- while not finished do
+end -- function eventHandler()
 
 
 while not finished do
 	parallel.waitForAny(eventHandler, main)
 	sleep(loopTime)
-end
+end -- while not finished do
 
 
 -- Clear up after an exit
