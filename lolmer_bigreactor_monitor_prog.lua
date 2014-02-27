@@ -126,7 +126,7 @@ local xClick, yClick = 0,0
 local loopTime = 1
 local controlRodAdjustAmount = 5 -- Default Reactor Rod Control adjustment amount when using UI
 local flowRateAdjustAmount = 100 -- Default Turbine Flow Rate adjustment amount when using UI
-local debugMode = true
+local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
 local reactorRodOverride = false -- Empty rod override for reactors
@@ -747,7 +747,6 @@ local function displayReactorBars(barParams)
 		rodPercentage = newRodPercentage
 	end -- if (xClick == 23  and yClick == 4) then
 
-
 	if (xClick == 28  and yClick == 4) then
 		--Increase rod level by amount
 		newRodPercentage = rodPercentage + controlRodAdjustAmount
@@ -992,7 +991,6 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		turbineFlowRate = newTurbineFlowRate
 	end -- if (xClick == 22  and yClick == 4) then
 
-
 	if (xClick == 28  and yClick == 4) then
 		--Increase rod level by amount
 		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
@@ -1048,6 +1046,8 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
 	print{"%",28,7,monitorIndex}
 	monitor.setBackgroundColor(colors.black)
+
+	-- Need equation to figure out rotor efficiency and display
 end -- function displayTurbineBars(statusParams)
 
 
