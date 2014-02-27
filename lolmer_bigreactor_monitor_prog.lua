@@ -484,32 +484,6 @@ local function findTurbines()
 end -- function findTurbines()
 
 
--- This function gets the average control rod percentage for a given reactor
-local function getControlRodPercentage(reactorIndex)
-	-- Grab current reactor
-	local reactor = nil
-	reactor = reactorList[reactorIndex]
-	if not reactor then
-		printLog("reactorList["..reactorIndex.."] in getControlRodPercentage() was not a valid Big Reactor")
-		return nil -- Invalid reactorIndex
-	end
-
-	-- Do we even need to iterate through the control rods? They are no longer treated individually
---[[
-	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
-
-	local rodTotal = 0
-	for i=0, numRods do
-		rodTotal = rodTotal + reactor.getControlRodLevel(i)
-	end
- 
-	local rodPercentage = 0
-	return (math.ceil(rodTotal/(numRods+1)))
---]]
-	return math.ceil(reactor.getControlRodLevel(0)) -- Just return the first control rod's status
-end -- function getControlRodPercentage(reactorIndex)
-
-
 -- Return current energy buffer in a specific reactor by %
 local function getDeviceStoredEnergyBufferPercent(device)
 	if not device then
@@ -532,7 +506,7 @@ local function temperatureControl(reactorIndex)
 		return -- Invalid reactorIndex
 	end
 
-	local rodPercentage = getControlRodPercentage(reactorIndex)
+	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	local rodTimeDiff = 0
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 
@@ -658,7 +632,7 @@ local function saveReactorOptions()
 	-- If we can save the files, save them
 	if reactorOptions then
 		local reactorIndex = 1
-		reactorOptions.writeLine(getControlRodPercentage(reactorIndex)) -- Store just the first reactor for now
+		reactorOptions.writeLine(math.ceil(reactorList[1].getControlRodLevel(0))) -- Store just the first reactor for now
 		-- The following values were added by Lolmer
 		reactorOptions.writeLine(minStoredEnergyPercent)
 		reactorOptions.writeLine(maxStoredEnergyPercent)
@@ -728,7 +702,7 @@ local function displayReactorBars(barParams)
 	print{tempString,2,5,monitorIndex}
 	print{reactorTemp.." C",padding+2,5,monitorIndex}
 
-	local rodPercentage = getControlRodPercentage(reactorIndex)
+	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	-- Allow controlling Reactor Control Rod Level from GUI
 	-- Decrease rod button: 23X, 4Y
 	-- Increase rod button: 28X, 4Y
@@ -1009,7 +983,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{"  Flow",22,3,monitorIndex}
 	print{"<     >",22,4,monitorIndex}
 	print{turbineFlowRate,24,4,monitorIndex}
-	print{"mB/t",22,5,monitorIndex}
+	print{"  mB/t",22,5,monitorIndex}
 
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Producing: "
