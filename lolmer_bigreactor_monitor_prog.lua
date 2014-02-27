@@ -891,7 +891,7 @@ local function displayAllStatus()
 	local onlineReactor, onlineTurbine = 0, 0
 	local totalReactorRF, totalTurbineRF = 0, 0
 	local totalReactorFuelConsumed = 0
-	local totalEnergy = 0 -- Total turbine and reactor energy buffer
+	local totalEnergy, totalEnergyStores = 0, 0 -- Total turbine and reactor energy buffer and overall capacity
 
 	for reactorIndex = 1, #reactorList do
 		reactor = reactorList[reactorIndex]
@@ -908,6 +908,7 @@ local function displayAllStatus()
 
 			-- Actively cooled reactors do not produce or store energy
 			if not reactor.isActivelyCooled() then
+				totalEnergyStores = totalEnergyStores + 1
 				totalEnergy = totalEnergy + reactor.getEnergyStored()
 				totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
 			end -- if not reactor.isActivelyCooled() then
@@ -926,6 +927,7 @@ local function displayAllStatus()
 				onlineTurbine = onlineTurbine + 1
 			end
 
+			totalEnergyStores = totalEnergyStores + 1
 			totalEnergy = totalEnergy + turbine.getEnergyStored()
 			totalTurbineRF = totalTurbineRF + turbine.getEnergyProducedLastTick()
 		end -- if turbine.getConnected() then
@@ -937,7 +939,7 @@ local function displayAllStatus()
 	print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t",2,6,1}
 	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,7,1}
 	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,8,1}
-	print{"Buffer: "..totalEnergy.."/"..(((1000000*#reactorList)+(1000000*#turbineList))).." RF",2,12,1}
+	print{"Buffer: "..totalEnergy.."/"..(1000000*totalEnergyStores).." RF",2,12,1}
 end -- function displayAllStatus()
 
 
