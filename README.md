@@ -9,6 +9,17 @@ This program was designed to work with the mods and versions installed on Never 
 - http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
 - Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
+To simplify the code and guesswork, I assume the following monitor layout:
+- One reactor with one Advanced Monitor.
+OR
+- One Advanced Monitor for overall status display plus (first found monitor)
+	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
+	one Advanced Monitor for each connected Turbine (last group of monitors found).
+If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
+
+When using actively cooled reactors with turbines, keep the following in mind:
+- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
+- Actively cooled reactors produce steam, not power.
 
 Features
 ----------------------------
@@ -20,7 +31,6 @@ Features
 	- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
 	- Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
 - Disable rod auto-adjust by right-clicking between the rod control buttons "<" and ">"
-
 
 Default values
 ----------------------------
@@ -76,6 +86,9 @@ ChangeLog
 	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 	- Display monitor number i top left of each monitor as "M#" to help find which monitor is which.
 	- Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
+	- Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
+	- Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
+	- Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
 
 - 0.3.1
 	- Add fuel consumption per tick to display

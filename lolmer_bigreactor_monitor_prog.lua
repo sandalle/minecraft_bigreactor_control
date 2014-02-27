@@ -14,6 +14,18 @@
 	http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
 	Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
+	To simplify the code and guesswork, I assume the following monitor layout:
+	1) One reactor with one or more Advanced Monitors (all monitors display the same info).
+		OR
+	2) One Advanced Monitor for overall status display plus (first found monitor)
+	   one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
+	   one Advanced Monitor for each connected Turbine (last group of monitors found).
+	If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
+
+	When using actively cooled reactors with turbines, keep the following in mind:
+		- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
+		- Actively cooled reactors produce steam, not power.
+
 	Features:
 		Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
 		ReactorOptions is read on start and then current values are saved every program cycle.
@@ -63,6 +75,10 @@
 		First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 		Display monitor number i top left of each monitor as "M#" to help find which monitor is which.
 		Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
+		Add monitor layout requirements to simplify code
+		Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
+		Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
+		Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
 	0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 	0.3.1 - Add fuel consumption per tick to display
 	0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
@@ -108,11 +124,13 @@ local progVer = "0.3.3"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
-local adjustAmount = 5
-local debugMode = false
+local controlRodAdjustAmount = 5 -- Default Reactor Rod Control adjustment amount when using UI
+local flowRateAdjustAmount = 100 -- Default Turbine Flow Rate adjustment amount when using UI
+local debugMode = true
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
 local reactorRodOverride = false -- Empty rod override for reactors
+local baseTurbineFlowRate = nil
 -- End multi-reactor cleanup section
 local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
@@ -123,6 +141,7 @@ local rodLastUpdate = {} -- Last timestamp update for rod control level update p
 local monitorList = {} -- Empty monitor array
 local reactorList = {} -- Empty reactor array
 local turbineList = {} -- Empty turbine array
+local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 
 term.clear()
 term.setCursorPos(2,1)
@@ -192,6 +211,7 @@ local function printLog(printStr)
 		-- If multiple monitors, use the last monitor for debugging if debug is enabled
 		if #monitorList > 1 then
 			term.redirect(monitorList[#monitorList]) -- Redirect to last monitor for debugging
+			monitorList[#monitorList].setTextScale(0.5) -- Fit more logs on screen
 			write(printStr.."\n")	-- May need to use term.scroll(x) if we output too much, not sure
 			term.restore()
 		end -- if #monitorList > 1 then
@@ -360,7 +380,8 @@ local function findMonitors()
 			local monitorX, monitorY = monitor.getSize()
 			printLog("Verifying monitor["..monitorIndex.."] is of size x:"..monitorX.." by y:"..monitorY)
 
-			if monitorX ~= 29 or monitorY ~= 12 then
+			-- Check for minimum size to allow for monitor.setTextScale(0.5) to work for 3x2 debugging monitor, changes getSize()
+			if monitorX < 29 or monitorY < 12 then
 				term.redirect(monitor)
 				monitor.clear()
 				printLog("Removing monitor "..monitorIndex.." for incorrect size")
@@ -419,6 +440,15 @@ local function findReactors()
 
 	-- Overwrite old reactor list with the now updated list
 	reactorList = newReactorList
+
+	-- Check if we have enough monitors for the number of reactors
+	if (#reactorList ~= 1) and ((#turbineList < #reactorList) + 1 < #monitorList) then
+		printLog("You need "..(#reactorList + 1).." monitors for your "..#reactorList.." connected reactors")
+	end
+
+	-- Start turbine monitor offset after reactors get monitors
+	-- This assumes that there is a monitor for each turbine and reactor, plus the overall monitor display
+	turbineMonitorOffset = #reactorList + 1 -- #turbineList will start at "1" if turbines found and move us just beyond #reactorList and status monitor range
 end -- function findReactors()
 
 
@@ -431,8 +461,7 @@ local function findTurbines()
 	newTurbineList = getDevices("BigReactors-Turbine")
 
 	if #newTurbineList == 0 then
-		printLog("No turbines found!")
-		error("Can't find any turbines!")
+		printLog("No turbines found") -- Not an error
 	else  -- Placeholder
 		for turbineIndex = 1, #newTurbineList do
 			local turbine = nil
@@ -443,10 +472,15 @@ local function findTurbines()
 				return -- Invalid turbineIndex
 			end
 		end -- for turbineIndex = 1, #newTurbineList do
-	end -- if #newTurbineList == 0 then
 
-	-- Overwrite old turbine list with the now updated list
-	turbineList = newTurbineList
+		-- Overwrite old turbine list with the now updated list
+		turbineList = newTurbineList
+
+		-- Check if we have enough monitors for the number of turbines
+		if #monitorList < (#reactorList + #turbineList + 1) then
+			printLog("You need "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines")
+		end
+	end -- if #newTurbineList == 0 then
 end -- function findTurbines()
 
 
@@ -460,7 +494,9 @@ local function getControlRodPercentage(reactorIndex)
 		return nil -- Invalid reactorIndex
 	end
 
-    local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
+	-- Do we even need to iterate through the control rods? They are no longer treated individually
+--[[
+	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	local rodTotal = 0
 	for i=0, numRods do
@@ -469,21 +505,21 @@ local function getControlRodPercentage(reactorIndex)
  
 	local rodPercentage = 0
 	return (math.ceil(rodTotal/(numRods+1)))
+--]]
+	return math.ceil(reactor.getControlRodLevel(0)) -- Just return the first control rod's status
 end -- function getControlRodPercentage(reactorIndex)
 
 
 -- Return current energy buffer in a specific reactor by %
-local function getReactorStoredEnergyBufferPercent(reactorIndex)
-	local reactor = nil
-	reactor = reactorList[reactorIndex]
-	if not reactor then
-		printLog("reactorList["..reactorIndex.."] in getReactorStoredEnergyBufferPercent() was not a valid Big Reactor")
+local function getDeviceStoredEnergyBufferPercent(device)
+	if not device then
+		printLog("getDeviceStoredEnergyBufferPercent() did not receive a valid Big Reactor device")
 		return -- Invalid reactorIndex
 	end
 
-	local energyBufferStorage = reactor.getEnergyStored()
-	return (math.floor(energyBufferStorage/100000)) -- 10000000*100
-end -- function getReactorStoredEnergyBufferPercent(reactorIndex)
+	local energyBufferStorage = device.getEnergyStored()
+	return (math.floor(energyBufferStorage/10000)) -- (buffer/10000000 RF)*100%
+end -- function getDeviceStoredEnergyBufferPercent(reactorIndex)
 
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
@@ -647,7 +683,7 @@ local function displayReactorBars(barParams)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 	if not monitor then
-		printLog("monitorList["..monitorIndex.."] in displayBars() was not a valid monitor")
+		printLog("monitorList["..monitorIndex.."] in displayReactorBars() was not a valid monitor")
 		return -- Invalid monitorIndex
 	end
 
@@ -655,13 +691,13 @@ local function displayReactorBars(barParams)
 	local reactor = nil
 	reactor = reactorList[reactorIndex]
 	if not reactor then
-		printLog("reactorList["..reactorIndex.."] in displayBars() was not a valid Big Reactor")
+		printLog("reactorList["..reactorIndex.."] in displayReactorBars() was not a valid Big Reactor")
 		return -- Invalid reactorIndex
 	end
 
     local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
-	-- Draw some cool lines
+	-- Draw border lines
 	monitor.setBackgroundColor(colors.black)
 	local width, height = monitor.getSize()
 
@@ -674,12 +710,11 @@ local function displayReactorBars(barParams)
 	drawLine(6,monitorIndex)
 
 	-- Draw some text
-
 	local fuelString = "Fuel: "
 	local tempString = "Temp: "
 	local energyBufferString = "Producing: "
 
-	local padding = math.max(string.len(fuelString), string.len(tempString),string.len(energyBufferString))
+	local padding = math.max(string.len(fuelString), string.len(tempString), string.len(energyBufferString))
 
 	local fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
 	print{fuelString,2,3,monitorIndex}
@@ -687,43 +722,45 @@ local function displayReactorBars(barParams)
 
 	local energyBuffer = reactor.getEnergyProducedLastTick()
 	print{energyBufferString,2,4,monitorIndex}
-	print{math.ceil(energyBuffer).."RF/t",padding+2,4,monitorIndex}
+	print{math.ceil(energyBuffer).." RF/t",padding+2,4,monitorIndex}
 
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 	print{tempString,2,5,monitorIndex}
 	print{reactorTemp.." C",padding+2,5,monitorIndex}
 
-	-- Decrease rod button: 22X, 4Y
-	-- Increase rod button: 28X, 4Y
-
-	local rodTotal = 0
-	for i=0, numRods do
-		rodTotal = rodTotal + reactor.getControlRodLevel(i)
-	end
 	local rodPercentage = getControlRodPercentage(reactorIndex)
-
+	-- Allow controlling Reactor Control Rod Level from GUI
+	-- Decrease rod button: 23X, 4Y
+	-- Increase rod button: 28X, 4Y
 	if (xClick == 23  and yClick == 4) then
 		--Decrease rod level by amount
-		newRodPercentage = rodPercentage - adjustAmount
+		newRodPercentage = rodPercentage - controlRodAdjustAmount
 		if newRodPercentage < 0 then
 			newRodPercentage = 0
 		end
-
 		xClick, yClick = 0,0
+
 		reactor.setAllControlRodLevels(newRodPercentage)
+
+		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
+		rodPercentage = newRodPercentage
 	end -- if (xClick == 23  and yClick == 4) then
 
 
 	if (xClick == 28  and yClick == 4) then
 		--Increase rod level by amount
-		newRodPercentage = rodPercentage + adjustAmount
+		newRodPercentage = rodPercentage + controlRodAdjustAmount
 		if newRodPercentage > 100 then
 			newRodPercentage = 100
 		end
 		xClick, yClick = 0,0
+
 		reactor.setAllControlRodLevels(newRodPercentage)
+
+		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
+		rodPercentage = newRodPercentage
 	end -- if (xClick == 28  and yClick == 4) then
 
 	print{"Control",23,3,monitorIndex}
@@ -731,30 +768,34 @@ local function displayReactorBars(barParams)
 	print{rodPercentage,25,4,monitorIndex}
 	print{"percent",23,5,monitorIndex}
 
+	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
+	-- still uses getEnergyProducedLastTick for mB/t of hot fluid generated
+	if not reactor.isActivelyCooled() then
+		-- PaintUtils only outputs to term., not monitor.
+		-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
+		term.redirect(monitor)
+		-- Draw stored energy buffer bar
+		drawBar(2,8,28,8,colors.gray,monitorIndex)
+		--paintutils.drawLine(2, 8, 28, 8, colors.gray)
 
-	-- PaintUtils only outputs to term., not monitor.
-	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
-	term.redirect(monitor)
-	-- Draw stored energy buffer bar
-	drawBar(2,8,28,8,colors.gray,monitorIndex)
-	--paintutils.drawLine(2, 8, 28, 8, colors.gray)
+		local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(reactor)
+		if curStoredEnergyPercent > 4 then
+			--paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
+			drawBar(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
+		elseif curStoredEnergyPercent > 0 then
+			--paintutils.drawPixel(2,8,colors.yellow)
+			drawBar(2,8,colors.yellow,monitorIndex)
+		end -- if curStoredEnergyPercent > 4 then
+		term.restore()
 
-	local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
-	if curStoredEnergyPercent > 4 then
-		--paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
-		drawBar(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
-	elseif curStoredEnergyPercent > 0 then
-		--paintutils.drawPixel(2,8,colors.yellow)
-		drawBar(2,8,colors.yellow,monitorIndex)
-	end -- if curStoredEnergyPercent > 4 then
-	term.restore()
-
-	monitor.setBackgroundColor(colors.black)
-	print{"Energy Buffer",2,7,monitorIndex}
-	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
-	print{"%",28,7,monitorIndex}
-	monitor.setBackgroundColor(colors.black)
-
+		monitor.setBackgroundColor(colors.black)
+		print{"Energy Buffer",2,7,monitorIndex}
+		print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
+		print{"%",28,7,monitorIndex}
+		monitor.setBackgroundColor(colors.black)
+	else
+		-- display hot fluid produced
+	end
 	-- Print rod override status
 	local reactorRodOverrideStatus = ""
 
@@ -770,12 +811,6 @@ local function displayReactorBars(barParams)
 
 	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
-
---[[
-	if reactor.isActivelyCooled() then
-		true
-	end
---]]
 
 	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %",2,10,monitorIndex}
 	print{"Consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,11,monitorIndex}
@@ -850,6 +885,7 @@ end -- function reactorStatus(statusParams)
 
 
 -- Display all found reactors' status to monitor 1
+-- This is only called if multiple reactors and/or a reactor plus at least one turbine are found
 local function displayAllStatus()
 	local reactor, turbine = nil, nil
 	local onlineReactor, onlineTurbine = 0, 0
@@ -868,10 +904,13 @@ local function displayAllStatus()
 			if reactor.getActive() then
 				onlineReactor = onlineReactor + 1
 				totalReactorFuelConsumed = totalReactorFuelConsumed + reactor.getFuelConsumedLastTick()
-			end
+			end -- reactor.getActive() then
 
-			totalEnergy = totalEnergy + reactor.getEnergyStored()
-			totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
+			-- Actively cooled reactors do not produce or store energy
+			if not reactor.isActivelyCooled() then
+				totalEnergy = totalEnergy + reactor.getEnergyStored()
+				totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
+			end -- if not reactor.isActivelyCooled() then
 		end -- if reactor.getConnected() then
 	end -- for reactorIndex = 1, #reactorList do
 
@@ -901,14 +940,113 @@ local function displayAllStatus()
 	print{"Buffer: "..totalEnergy.."/"..(((1000000*#reactorList)+(1000000*#turbineList))).." RF",2,12,1}
 end -- function displayAllStatus()
 
+
 -- Get turbine status
-local function turbineStatus(statusParams)
-	-- Default to first turbine and second monitor
-	setmetatable(statusParams,{__index={reactorIndex=1, monitorIndex=2}})
-	local reactorIndex, monitorIndex =
-		statusParams[1] or statusParams.reactorIndex,
-		statusParams[2] or statusParams.monitorIndex
-end -- function turbineStatus(statusParams)
+local function displayTurbineBars(turbineIndex, monitorIndex)
+	-- Grab current monitor
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in displayTurbineBars() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current turbine
+	local turbine = nil
+	turbine = turbineList[turbineIndex]
+	if not turbine then
+		printLog("turbineList["..turbineIndex.."] in displayTurbineBars() was not a valid Big Turbine")
+		return -- Invalid turbineIndex
+	end
+
+	-- Draw border lines
+	monitor.setBackgroundColor(colors.black)
+	local width, height = monitor.getSize()
+
+	for i=3, 5 do
+		monitor.setCursorPos(21, i)
+		monitor.write("|")
+	end
+
+	drawLine(2,monitorIndex)
+	drawLine(6,monitorIndex)
+
+	-- Allow controlling Turbine Flow Rate from GUI
+	-- Decrease flow rate button: 22X, 4Y
+	-- Increase flow rate button: 28X, 4Y
+	local turbineFlowRate = math.ceil(turbine.getFluidFlowRateMax())
+	if (xClick == 22  and yClick == 4) then
+		--Decrease rod level by amount
+		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
+		if newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 0
+		end
+		xClick, yClick = 0,0
+
+		turbine.setFluidFlowRateMax(newTurbineFlowRate)
+
+		-- Save updated Turbine Flow Rate
+		baseTurbineFlowRate = newTurbineFlowRate
+		turbineFlowRate = newTurbineFlowRate
+	end -- if (xClick == 22  and yClick == 4) then
+
+
+	if (xClick == 28  and yClick == 4) then
+		--Increase rod level by amount
+		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		end
+		xClick, yClick = 0,0
+
+		turbine.setFluidFlowRateMax(newTurbineFlowRate)
+
+		-- Save updated Turbine Flow Rate
+		baseTurbineFlowRate = newTurbineFlowRate
+		turbineFlowRate = newTurbineFlowRate
+	end -- if (xClick == 28  and yClick == 4) then
+
+	print{"  Flow",22,3,monitorIndex}
+	print{"<     >",22,4,monitorIndex}
+	print{turbineFlowRate,24,4,monitorIndex}
+	print{"mB/t",22,5,monitorIndex}
+
+	local rotorSpeedString = "Speed: "
+	local energyBufferString = "Producing: "
+
+	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
+
+	local energyBuffer = turbine.getEnergyProducedLastTick()
+	print{energyBufferString,1,4,monitorIndex}
+	print{math.ceil(energyBuffer).." RF/t",padding+1,4,monitorIndex}
+
+	local rotorSpeed = math.ceil(turbine.getRotorSpeed())
+	print{rotorSpeedString,1,5,monitorIndex}
+	print{rotorSpeed.." RPM",padding+1,5,monitorIndex}
+
+	-- PaintUtils only outputs to term., not monitor.
+	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
+	term.redirect(monitor)
+	-- Draw stored energy buffer bar
+	drawBar(1,8,28,8,colors.gray,monitorIndex)
+	--paintutils.drawLine(2, 8, 28, 8, colors.gray)
+
+	local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(turbine)
+	if curStoredEnergyPercent > 4 then
+		--paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
+		drawBar(1, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
+	elseif curStoredEnergyPercent > 0 then
+		--paintutils.drawPixel(2,8,colors.yellow)
+		drawBar(1,8,colors.yellow,monitorIndex)
+	end -- if curStoredEnergyPercent > 4 then
+	term.restore()
+
+	monitor.setBackgroundColor(colors.black)
+	print{"Energy Buffer",1,7,monitorIndex}
+	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
+	print{"%",28,7,monitorIndex}
+	monitor.setBackgroundColor(colors.black)
+end -- function displayTurbineBars(statusParams)
 
 
 function main()
@@ -923,18 +1061,27 @@ function main()
 		findReactors()
 		findTurbines()
 
+		-- Loop through found monitors
 		for monitorIndex = 1, #monitorList do
-			clearMonitor(progName, monitorIndex) -- Clear monitor and draw borders
-			printCentered(progName, 1, monitorIndex)
-
-			-- For multiple monitors, monitor #1 is reserved for overall status
-			if #monitorList > 1 and monitorIndex == 1 then
+			-- For multiple reactors/monitors, monitor #1 is reserved for overall status
+			if ((#reactorList + #turbineList) > 1) and (#monitorList > 1) and (monitorIndex == 1) then
+				clearMonitor(progName, monitorIndex) -- Clear monitor and draw borders
+				printCentered(progName, 1, monitorIndex)
 				displayAllStatus()
 			elseif debugMode and (monitorIndex == #monitorList) then
 				break -- We're using this monitor for debug info
+			-- Turbines are taken care of below via an offset, so do not loop through those
+			-- if no turbines are found, use all monitors for reactors
+			-- #turbineMonitorOffset already included #reactorList and +1 for overall status monitor
+			elseif #turbineList and (monitorIndex > turbineMonitorOffset) then
+				break
 			else
-				-- This code needs refactoring once we actually work with multiple reactors
+				-- This code needs re-factoring once we actually work with multiple reactors
 				for reactorIndex = 1, #reactorList do
+					clearMonitor(progName, monitorIndex) -- Clear monitor and draw borders
+					printCentered(progName, 1, monitorIndex)
+
+					-- Display reactor status, includes "Disconnected" reactors
 					reactorStatus{reactorIndex, monitorIndex}
 
 					reactor = reactorList[reactorIndex]
@@ -944,7 +1091,7 @@ function main()
 					end
 
 					if reactor.getConnected() then
-						local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactorIndex)
+						local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(reactor)
 
 						-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
 						-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
@@ -961,11 +1108,28 @@ function main()
 						end
 
 						displayReactorBars{reactorIndex,monitorIndex}
-						sleep(loopTime)
-						saveReactorOptions()
 					end	-- if reactor.getConnected() then
 				end	-- for reactorIndex = 1, #reactorList do
+
+				-- Monitors for turbines start after turbineMonitorOffset
+				for turbineIndex = 1, #turbineList do
+					clearMonitor(progName, turbineIndex+turbineMonitorOffset) -- Clear monitor and draw borders
+					printCentered(progName, 1, turbineIndex+turbineMonitorOffset)
+
+					turbine = turbineList[turbineIndex]
+					if not turbine then
+						printLog("turbineList["..turbineIndex.."] in main() was not a valid Big Turbine")
+						break -- Invalid turbineIndex
+					end
+
+					if turbine.getConnected() then
+						displayTurbineBars(turbineIndex,turbineIndex+turbineMonitorOffset)
+					end
+				end -- for reactorIndex = 1, #reactorList do
 			end -- if #reactorList > 1 and monitorIndex == 1 then
+
+			sleep(loopTime)	-- Sleep
+			saveReactorOptions()
 		end -- for monitorIndex = 1, #monitorList do
 	end -- while not finished do
 end -- main()
