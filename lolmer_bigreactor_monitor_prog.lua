@@ -129,7 +129,8 @@ local flowRateAdjustAmount = 100 -- Default Turbine Flow Rate adjustment amount 
 local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
-local reactorRodOverride = false -- Empty rod override for reactors
+local reactorRodOverride = false -- Rod override for Reactors
+local turbineFlowRateOverride = false -- Flow rate override for Turbines
 local baseTurbineFlowRate = nil
 -- End multi-reactor cleanup section
 local minStoredEnergyPercent = nil -- Max energy % to store before activate
@@ -142,6 +143,7 @@ local monitorList = {} -- Empty monitor array
 local reactorList = {} -- Empty reactor array
 local turbineList = {} -- Empty turbine array
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
+local turbineLastUpdate = {} -- Last timestamp update for turbine flow rate update per turbine
 
 term.clear()
 term.setCursorPos(2,1)
@@ -429,10 +431,10 @@ local function findReactors()
 			if #newReactorList ~= #reactorList then
 				reactor.setAllControlRodLevels(baseControlRodLevel)
 
-			-- Initialize rod update timestamp if number of reactors has changed or initial startup
+				-- Initialize rod update timestamp if number of reactors has changed or initial startup
 				rodLastUpdate[reactorIndex] = os.time()
 
-			-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
+				-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
 				autoStart[reactorIndex] = true
 			end -- if #newReactorList ~= #reactorList then
 		end -- for reactorIndex = 1, #newReactorList do
@@ -471,6 +473,10 @@ local function findTurbines()
 				printLog("turbineList["..turbineIndex.."] is not a valid Big Reactors Turbine")
 				return -- Invalid turbineIndex
 			end
+
+			-- Initialize turbine flow rate timestamp if number of reactors has changed or initial startup
+			turbineLastUpdate[turbineIndex] = os.time()
+
 		end -- for turbineIndex = 1, #newTurbineList do
 
 		-- Overwrite old turbine list with the now updated list
@@ -1025,6 +1031,48 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 end -- function displayTurbineBars(statusParams)
 
 
+-- Maintain Turbine flow rate at 900 or 1,800 RPM
+local function flowRateControl(turbineIndex)
+	-- Grab current turbine
+	local turbine = nil
+	turbine = turbineList[turbineIndex]
+	if not turbine then
+		printLog("turbineList["..turbineIndex.."] in flowRateControl() was not a valid Big Turbine")
+		return -- Invalid turbineIndex
+	end
+
+	-- No point modifying control rod levels for temperature if the turbine is offline
+	if turbine.getActive() then
+		local flowRate = turbine.getFluidFlowRate()
+		local flowRateMax = math.ceil(turbine.getFluidFlowRateMax())
+		local turbineTimeDiff = 0
+		local rotorSpeed = math.ceil(turbine.getRotorSpeed())
+		local newFlowRate = 0
+
+		turbineTimeDiff = math.abs(os.time() - turbineLastUpdate[turbineIndex]) -- Difference in turbine flow rate update timestamp and now
+
+		-- If we're outside our optimal rotor speed of 900 RPM or 1800 RPM, do something!
+		if (math.fmod(rotorSpeed,900) ~= 0) and (turbineTimeDiff > 0.2) then
+			-- First simple checks if we're above or below optimal
+			if rotorSpeed < 900 then
+				newFlowRate = flowRate + flowRateAdjustAmount
+			elseif rotorSpeed > 1800 then
+				newFlowRate = flowRate - flowRateAdjustAmount
+			end
+
+			-- Check bounds [0,2000]
+			if newFlowRate > 2000 then
+				newFlowRate = 2000
+			elseif newFlowRate < 0 then
+				newFlowRate = 0
+			end
+
+			turbineLastUpdate[turbineIndex] = os.time() -- Last update is now. :)
+		end -- if (rotorSpeed % 900 == 0) and (turbineTimeDiff > 0.2) then
+	end -- if turbine.getActive() then
+end -- function flowRateControl(turbineIndex)
+
+
 function main()
 	-- Load reactor parameters and initialize systems
 	loadReactorOptions()
@@ -1099,6 +1147,10 @@ function main()
 					end
 
 					if turbine.getConnected() then
+						if not turbineFlowRateOverride then
+							flowRateControl(turbineIndex)
+						end
+
 						displayTurbineBars(turbineIndex,turbineIndex+turbineMonitorOffset)
 					end
 				end -- for reactorIndex = 1, #reactorList do
