@@ -978,11 +978,17 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		end
 		xClick, yClick = 0,0
 
+		-- Check bounds [0,2000]
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		elseif newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 25 -- Don't go to zero, might as well power off
+		end
+
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
 
 		-- Save updated Turbine Flow Rate
-		baseTurbineFlowRate = newTurbineFlowRate
-		turbineFlowRate = newTurbineFlowRate
+		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
 	end -- if (xClick == 22  and yClick == 4) then
 
 	if (xClick == 28  and yClick == 4) then
@@ -993,11 +999,17 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		end
 		xClick, yClick = 0,0
 
+		-- Check bounds [0,2000]
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		elseif newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 25 -- Don't go to zero, might as well power off
+		end
+
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
 
 		-- Save updated Turbine Flow Rate
-		baseTurbineFlowRate = newTurbineFlowRate
-		turbineFlowRate = newTurbineFlowRate
+		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
 	end -- if (xClick == 28  and yClick == 4) then
 
 	print{"  Flow",22,3,monitorIndex}
@@ -1111,7 +1123,7 @@ local function flowRateControl(turbineIndex)
 	-- No point modifying control rod levels for temperature if the turbine is offline
 	if turbine.getActive() then
 		local flowRate = turbine.getFluidFlowRate()
-		local flowRateMax = math.ceil(turbine.getFluidFlowRateMax())
+		local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
 		local turbineTimeDiff = 0
 		local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 		local newFlowRate = 0
@@ -1123,11 +1135,12 @@ local function flowRateControl(turbineIndex)
 		printLog("turbineTimeDiff = "..turbineTimeDiff)
 		if (math.fmod(rotorSpeed,900) ~= 0) and (turbineTimeDiff > 0.2) then
 			-- First simple checks if we're above or below optimal
-			if (rotorSpeed < 900) or  ((rotorSpeed < 1800) and (flowRate < 2000)) then
-				newFlowRate = flowRate + flowRateAdjustAmount
+			if ((rotorSpeed < 900) and (flowRate == flowRateUserMax)) or -- Don't increment maximum if flowRate isn't keeping up with our maximum setting
+				((rotorSpeed < 1800) and (flowRateUserMax < 2000)) then
+				newFlowRate = flowRateUserMax + flowRateAdjustAmount
 			-- If we're past max optimal RPM or cannot increase flowRate, downgrade to get to 900 RPM
 			elseif (rotorSpeed > 1800) or (rotorSpeed > 900) then
-				newFlowRate = flowRate - flowRateAdjustAmount
+				newFlowRate = flowRateUserMax - flowRateAdjustAmount
 			end
 
 			-- Check bounds [0,2000]
