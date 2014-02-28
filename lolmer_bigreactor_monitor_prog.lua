@@ -911,7 +911,7 @@ local function displayAllStatus()
 		end -- if not turbine then
 
 		if turbine.getConnected() then
-			if reactor.getActive() then
+			if turbine.getActive() then
 				onlineTurbine = onlineTurbine + 1
 			end
 
