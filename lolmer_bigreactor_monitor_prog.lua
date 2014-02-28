@@ -1133,7 +1133,7 @@ local function flowRateControl(turbineIndex)
 		-- If we're outside our optimal rotor speed of 900 RPM or 1800 RPM, do something!
 		printLog("rotorspeed "..rotorSpeed.." % 900 = "..math.fmod(rotorSpeed,900))
 		printLog("turbineTimeDiff = "..turbineTimeDiff)
-		if (math.fmod(rotorSpeed,900) ~= 0) and (turbineTimeDiff > 0.1) then
+		if (math.fmod(rotorSpeed,900) ~= 0) then
 			-- First simple checks if we're above or below optimal
 			if ((rotorSpeed < 900) and (flowRate == flowRateUserMax)) or -- Don't increment maximum if flowRate isn't keeping up with our maximum setting
 				((rotorSpeed < 1800) and (flowRateUserMax < 2000)) then
