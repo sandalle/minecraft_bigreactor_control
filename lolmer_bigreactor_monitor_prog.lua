@@ -38,8 +38,14 @@ Features:
 	Will display reactor data to all attached monitors of correct dimensions.
 		For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
 		Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
-	Disable rod auto-adjust by right-clicking between the rod control buttons "<" and ">"
 	For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+
+GUI Usage:
+	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
+		"Control %" will lower/raise the Reactor Control Rods for that Reactor
+		"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+	Right-clicking between the "<" and ">" (not on) will disable auto-adjust of that value for attached device.
+	Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
 
 Default values:
 	Rod Control: 90% (Let's start off safe and then power up as we can)
@@ -66,7 +72,8 @@ Other reactor control program which I based my program on:
 	http://pastebin.com/aMAu4X5J (ScatmanJohn)
 	http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
 A simpler Big Reactor control program is available from:
-	http://pastebin.com/tFkhQLYn (IronClaymore)
+	http://pastebin.com/tFkhQLYn (IronClaymore, only for Big Reactors 0.2 or passively cooled Big Reactors in 0.3)
+	http://pastebin.com/FaccdayZ (IronClaymore's script updated by mechaet for actively cooled Big Ractors)
 
 Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
 Computercraft API: http://computercraft.info/wiki/Category:APIs
@@ -117,6 +124,7 @@ TODO:
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
+- Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
 
 ]]--
 
