@@ -11,12 +11,17 @@ This program was designed to work with the mods and versions installed on Never 
 
 To simplify the code and guesswork, I assume the following monitor layout:
 - One Advanced Monitor for overall status display plus
+
 	one or more Reactors plus
+
 	none or more Turbines.
 OR
 - One Advanced Monitor for overall status display plus (first found monitor)
+
 	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
+
 	one Advanced Monitor for each connected Turbine (last group of monitors found).
+
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
 NOTE that only one reactor and one turbine has been tested with the above, but IN THEORY any number is supported.
@@ -38,8 +43,8 @@ Features
 
 GUI Usage:
 - The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
-	"Control %" will lower/raise the Reactor Control Rods for that Reactor
-	"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+	- "Control %" will lower/raise the Reactor Control Rods for that Reactor
+	- "Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
 - Right-clicking between the "<" and ">" (not on) will disable auto-adjust of that value for attached device.
 - Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
 
