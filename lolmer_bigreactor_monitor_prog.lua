@@ -788,7 +788,7 @@ local function displayReactorBars(barParams)
 	if not reactor.isActivelyCooled() then
 		-- PaintUtils only outputs to term., not monitor.
 		-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
-		term.redirect(monitor)
+
 		-- Draw stored energy buffer bar
 		drawBar(2,8,28,8,colors.gray,monitorIndex)
 		--paintutils.drawLine(2, 8, 28, 8, colors.gray)
@@ -801,7 +801,6 @@ local function displayReactorBars(barParams)
 			--paintutils.drawPixel(2,8,colors.yellow)
 			drawBar(2,8,colors.yellow,monitorIndex)
 		end -- if curStoredEnergyPercent > 4 then
-		term.restore()
 
 		monitor.setBackgroundColor(colors.black)
 		print{"Energy Buffer",2,7,monitorIndex}
@@ -963,12 +962,17 @@ local function displayAllStatus()
 
 	print{"Reactors online/found: "..onlineReactor.."/"..#reactorList,2,3,1}
 	print{"Turbines online/found: "..onlineTurbine.."/"..#turbineList,2,4,1}
-	print{"Monitors found: "..#monitorList,2,5,1}
-	print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t",2,6,1}
-	print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,7,1}
-	print{"Steam Stored: "..math.ceil(totalSteamStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,8,1}
-	print{"Coolant Stored: "..math.ceil(totalCoolantStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,9,1}
-	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,10,1}
+
+	if totalReactorRF ~= 0 then
+		print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t",2,6,1}
+	end
+
+	if #turbineList then
+		print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,7,1}
+		print{"Steam Stored: "..math.ceil(totalSteamStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,8,1}
+		print{"Coolant Stored: "..math.ceil(totalCoolantStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,9,1}
+		print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,10,1}
+	end
 	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,11,1}
 	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..(1000000*totalEnergyStores).." RF",2,12,1}
 end -- function displayAllStatus()
@@ -1070,7 +1074,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 	-- PaintUtils only outputs to term., not monitor.
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
-	term.redirect(monitor)
+
 	-- Draw stored energy buffer bar
 	drawBar(1,8,28,8,colors.gray,monitorIndex)
 	--paintutils.drawLine(2, 8, 28, 8, colors.gray)
@@ -1083,7 +1087,6 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		--paintutils.drawPixel(2,8,colors.yellow)
 		drawBar(1,8,colors.yellow,monitorIndex)
 	end -- if curStoredEnergyPercent > 4 then
-	term.restore()
 
 	monitor.setBackgroundColor(colors.black)
 	print{"Energy Buffer",1,7,monitorIndex}
