@@ -85,6 +85,7 @@ ChangeLog:
 	Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
 	Allow for one monitor for n number of reactors and m number of turbines
 	Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
+	Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
 0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 0.3.1 - Add fuel consumption per tick to display
 0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
@@ -116,7 +117,6 @@ TODO:
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling
-- Clicks on monitors should be related to what the monitor is showing (e.g. clicking on a reactor display shouldn't modify turbine values)
 
 ]]--
 
@@ -124,7 +124,7 @@ TODO:
 -- Some global variables
 local progVer = "0.3.3"
 local progName = "EZ-NUKE ".. progVer
-local xClick, yClick = 0,0
+local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 1
 local controlRodAdjustAmount = 5 -- Default Reactor Rod Control % adjustment amount when using UI
 local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount when using UI
@@ -142,6 +142,7 @@ local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
 local autoStart = {} -- Array for automatically starting reactors
 local rodLastUpdate = {} -- Last timestamp update for rod control level update per reactor
 local monitorList = {} -- Empty monitor array
+local monitorNames = {} -- Empty array of monitor names
 local reactorList = {} -- Empty reactor array
 local turbineList = {} -- Empty turbine array
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
@@ -301,7 +302,7 @@ end -- function clearMonitor(printString, monitorIndex)
 local function getDevices(deviceType)
 	local deviceName = nil
 	local deviceIndex = 1
-	local deviceList = {} -- Empty array, which grows as we need
+	local deviceList, deviceNames = {}, {} -- Empty array, which grows as we need
 	local peripheralList = peripheral.getNames() -- Get table of connected peripherals
 
 	deviceType = deviceType:lower() -- Make sure we're matching case here
@@ -312,12 +313,13 @@ local function getDevices(deviceType)
 		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
 			-- Log devices found which match deviceType and which device index we give them
 			printLog("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] as index \"["..deviceIndex.."]\" attached as \""..peripheralList[peripheralIndex].."\".")
+			deviceNames[deviceIndex] = peripheralList[peripheralIndex]
 			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
 			deviceIndex = deviceIndex + 1
 		end
 	end -- for peripheralIndex = 1, #peripheralList do
 
-	return deviceList
+	return deviceList, deviceNames
 end -- function getDevices(deviceType)
 
 -- Draw a line across the entire x-axis
@@ -366,7 +368,7 @@ local function findMonitors()
 	monitorList = {}
 
 	printLog("Finding monitors...")
-	monitorList = getDevices("monitor")
+	monitorList, monitorNames = getDevices("monitor")
 
 	if #monitorList == 0 then
 		printLog("No monitors found!")
@@ -710,35 +712,35 @@ local function displayReactorBars(barParams)
 	-- Allow controlling Reactor Control Rod Level from GUI
 	-- Decrease rod button: 23X, 4Y
 	-- Increase rod button: 28X, 4Y
-	if (xClick == 23  and yClick == 4) then
+	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Decrease rod level by amount
 		newRodPercentage = rodPercentage - controlRodAdjustAmount
 		if newRodPercentage < 0 then
 			newRodPercentage = 0
 		end
-		xClick, yClick = 0,0
+		sideClick, xClick, yClick = 0, 0, 0
 
 		reactor.setAllControlRodLevels(newRodPercentage)
 
 		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
 		rodPercentage = newRodPercentage
-	end -- if (xClick == 23  and yClick == 4) then
+	end -- if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
-	if (xClick == 28  and yClick == 4) then
+	if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Increase rod level by amount
 		newRodPercentage = rodPercentage + controlRodAdjustAmount
 		if newRodPercentage > 100 then
 			newRodPercentage = 100
 		end
-		xClick, yClick = 0,0
+		sideClick, xClick, yClick = 0, 0, 0
 
 		reactor.setAllControlRodLevels(newRodPercentage)
 
 		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
 		rodPercentage = newRodPercentage
-	end -- if (xClick == 28  and yClick == 4) then
+	end -- if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"Control",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
@@ -841,23 +843,23 @@ local function reactorStatus(statusParams)
 			monitor.setTextColor(colors.red)
 		end -- if reactor.getActive() then
 
-		if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
+		if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 			if yClick == 1 then
 				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
-				xClick, yClick = 0,0 -- Reset click after we register it
+				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 
 				-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
 				if not reactor.getActive() then
 					autoStart[reactorIndex] = false
 				end
 			end -- if yClick == 1 then
-		end -- if(xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) then
+		end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
 		-- Allow disabling rod level auto-adjust and only manual rod level control
-		if (xClick > 23 and xClick < 28) and yClick == 4 then
+		if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 			reactorRodOverride = not reactorRodOverride -- Toggle reactor rod override status
-			xClick, yClick = 0,0 -- Reset click after we register it
-		end
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+		end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	else
 		reactorStatus = "DISCONNECTED"
@@ -965,13 +967,13 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	-- Decrease flow rate button: 22X, 4Y
 	-- Increase flow rate button: 28X, 4Y
 	local turbineFlowRate = math.ceil(turbine.getFluidFlowRateMax())
-	if (xClick == 22  and yClick == 4) then
+	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Decrease rod level by amount
 		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
 		if newTurbineFlowRate < 0 then
 			newTurbineFlowRate = 0
 		end
-		xClick, yClick = 0,0
+		sideClick, xClick, yClick = 0, 0, 0
 
 		-- Check bounds [0,2000]
 		if newTurbineFlowRate > 2000 then
@@ -984,15 +986,15 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 		-- Save updated Turbine Flow Rate
 		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
-	end -- if (xClick == 22  and yClick == 4) then
+	end -- if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
-	if (xClick == 28  and yClick == 4) then
+	if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Increase rod level by amount
 		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
 		end
-		xClick, yClick = 0,0
+		sideClick, xClick, yClick = 0, 0, 0
 
 		-- Check bounds [0,2000]
 		if newTurbineFlowRate > 2000 then
@@ -1005,7 +1007,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 		-- Save updated Turbine Flow Rate
 		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
-	end -- if (xClick == 28  and yClick == 4) then
+	end -- if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"  Flow",22,3,monitorIndex}
 	print{"<     >",22,4,monitorIndex}
@@ -1082,17 +1084,17 @@ local function turbineStatus(turbineIndex, monitorIndex)
 			monitor.setTextColor(colors.red)
 		end -- if turbine.getActive() then
 
-		if(xClick >= (width - string.len(turbineStatus) - 1) and xClick <= (width-1)) then
+		if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 			if yClick == 1 then
 				turbine.setActive(not turbine.getActive()) -- Toggle turbine status
-				xClick, yClick = 0,0 -- Reset click after we register it
+				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 			end -- if yClick == 1 then
-		end -- if(xClick >= (width - string.len(turbineStatus) - 1) and xClick <= (width-1)) then
+		end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
 		-- Allow disabling rod level auto-adjust and only manual rod level control
-		if (xClick > 23 and xClick < 28) and yClick == 4 then
+		if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 			turbineFlowRateOverride = not turbineFlowRateOverride -- Toggle turbine rod override status
-			xClick, yClick = 0,0 -- Reset click after we register it
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
 
 	else
@@ -1253,8 +1255,8 @@ local function eventHandler()
 		event, arg1, arg2, arg3 = os.pullEvent()
 
 		if event == "monitor_touch" then
-			xClick, yClick = math.floor(arg2), math.floor(arg3)
-			--printLog("Monitor touch X: "..xClick.." Y: "..yClick)
+			sideClick, xClick, yClick = arg1, math.floor(arg2), math.floor(arg3)
+			printLog("Side: "..arg1.." Monitor touch X: "..xClick.." Y: "..yClick)
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
 			if ch == "q" then

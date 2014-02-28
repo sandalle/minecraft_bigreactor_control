@@ -86,7 +86,7 @@ Resources
 
 ChangeLog
 ============================
-- 0.3.2
+- 0.3.3
 	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 	- Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
@@ -96,6 +96,10 @@ ChangeLog
 	- Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
 	- Allow for one monitor for n number of reactors and m number of turbines
 	- Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
+	- Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
+
+- 0.3.2
+	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 
 - 0.3.1
 	- Add fuel consumption per tick to display
@@ -140,4 +144,3 @@ TODO
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling
-- Clicks on monitors should be related to what the monitor is showing (e.g. clicking on a reactor display shouldn't modify turbine values)
