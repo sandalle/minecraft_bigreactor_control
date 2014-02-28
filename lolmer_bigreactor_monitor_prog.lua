@@ -727,7 +727,7 @@ local function displayReactorBars(barParams)
 		rodPercentage = newRodPercentage
 	end -- if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
-	if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+	if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Increase rod level by amount
 		newRodPercentage = rodPercentage + controlRodAdjustAmount
 		if newRodPercentage > 100 then
@@ -740,7 +740,7 @@ local function displayReactorBars(barParams)
 		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
 		rodPercentage = newRodPercentage
-	end -- if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"Control",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
@@ -987,7 +987,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
 	end -- if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
-	if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+	if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Increase rod level by amount
 		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
 		if newTurbineFlowRate > 2000 then
@@ -1006,7 +1006,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 		-- Save updated Turbine Flow Rate
 		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
-	end -- if (xClick == 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"  Flow",22,3,monitorIndex}
 	print{"<     >",22,4,monitorIndex}
