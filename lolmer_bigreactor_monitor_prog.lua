@@ -680,8 +680,6 @@ local function displayReactorBars(barParams)
 		return -- Invalid reactorIndex
 	end
 
-    local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
-
 	-- Draw border lines
 	monitor.setBackgroundColor(colors.black)
 	local width, height = monitor.getSize()
@@ -797,6 +795,8 @@ local function displayReactorBars(barParams)
 	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
 
+    local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
+
 	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %",2,10,monitorIndex}
 	print{"Consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,11,monitorIndex}
 	print{"Rods: "..(numRods + 1),2,12,monitorIndex} -- numRods index starts at 0
@@ -829,8 +829,6 @@ local function reactorStatus(statusParams)
 
 	local width, height = monitor.getSize()
 	local reactorStatus = ""
-
-    local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	if reactor.getConnected() then
 		if reactor.getActive() then
@@ -1040,6 +1038,59 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 end -- function displayTurbineBars(statusParams)
 
 
+-- Display turbine status
+local function turbineStatus(turbineIndex, monitorIndex)	
+	-- Grab current monitor
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in turbineStatus() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current turbine
+	local turbine = nil
+	turbine = turbineList[turbineIndex]
+	if not turbine then
+		printLog("turbineList["..turbineIndex.."] in turbineStatus() was not a valid Big Turbine")
+		return -- Invalid turbineIndex
+	end
+
+	local width, height = monitor.getSize()
+	local turbineStatus = ""
+
+	if turbine.getConnected() then
+		if turbine.getActive() then
+			turbineStatus = "ONLINE"
+			monitor.setTextColor(colors.green)
+		else
+			turbineStatus = "OFFLINE"
+			monitor.setTextColor(colors.red)
+		end -- if turbine.getActive() then
+
+		if(xClick >= (width - string.len(turbineStatus) - 1) and xClick <= (width-1)) then
+			if yClick == 1 then
+				turbine.setActive(not turbine.getActive()) -- Toggle turbine status
+				xClick, yClick = 0,0 -- Reset click after we register it
+			end -- if yClick == 1 then
+		end -- if(xClick >= (width - string.len(turbineStatus) - 1) and xClick <= (width-1)) then
+
+		-- Allow disabling rod level auto-adjust and only manual rod level control
+		if (xClick > 23 and xClick < 28) and yClick == 4 then
+			turbineFlowRateOverride = not turbineFlowRateOverride -- Toggle turbine rod override status
+			xClick, yClick = 0,0 -- Reset click after we register it
+		end
+
+	else
+		turbineStatus = "DISCONNECTED"
+		monitor.setTextColor(colors.red)
+	end -- if turbine.getConnected() then
+
+	print{turbineStatus, width - string.len(turbineStatus) - 1, 1, monitorIndex}
+	monitor.setTextColor(colors.white)
+end -- function function turbineStatus(turbineIndex, monitorIndex)
+
+
 -- Maintain Turbine flow rate at 900 or 1,800 RPM
 local function flowRateControl(turbineIndex)
 	-- Grab current turbine
@@ -1116,7 +1167,7 @@ function main()
 					clearMonitor(progName, monitorIndex) -- Clear monitor and draw borders
 					printCentered(progName, 1, monitorIndex)
 
-					-- Display reactor status, includes "Disconnected" reactors
+					-- Display reactor status, includes "Disconnected" but found reactors
 					reactorStatus{reactorIndex, monitorIndex}
 
 					reactor = reactorList[reactorIndex]
@@ -1148,8 +1199,12 @@ function main()
 
 				-- Monitors for turbines start after turbineMonitorOffset
 				for turbineIndex = 1, #turbineList do
-					clearMonitor(progName, turbineIndex+turbineMonitorOffset) -- Clear monitor and draw borders
-					printCentered(progName, 1, turbineIndex+turbineMonitorOffset)
+					local turbineMonitorIndex = turbineIndex+turbineMonitorOffset
+					clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
+					printCentered(progName, 1, turbineMonitorIndex)
+
+					-- Display turbine status, includes "Disconnected" but found turbines
+					turbineStatus(turbineIndex, turbineMonitorIndex)
 
 					turbine = turbineList[turbineIndex]
 					if not turbine then
@@ -1162,7 +1217,7 @@ function main()
 							flowRateControl(turbineIndex)
 						end
 
-						displayTurbineBars(turbineIndex,turbineIndex+turbineMonitorOffset)
+						displayTurbineBars(turbineIndex,turbineMonitorIndex)
 					end
 				end -- for reactorIndex = 1, #reactorList do
 			end -- if #reactorList > 1 and monitorIndex == 1 then
