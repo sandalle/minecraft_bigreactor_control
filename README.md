@@ -95,6 +95,7 @@ ChangeLog
 	- Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
 	- Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
 	- Allow for one monitor for n number of reactors and m number of turbines
+	- Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
 
 - 0.3.1
 	- Add fuel consumption per tick to display

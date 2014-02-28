@@ -84,6 +84,7 @@ ChangeLog:
 	Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
 	Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
 	Allow for one monitor for n number of reactors and m number of turbines
+	Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
 0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 0.3.1 - Add fuel consumption per tick to display
 0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
@@ -130,8 +131,8 @@ local progVer = "0.3.3"
 local progName = "EZ-NUKE ".. progVer
 local xClick, yClick = 0,0
 local loopTime = 1
-local controlRodAdjustAmount = 5 -- Default Reactor Rod Control adjustment amount when using UI
-local flowRateAdjustAmount = 100 -- Default Turbine Flow Rate adjustment amount when using UI
+local controlRodAdjustAmount = 5 -- Default Reactor Rod Control % adjustment amount when using UI
+local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount when using UI
 local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
@@ -470,7 +471,7 @@ local function findTurbines()
 
 	if #newTurbineList == 0 then
 		printLog("No turbines found") -- Not an error
-	else  -- Placeholder
+	else
 		for turbineIndex = 1, #newTurbineList do
 			local turbine = nil
 			turbine = newTurbineList[turbineIndex]
@@ -480,9 +481,11 @@ local function findTurbines()
 				return -- Invalid turbineIndex
 			end
 
-			-- Initialize turbine flow rate timestamp if number of reactors has changed or initial startup
-			turbineLastUpdate[turbineIndex] = os.time()
-
+			-- If number of found turbines changed, re-initialize them all for now
+			if #newTurbineList ~= #turbineList then
+				-- Initialize turbine flow rate timestamp if number of reactors has changed or initial startup
+				turbineLastUpdate[turbineIndex] = os.time()
+			end -- if #newTurbineList ~= #turbineList then
 		end -- for turbineIndex = 1, #newTurbineList do
 
 		-- Overwrite old turbine list with the now updated list
@@ -1113,11 +1116,14 @@ local function flowRateControl(turbineIndex)
 		turbineTimeDiff = math.abs(os.time() - turbineLastUpdate[turbineIndex]) -- Difference in turbine flow rate update timestamp and now
 
 		-- If we're outside our optimal rotor speed of 900 RPM or 1800 RPM, do something!
+		printLog("rotorspeed "..rotorSpeed.." % 900 = "..math.fmod(rotorSpeed,900))
+		printLog("turbineTimeDiff = "..turbineTimeDiff)
 		if (math.fmod(rotorSpeed,900) ~= 0) and (turbineTimeDiff > 0.2) then
 			-- First simple checks if we're above or below optimal
-			if rotorSpeed < 900 then
+			if (rotorSpeed < 900) or  ((rotorSpeed < 1800) and (flowRate < 2000)) then
 				newFlowRate = flowRate + flowRateAdjustAmount
-			elseif rotorSpeed > 1800 then
+			-- If we're past max optimal RPM or cannot increase flowRate, downgrade to get to 900 RPM
+			elseif (rotorSpeed > 1800) or (rotorSpeed > 900) then
 				newFlowRate = flowRate - flowRateAdjustAmount
 			end
 
@@ -1125,9 +1131,10 @@ local function flowRateControl(turbineIndex)
 			if newFlowRate > 2000 then
 				newFlowRate = 2000
 			elseif newFlowRate < 0 then
-				newFlowRate = 0
+				newFlowRate = 25 -- Don't go to zero, might as well power off
 			end
 
+			turbine.setFluidFlowRateMax(newFlowRate)
 			turbineLastUpdate[turbineIndex] = os.time() -- Last update is now. :)
 		end -- if (rotorSpeed % 900 == 0) and (turbineTimeDiff > 0.2) then
 	end -- if turbine.getActive() then
