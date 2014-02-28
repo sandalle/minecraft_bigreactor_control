@@ -707,10 +707,6 @@ local function displayReactorBars(barParams)
 	print{fuelString,2,3,monitorIndex}
 	print{fuelPercentage.." %",padding+2,3,monitorIndex}
 
-	local energyBuffer = reactor.getEnergyProducedLastTick()
-	print{energyBufferString,2,4,monitorIndex}
-	print{math.ceil(energyBuffer).." RF/t",padding+2,4,monitorIndex}
-
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 	print{tempString,2,5,monitorIndex}
 	print{reactorTemp.." C",padding+2,5,monitorIndex}
@@ -754,6 +750,10 @@ local function displayReactorBars(barParams)
 	print{rodPercentage,25,4,monitorIndex}
 	print{"percent",23,5,monitorIndex}
 
+	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
+	local energyBuffer = reactor.getEnergyProducedLastTick()
+	print{energyBufferString,2,4,monitorIndex}
+
 	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
 	-- still uses getEnergyProducedLastTick for mB/t of hot fluid generated
 	if not reactor.isActivelyCooled() then
@@ -779,10 +779,13 @@ local function displayReactorBars(barParams)
 		print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
 		print{"%",28,7,monitorIndex}
 		monitor.setBackgroundColor(colors.black)
+
+		print{math.ceil(energyBuffer).." RF/t",padding+2,4,monitorIndex}
 	else
-		print{"Steam: "..reactor.getEnergyProducedLastTick().." mB / t",2,7,monitorIndex}
+		print{math.ceil(energyBuffer).." mB/t",padding+2,4,monitorIndex}
 		-- display hot fluid produced
-	end
+	end -- if not reactor.isActivelyCooled() then
+
 	-- Print rod override status
 	local reactorRodOverrideStatus = ""
 
