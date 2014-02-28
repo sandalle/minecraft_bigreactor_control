@@ -135,11 +135,8 @@ ChangeLog
 
 TODO
 ============================
-- Support multiple reactors
-	- If multiple reactors, require a monitor for each reactor and display only that reactor on a monitor
-	- Save parameters per reactor instead of one global set for all reactors
-	- Allow for a monitor (first monitor would be good) to display compressed info from all reactors (Rhonyn)
+- Save parameters per reactor instead of one global set for all reactors
 - Add min/max RF/t output and have it override temperature concerns (maybe?)
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-- Add BR 0.3 active-cooled Turbine control support
+- Lookup using pcall for better error handling
