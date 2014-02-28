@@ -1009,8 +1009,8 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"  Flow",22,3,monitorIndex}
-	print{"<     >",22,4,monitorIndex}
-	print{turbineFlowRate,24,4,monitorIndex}
+	print{"<      >",22,4,monitorIndex}
+	print{turbineFlowRate,23,4,monitorIndex}
 	print{"  mB/t",22,5,monitorIndex}
 
 	local rotorSpeedString = "Speed: "
