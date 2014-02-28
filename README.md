@@ -26,7 +26,7 @@ If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
 Notes
 ----------------------------
-- Only one reactor and one and two turbines have been tested with the above, but IN THEORY any number is supported.
+- Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
 - Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
 
 When using actively cooled reactors with turbines, keep the following in mind:
