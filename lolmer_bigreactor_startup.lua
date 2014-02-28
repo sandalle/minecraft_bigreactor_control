@@ -1,6 +1,6 @@
 --[[
 	Programmer: Lolmer
-	Last update: 2014-02-24
+	Last update: 2014-02-28
 	Pastebin: http://pastebin.com/ZTMzRLez
 
 	Description:
@@ -38,9 +38,5 @@ os.setComputerLabel("ReactorControl")
 shell.run("rm", "reactorcontrol")
 -- Download http://pastebin.com/fguScPBQ and name "reactorcontrol"
 shell.run("pastebin", "get", "fguScPBQ", "reactorcontrol")
-
--- Remove any prior, possibly old, versions of "FC_API"
--- No longer used
-shell.run("rm", "FC_API")
 
 shell.run("reactorcontrol")
