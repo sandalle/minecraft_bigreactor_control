@@ -23,6 +23,8 @@ To simplify the code and guesswork, I assume the following monitor layout:
 	one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
+NOTE that only one reactor and one turbine has been tested with the above, but IN THEORY any number is supported.
+
 When using actively cooled reactors with turbines, keep the following in mind:
 	- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
 	- Actively cooled reactors produce steam, not power.
