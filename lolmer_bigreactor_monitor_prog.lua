@@ -2,7 +2,7 @@
 Program name: Lolmer's EZ-NUKE reactor control system
 Version: v0.3.3
 Programmer: Lolmer
-Last update: 2014-02-25
+Last update: 2014-02-28
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -913,7 +913,7 @@ local function displayAllStatus()
 	local onlineReactor, onlineTurbine = 0, 0
 	local totalReactorRF, totalReactorSteam, totalTurbineRF = 0, 0, 0
 	local totalReactorFuelConsumed = 0
-	local totalEnergy, totalEnergyStores = 0, 0 -- Total turbine and reactor energy buffer and overall capacity
+	local totalCoolantStored, totalSteamStored, totalEnergy, totalEnergyStores = 0, 0, 0, 0 -- Total turbine and reactor energy buffer and overall capacity
 
 	for reactorIndex = 1, #reactorList do
 		reactor = reactorList[reactorIndex]
@@ -935,6 +935,8 @@ local function displayAllStatus()
 				totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
 			else
 				totalReactorSteam = totalReactorSteam + reactor.getEnergyProducedLastTick()
+				totalSteamStored = totalSteamStored + reactor.getHotFluidAmount()
+				totalCoolantStored = totalCoolantStored + reactor.getCoolantAmount()
 			end -- if not reactor.isActivelyCooled() then
 		end -- if reactor.getConnected() then
 	end -- for reactorIndex = 1, #reactorList do
@@ -954,6 +956,8 @@ local function displayAllStatus()
 			totalEnergyStores = totalEnergyStores + 1
 			totalEnergy = totalEnergy + turbine.getEnergyStored()
 			totalTurbineRF = totalTurbineRF + turbine.getEnergyProducedLastTick()
+			totalSteamStored = totalSteamStored + turbine.getInputAmount()
+			totalCoolantStored = totalCoolantStored + turbine.getOutputAmount()
 		end -- if turbine.getConnected() then
 	end -- for turbineIndex = 1, #turbineList do
 
@@ -962,8 +966,10 @@ local function displayAllStatus()
 	print{"Monitors found: "..#monitorList,2,5,1}
 	print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t",2,6,1}
 	print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,7,1}
-	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,8,1}
-	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,9,1}
+	print{"Steam Stored: "..math.ceil(totalSteamStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,8,1}
+	print{"Coolant Stored: "..math.ceil(totalCoolantStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,9,1}
+	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,10,1}
+	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,11,1}
 	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..(1000000*totalEnergyStores).." RF",2,12,1}
 end -- function displayAllStatus()
 
