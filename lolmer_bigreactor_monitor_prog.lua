@@ -286,8 +286,10 @@ local function printCentered(printString, yPos, monitorIndex)
 		-- Add monitor name to first line
 		monitorNameLength = monitorNames[monitorIndex]:len()
 
-		-- Leave room for "offline" and "online" on the right
-		width = width - 7
+		-- Leave room for "offline" and "online" on the right except for overall status display
+		if (#monitorList ~= 1) and (monitorIndex ~= 1) then
+			width = width - 7
+		end
 	end
 
 	monitor.setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) +  monitorNameLength/2, yPos)
@@ -1223,8 +1225,8 @@ function main()
 			-- or for multiple reactors/turbines and only one monitor
 			if (((#reactorList + #turbineList) > 1) and (#monitorList > 1) and (monitorIndex == 1)) or
 				(((#reactorList + #turbineList) > 1) and (#monitorList == 1)) then
-				clearMonitor(progName, monitorIndex) -- Clear monitor and draw borders
-				printCentered(progName, 1, monitorIndex)
+				clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
+				printCentered(progName.." "..progVer, 1, monitorIndex)
 				displayAllStatus()
 			elseif debugMode and (monitorIndex == #monitorList) then
 				break -- We're using this monitor for debug info
