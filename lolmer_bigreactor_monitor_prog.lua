@@ -780,7 +780,6 @@ local function displayReactorBars(barParams)
 		print{math.ceil(energyBuffer).." RF/t",padding+2,4,monitorIndex}
 	else
 		print{math.ceil(energyBuffer).." mB/t",padding+2,4,monitorIndex}
-		-- display hot fluid produced
 	end -- if not reactor.isActivelyCooled() then
 
 	-- Print rod override status
@@ -1050,6 +1049,22 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{"%",28,7,monitorIndex}
 	monitor.setBackgroundColor(colors.black)
 
+	-- Print rod override status
+	local turbineFlowRateOverrideStatus = ""
+
+	print{"Flow Auto-adjust:",2,10,monitorIndex}
+
+	if not turbineFlowRateOverride then
+		turbineFlowRateOverrideStatus = "Enabled"
+		monitor.setTextColor(colors.green)
+	else
+		turbineFlowRateOverrideStatus = "Disabled"
+		monitor.setTextColor(colors.red)
+	end -- if not reactorRodOverride then
+
+	print{turbineFlowRateOverrideStatus, width - string.len(turbineFlowRateOverrideStatus) - 1, 10, monitorIndex}
+	monitor.setTextColor(colors.white)
+
 	-- Need equation to figure out rotor efficiency and display
 end -- function displayTurbineBars(statusParams)
 
@@ -1091,7 +1106,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 			end -- if yClick == 1 then
 		end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
-		-- Allow disabling rod level auto-adjust and only manual rod level control
+		-- Allow disabling/enabling flow rate auto-adjust
 		if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 			turbineFlowRateOverride = not turbineFlowRateOverride -- Toggle turbine rod override status
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
