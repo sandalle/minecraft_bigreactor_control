@@ -928,7 +928,7 @@ local function displayAllStatus()
 	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,7,1}
 	print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,8,1}
 	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,9,1}
-	print{"Buffer: "..totalEnergy.."/"..(1000000*totalEnergyStores).." RF",2,12,1}
+	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..(1000000*totalEnergyStores).." RF",2,12,1}
 end -- function displayAllStatus()
 
 
