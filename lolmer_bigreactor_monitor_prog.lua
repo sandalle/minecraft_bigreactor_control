@@ -77,12 +77,13 @@ Big Reactors API: http://big-reactors.com/cc_api.html
 ChangeLog:
 0.3.3 - Add Big Reactor Turbine support
 	First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
-	Display monitor number i top left of each monitor as "M#" to help find which monitor is which.
+	Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
 	Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
 	Add monitor layout requirements to simplify code
 	Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
 	Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
 	Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
+	Allow for one monitor for n number of reactors and m number of turbines
 0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 0.3.1 - Add fuel consumption per tick to display
 0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
@@ -777,6 +778,7 @@ local function displayReactorBars(barParams)
 		print{"%",28,7,monitorIndex}
 		monitor.setBackgroundColor(colors.black)
 	else
+		print{"Steam: "..reactor.getEnergyProducedLastTick().." mB / t",2,7,monitorIndex}
 		-- display hot fluid produced
 	end
 	-- Print rod override status
@@ -872,7 +874,7 @@ end -- function reactorStatus(statusParams)
 local function displayAllStatus()
 	local reactor, turbine = nil, nil
 	local onlineReactor, onlineTurbine = 0, 0
-	local totalReactorRF, totalTurbineRF = 0, 0
+	local totalReactorRF, totalReactorSteam, totalTurbineRF = 0, 0, 0
 	local totalReactorFuelConsumed = 0
 	local totalEnergy, totalEnergyStores = 0, 0 -- Total turbine and reactor energy buffer and overall capacity
 
@@ -894,6 +896,8 @@ local function displayAllStatus()
 				totalEnergyStores = totalEnergyStores + 1
 				totalEnergy = totalEnergy + reactor.getEnergyStored()
 				totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
+			else
+				totalReactorSteam = totalReactorSteam + reactor.getEnergyProducedLastTick()
 			end -- if not reactor.isActivelyCooled() then
 		end -- if reactor.getConnected() then
 	end -- for reactorIndex = 1, #reactorList do
@@ -921,7 +925,8 @@ local function displayAllStatus()
 	print{"Monitors found: "..#monitorList,2,5,1}
 	print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t",2,6,1}
 	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,7,1}
-	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,8,1}
+	print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,8,1}
+	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,9,1}
 	print{"Buffer: "..totalEnergy.."/"..(1000000*totalEnergyStores).." RF",2,12,1}
 end -- function displayAllStatus()
 

@@ -89,11 +89,12 @@ ChangeLog
 - 0.3.2
 	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
-	- Display monitor number i top left of each monitor as "M#" to help find which monitor is which.
+	- Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
 	- Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
 	- Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
 	- Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
 	- Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
+	- Allow for one monitor for n number of reactors and m number of turbines
 
 - 0.3.1
 	- Add fuel consumption per tick to display
