@@ -87,7 +87,7 @@ Resources
 ChangeLog
 ============================
 - 0.3.3
-	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
+	- Add Big Reactors Turbine support.
 	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 	- Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
 	- Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
@@ -143,4 +143,4 @@ TODO
 - Add min/max RF/t output and have it override temperature concerns (maybe?)
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-- Lookup using pcall for better error handling
+- Lookup using pcall for better error handling - http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
