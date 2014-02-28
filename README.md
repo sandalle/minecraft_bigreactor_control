@@ -140,3 +140,4 @@ TODO
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling
+- Clicks on monitors should be related to what the monitor is showing (e.g. clicking on a reactor display shouldn't modify turbine values)
