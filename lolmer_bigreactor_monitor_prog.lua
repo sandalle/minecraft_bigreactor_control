@@ -15,11 +15,12 @@ http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
 Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
 To simplify the code and guesswork, I assume the following monitor layout:
-1) One reactor with one or more Advanced Monitors (all monitors display the same info).
-	OR
+1) One Advanced Monitor for overall status display plus
+	one or more Reactors plus
+	none or more Turbines.
 2) One Advanced Monitor for overall status display plus (first found monitor)
-   one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
-   one Advanced Monitor for each connected Turbine (last group of monitors found).
+	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
+	one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
 When using actively cooled reactors with turbines, keep the following in mind:
@@ -1088,7 +1089,9 @@ function main()
 		-- Loop through found monitors
 		for monitorIndex = 1, #monitorList do
 			-- For multiple reactors/monitors, monitor #1 is reserved for overall status
-			if ((#reactorList + #turbineList) > 1) and (#monitorList > 1) and (monitorIndex == 1) then
+			-- or for multiple reactors/turbines and only one monitor
+			if (((#reactorList + #turbineList) > 1) and (#monitorList > 1) and (monitorIndex == 1)) or
+				(((#reactorList + #turbineList) > 1) and (#monitorList == 1)) then
 				clearMonitor(progName, monitorIndex) -- Clear monitor and draw borders
 				printCentered(progName, 1, monitorIndex)
 				displayAllStatus()

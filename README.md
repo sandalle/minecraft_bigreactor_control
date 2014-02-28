@@ -10,7 +10,9 @@ This program was designed to work with the mods and versions installed on Never 
 - Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
 To simplify the code and guesswork, I assume the following monitor layout:
-- One reactor with one Advanced Monitor.
+- One Advanced Monitor for overall status display plus
+	one or more Reactors plus
+	none or more Turbines.
 OR
 - One Advanced Monitor for overall status display plus (first found monitor)
 	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
