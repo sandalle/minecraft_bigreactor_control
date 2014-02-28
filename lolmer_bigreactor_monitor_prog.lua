@@ -1248,13 +1248,11 @@ end -- main()
 
 local function eventHandler()
 	while not finished do
+		-- http://computercraft.info/wiki/Os.pullEvent
+		-- http://www.computercraft.info/forums2/index.php?/topic/1516-ospullevent-what-is-it-and-how-is-it-useful/
 		event, arg1, arg2, arg3 = os.pullEvent()
 
 		if event == "monitor_touch" then
-			xClick, yClick = math.floor(arg2), math.floor(arg3)
-			--printLog("Monitor touch X: "..xClick.." Y: "..yClick)
-		-- What is this even for if we aren't looking for a monitor?
-		elseif event == "mouse_click" then -- and not monitorList[monitorIndex] then
 			xClick, yClick = math.floor(arg2), math.floor(arg3)
 			--printLog("Monitor touch X: "..xClick.." Y: "..yClick)
 		elseif event == "char" and not inManualMode then
