@@ -24,7 +24,10 @@ OR
 
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
-NOTE that only one reactor and one turbine has been tested with the above, but IN THEORY any number is supported.
+Notes
+----------------------------
+- Only one reactor and one and two turbines have been tested with the above, but IN THEORY any number is supported.
+- Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
 
 When using actively cooled reactors with turbines, keep the following in mind:
 - 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
@@ -41,7 +44,8 @@ Features
 	- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
 	- Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
 
-GUI Usage:
+GUI Usage
+----------------------------
 - The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 	- "Control %" will lower/raise the Reactor Control Rods for that Reactor
 	- "Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
@@ -110,6 +114,8 @@ ChangeLog
 	- Allow for one monitor for n number of reactors and m number of turbines
 	- Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
 	- Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
+	- Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
+	- Remove version number from monitors to free up space for monitor names.
 
 - 0.3.2
 	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)

@@ -23,7 +23,9 @@ To simplify the code and guesswork, I assume the following monitor layout:
 	one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
-NOTE that only one reactor and one turbine has been tested with the above, but IN THEORY any number is supported.
+Notes:
+	Only one reactor and one and two turbines have been tested with the above, but IN THEORY any number is supported.
+	Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
 
 When using actively cooled reactors with turbines, keep the following in mind:
 	- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
@@ -93,6 +95,8 @@ ChangeLog:
 	Allow for one monitor for n number of reactors and m number of turbines
 	Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
 	Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
+	Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
+	Remove version number from monitors to free up space for monitor names.
 0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 0.3.1 - Add fuel consumption per tick to display
 0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
@@ -131,7 +135,7 @@ TODO:
 
 -- Some global variables
 local progVer = "0.3.3"
-local progName = "EZ-NUKE ".. progVer
+local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 1
 local controlRodAdjustAmount = 5 -- Default Reactor Rod Control % adjustment amount when using UI
@@ -152,7 +156,9 @@ local rodLastUpdate = {} -- Last timestamp update for rod control level update p
 local monitorList = {} -- Empty monitor array
 local monitorNames = {} -- Empty array of monitor names
 local reactorList = {} -- Empty reactor array
+local reactorNames = {} -- Empty array of reactor names
 local turbineList = {} -- Empty turbine array
+local trubineNames = {} -- Empty array of turbine names
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 local turbineLastUpdate = {} -- Last timestamp update for turbine flow rate update per turbine
 
@@ -273,10 +279,24 @@ local function printCentered(printString, yPos, monitorIndex)
 	end
 
 	local width, height = monitor.getSize()
-	monitor.setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) , yPos)
+	local monitorNameLength = 0
+
+	-- Special changes for title bar
+	if yPos == 1 then
+		-- Add monitor name to first line
+		monitorNameLength = monitorNames[monitorIndex]:len()
+
+		-- Leave room for "offline" and "online" on the right
+		width = width - 7
+	end
+
+	monitor.setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) +  monitorNameLength/2, yPos)
 	monitor.clearLine()
 	monitor.write(printString)
-	print{"M"..monitorIndex, 1, 1, monitorIndex}
+
+	monitor.setTextColor(colors.blue)
+	print{monitorNames[monitorIndex], 1, 1, monitorIndex}
+	monitor.setTextColor(colors.white)
 end -- function printCentered(printString, yPos, monitorIndex)
 
 
@@ -295,7 +315,9 @@ local function clearMonitor(printString, monitorIndex)
 	local width, height = monitor.getSize()
 
 	printCentered(printString, 1, monitorIndex)
-	print{"M"..monitorIndex, 1, 1, monitorIndex}
+	monitor.setTextColor(colors.blue)
+	print{monitorNames[monitorIndex], 1, 1, monitorIndex}
+	monitor.setTextColor(colors.white)
 
 	for i=1, width do
 		monitor.setCursorPos(i, gap)
@@ -423,7 +445,7 @@ local function findReactors()
 	newReactorList = {}
 
 	printLog("Finding reactors...")
-	newReactorList = getDevices("BigReactors-Reactor")
+	newReactorList, reactorNames = getDevices("BigReactors-Reactor")
 
 	if #newReactorList == 0 then
 		printLog("No reactors found!")
@@ -472,7 +494,7 @@ local function findTurbines()
 	newTurbineList = {}
 
 	printLog("Finding turbines...")
-	newTurbineList = getDevices("BigReactors-Turbine")
+	newTurbineList, turbineNames = getDevices("BigReactors-Turbine")
 
 	if #newTurbineList == 0 then
 		printLog("No turbines found") -- Not an error
@@ -808,10 +830,14 @@ local function displayReactorBars(barParams)
 
     local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
-	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %",2,10,monitorIndex}
-	print{"Consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,11,monitorIndex}
-	print{"Rods: "..(numRods + 1),2,12,monitorIndex} -- numRods index starts at 0
-	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),12,monitorIndex}
+	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %",2,9,monitorIndex}
+	print{"Consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,10,monitorIndex}
+	print{"Rods: "..(numRods + 1),2,11,monitorIndex} -- numRods index starts at 0
+	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),11,monitorIndex}
+
+	monitor.setTextColor(colors.blue)
+	printCentered(reactorNames[reactorIndex],12,monitorIndex)
+	monitor.setTextColor(colors.white)
 end -- function displayReactorBars(barParams)
 
 
@@ -933,8 +959,8 @@ local function displayAllStatus()
 	print{"Turbines online/found: "..onlineTurbine.."/"..#turbineList,2,4,1}
 	print{"Monitors found: "..#monitorList,2,5,1}
 	print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t",2,6,1}
-	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,7,1}
-	print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,8,1}
+	print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,7,1}
+	print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,8,1}
 	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,9,1}
 	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..(1000000*totalEnergyStores).." RF",2,12,1}
 end -- function displayAllStatus()
@@ -1071,6 +1097,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end -- if not reactorRodOverride then
 
 	print{turbineFlowRateOverrideStatus, width - string.len(turbineFlowRateOverrideStatus) - 1, 10, monitorIndex}
+	monitor.setTextColor(colors.white)
+
+	monitor.setTextColor(colors.blue)
+	printCentered(turbineNames[turbineIndex],12,monitorIndex)
 	monitor.setTextColor(colors.white)
 
 	-- Need equation to figure out rotor efficiency and display
