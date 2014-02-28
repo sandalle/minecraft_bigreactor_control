@@ -120,6 +120,7 @@ TODO:
 	Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 	Add BR 0.3 active-cooled Turbine control support (see https://twitter.com/ErogenousBeef/status/437663302403891200/photo/1/large)
 	Add fuel reactivity to reactor display
+	Lookup using pcall for better error handling
 
 ]]--
 
@@ -1233,25 +1234,22 @@ local function eventHandler()
 	while not finished do
 		event, arg1, arg2, arg3 = os.pullEvent()
 
-		for monitorIndex = 1, #monitorList do
-			if event == "monitor_touch" then
-				xClick, yClick = math.floor(arg2), math.floor(arg3)
-				-- Draw debug stuff
-				--print{"Monitor touch X: "..xClick.." Y: "..yClick, 1, 10, monitorIndex}
-			-- What is this even for if we aren't looking for a monitor?
-			elseif event == "mouse_click" and not monitorList[monitorIndex] then
-				xClick, yClick = math.floor(arg2), math.floor(arg3)
-				--print{"Mouse click X: "..xClick.." Y: "..yClick, 1, 11, monitorIndex}
-			elseif event == "char" and not inManualMode then
-				local ch = string.lower(arg1)
-				if ch == "q" then
-					finished = true
-				elseif ch == "r" then
-					finished = true
-					os.reboot()
-				end -- if ch == "q" then
-			end -- if event == "monitor_touch" then
-		end -- for monitorIndex = 1, #monitorList do
+		if event == "monitor_touch" then
+			xClick, yClick = math.floor(arg2), math.floor(arg3)
+			--printLog("Monitor touch X: "..xClick.." Y: "..yClick)
+		-- What is this even for if we aren't looking for a monitor?
+		elseif event == "mouse_click" then -- and not monitorList[monitorIndex] then
+			xClick, yClick = math.floor(arg2), math.floor(arg3)
+			--printLog("Monitor touch X: "..xClick.." Y: "..yClick)
+		elseif event == "char" and not inManualMode then
+			local ch = string.lower(arg1)
+			if ch == "q" then
+				finished = true
+			elseif ch == "r" then
+				finished = true
+				os.reboot()
+			end -- if ch == "q" then
+		end -- if event == "monitor_touch" then
 	end -- while not finished do
 end -- function eventHandler()
 
