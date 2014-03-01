@@ -99,6 +99,7 @@ ChangeLog:
 	Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
 	Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
 	Remove version number from monitors to free up space for monitor names.
+	Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
 0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 0.3.1 - Add fuel consumption per tick to display
 0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
