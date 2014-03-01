@@ -144,7 +144,6 @@ local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
 local reactorRodOverride = false -- Rod override for Reactors
-local turbineFlowRateOverride = false -- Flow rate override for Turbines
 -- End multi-reactor cleanup section
 local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
@@ -158,6 +157,7 @@ local reactorList = {} -- Empty reactor array
 local reactorNames = {} -- Empty array of reactor names
 local turbineList = {} -- Empty turbine array
 local trubineNames = {} -- Empty array of turbine names
+local turbineFlowRateOverride = {} -- Flow rate override for each Turbine
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 local turbineLastUpdate = {} -- Last timestamp update for turbine flow rate update per turbine
 
@@ -586,6 +586,9 @@ local function findTurbines()
 			if #newTurbineList ~= #turbineList then
 				-- Initialize turbine flow rate timestamp if number of reactors has changed or initial startup
 				turbineLastUpdate[turbineIndex] = os.time()
+
+				-- Default is to allow flow rate auto-adjust
+				turbineFlowRateOverride[turbineIndex] = false
 			end -- if #newTurbineList ~= #turbineList then
 		end -- for turbineIndex = 1, #newTurbineList do
 
@@ -1171,7 +1174,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 	print{"Flow Auto-adjust:",2,10,monitorIndex}
 
-	if not turbineFlowRateOverride then
+	if not turbineFlowRateOverride[turbineIndex] then
 		turbineFlowRateOverrideStatus = "Enabled"
 		monitor.setTextColor(colors.green)
 	else
@@ -1229,7 +1232,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 
 		-- Allow disabling/enabling flow rate auto-adjust
 		if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-			turbineFlowRateOverride = not turbineFlowRateOverride -- Toggle turbine rod override status
+			turbineFlowRateOverride[turbineIndex] = not turbineFlowRateOverride[turbineIndex] -- Toggle turbine rod override status
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
 
@@ -1368,7 +1371,7 @@ function main()
 					end
 
 					if turbine.getConnected() then
-						if not turbineFlowRateOverride then
+						if not turbineFlowRateOverride[turbineIndex] then
 							flowRateControl(turbineIndex)
 						end
 
