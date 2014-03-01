@@ -355,7 +355,7 @@ local function getDevices(deviceType)
 end -- function getDevices(deviceType)
 
 -- Draw a line across the entire x-axis
-local function drawLine(yPos,monitorIndex)
+local function drawLine(yPos, monitorIndex)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 
@@ -374,12 +374,12 @@ end -- function drawLine(yPos,monitorIndex)
 
 
 -- Display a solid bar of specified color
-local function drawBar(startXPos, startYPos,endXPos,endYPos,color,monitorIndex)
+local function drawBar(startXPos, startYPos, endXPos, endYPos, color, monitorIndex)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitorList["..monitorIndex.."] in print() was not a valid monitor")
+		printLog("monitorList["..monitorIndex.."] in drawBar() was not a valid monitor")
 		return -- Invalid monitorIndex
 	end
 
@@ -387,8 +387,28 @@ local function drawBar(startXPos, startYPos,endXPos,endYPos,color,monitorIndex)
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
 	term.redirect(monitor)
 	paintutils.drawLine(startXPos, startYPos, endXPos, endYPos, color)
+	monitor.setBackgroundColor(colors.black) -- PaintUtils doesn't restore the color
 	term.restore()
 end -- function drawBar(startXPos, startYPos,endXPos,endYPos,color,monitorIndex)
+
+
+-- Display single pixel color
+local function drawPixel(xPos, yPos, color, monitorIndex)
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in drawPixel() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	-- PaintUtils only outputs to term., not monitor.
+	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
+	term.redirect(monitor)
+	paintutils.drawPixel(xPos, yPos, color)
+	monitor.setBackgroundColor(colors.black) -- PaintUtils doesn't restore the color
+	term.restore()
+end -- function drawPixel(xPos, yPos, color, monitorIndex)
 
 
 -- End helper functions
@@ -714,7 +734,6 @@ local function displayReactorBars(barParams)
 	end
 
 	-- Draw border lines
-	monitor.setBackgroundColor(colors.black)
 	local width, height = monitor.getSize()
 
 	for i=3, 5 do
@@ -722,8 +741,8 @@ local function displayReactorBars(barParams)
 		monitor.write("|")
 	end
 
-	drawLine(2,monitorIndex)
-	drawLine(6,monitorIndex)
+	drawLine(2, monitorIndex)
+	drawLine(6, monitorIndex)
 
 	-- Draw some text
 	local fuelString = "Fuel: "
@@ -786,27 +805,19 @@ local function displayReactorBars(barParams)
 	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
 	-- still uses getEnergyProducedLastTick for mB/t of hot fluid generated
 	if not reactor.isActivelyCooled() then
-		-- PaintUtils only outputs to term., not monitor.
-		-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
-
 		-- Draw stored energy buffer bar
 		drawBar(2,8,28,8,colors.gray,monitorIndex)
-		--paintutils.drawLine(2, 8, 28, 8, colors.gray)
 
 		local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(reactor)
 		if curStoredEnergyPercent > 4 then
-			--paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
-			drawBar(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
+			drawBar(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow, monitorIndex)
 		elseif curStoredEnergyPercent > 0 then
-			--paintutils.drawPixel(2,8,colors.yellow)
-			drawBar(2,8,colors.yellow,monitorIndex)
+			drawPixel(2, 8, colors.yellow, monitorIndex)
 		end -- if curStoredEnergyPercent > 4 then
 
-		monitor.setBackgroundColor(colors.black)
 		print{"Energy Buffer",2,7,monitorIndex}
 		print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
 		print{"%",28,7,monitorIndex}
-		monitor.setBackgroundColor(colors.black)
 
 		print{math.ceil(energyBuffer).." RF/t",padding+2,4,monitorIndex}
 	else
@@ -913,6 +924,15 @@ local function displayAllStatus()
 	local totalReactorRF, totalReactorSteam, totalTurbineRF = 0, 0, 0
 	local totalReactorFuelConsumed = 0
 	local totalCoolantStored, totalSteamStored, totalEnergy, totalEnergyStores = 0, 0, 0, 0 -- Total turbine and reactor energy buffer and overall capacity
+	local maxSteamStored = (2000*#turbineList)+(5000*#reactorList)
+	local maxCoolantStored = (2000*#turbineList)+(5000*#reactorList)
+
+	local monitor, monitorIndex = nil, 1
+	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in reactorStatus() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
 
 	for reactorIndex = 1, #reactorList do
 		reactor = reactorList[reactorIndex]
@@ -960,21 +980,22 @@ local function displayAllStatus()
 		end -- if turbine.getConnected() then
 	end -- for turbineIndex = 1, #turbineList do
 
-	print{"Reactors online/found: "..onlineReactor.."/"..#reactorList,2,3,1}
-	print{"Turbines online/found: "..onlineTurbine.."/"..#turbineList,2,4,1}
+	print{"Reactors online/found: "..onlineReactor.."/"..#reactorList, 2, 3, monitorIndex}
+	print{"Turbines online/found: "..onlineTurbine.."/"..#turbineList, 2, 4, monitorIndex}
 
 	if totalReactorRF ~= 0 then
-		print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t",2,6,1}
+		print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t", 2, 5, monitorIndex}
 	end
 
 	if #turbineList then
-		print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t",2,7,1}
-		print{"Steam Stored: "..math.ceil(totalSteamStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,8,1}
-		print{"Coolant Stored: "..math.ceil(totalCoolantStored).."/"..((2000*#turbineList)+(5000*#reactorList)).." mB",2,9,1}
-		print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t",2,10,1}
-	end
-	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t",2,11,1}
-	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..(1000000*totalEnergyStores).." RF",2,12,1}
+		print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t", 2, 6, monitorIndex}
+		print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t", 2, 7, monitorIndex}
+		print{"Steam "..math.ceil(totalSteamStored).."/"..maxSteamStored.." mB", 2, 8, monitorIndex}
+		print{"Coolant "..math.ceil(totalCoolantStored).."/"..maxCoolantStored.." mB", 2, 9, monitorIndex}
+	end -- if #turbineList then
+
+	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t", 2, 11, monitorIndex}
+	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..(1000000*totalEnergyStores).." RF", 2, 12, monitorIndex}
 end -- function displayAllStatus()
 
 
@@ -997,7 +1018,6 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end
 
 	-- Draw border lines
-	monitor.setBackgroundColor(colors.black)
 	local width, height = monitor.getSize()
 
 	for i=3, 5 do
@@ -1081,18 +1101,14 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 	local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(turbine)
 	if curStoredEnergyPercent > 4 then
-		--paintutils.drawLine(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow)
 		drawBar(1, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
 	elseif curStoredEnergyPercent > 0 then
-		--paintutils.drawPixel(2,8,colors.yellow)
-		drawBar(1,8,colors.yellow,monitorIndex)
+		drawPixel(1, 8, colors.yellow, monitorIndex)
 	end -- if curStoredEnergyPercent > 4 then
 
-	monitor.setBackgroundColor(colors.black)
 	print{"Energy Buffer",1,7,monitorIndex}
 	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+3),7,monitorIndex}
 	print{"%",28,7,monitorIndex}
-	monitor.setBackgroundColor(colors.black)
 
 	-- Print rod override status
 	local turbineFlowRateOverrideStatus = ""
