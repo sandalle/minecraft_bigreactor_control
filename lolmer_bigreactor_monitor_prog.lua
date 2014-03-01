@@ -882,7 +882,7 @@ local function displayReactorBars(barParams)
 	-- Print rod override status
 	local reactorRodOverrideStatus = ""
 
-	print{"Rod Auto-adjust:",2,9,monitorIndex}
+	print{"Rod Auto-adjust:",2,8,monitorIndex}
 
 	if not reactorRodOverride then
 		reactorRodOverrideStatus = "Enabled"
@@ -892,7 +892,7 @@ local function displayReactorBars(barParams)
 		monitor.setTextColor(colors.red)
 	end -- if not reactorRodOverride then
 
-	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
+	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 8, monitorIndex}
 	monitor.setTextColor(colors.white)
 
     local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
