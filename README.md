@@ -47,7 +47,7 @@ Features
 GUI Usage
 ----------------------------
 - The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
-	- "Control %" will lower/raise the Reactor Control Rods for that Reactor
+	- "Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
 	- "Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
 - Right-clicking between the "<" and ">" (not on) will disable auto-adjust of that value for attached device.
 - Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
