@@ -848,10 +848,9 @@ local function displayReactorBars(barParams)
 		rodPercentage = newRodPercentage
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
-	print{"Control",23,3,monitorIndex}
+	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
 	print{rodPercentage,25,4,monitorIndex}
-	print{"percent",23,5,monitorIndex}
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
 	local energyBuffer = reactor.getEnergyProducedLastTick()
