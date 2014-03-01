@@ -50,6 +50,7 @@ GUI Usage
 	- "Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
 	- "Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
 - Right-clicking between the "<" and ">" (not on) will disable auto-adjust of that value for attached device.
+	- Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
 - Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
 
 Default values
@@ -164,4 +165,3 @@ TODO
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling - http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
-- Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.

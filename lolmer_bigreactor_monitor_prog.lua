@@ -46,7 +46,8 @@ GUI Usage:
 	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
 		"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
-	Right-clicking between the "<" and ">" (not on) will disable auto-adjust of that value for attached device.
+	Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
+		Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
 	Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
 
 Default values:
@@ -129,7 +130,6 @@ TODO:
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
-- Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
 
 ]]--
 
@@ -943,7 +943,7 @@ local function reactorStatus(statusParams)
 			monitor.setTextColor(colors.red)
 		end -- if reactor.getActive() then
 
-		if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
+		if xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1) and (sideClick == monitorNames[monitorIndex]) then
 			if yClick == 1 then
 				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
 				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
@@ -956,7 +956,9 @@ local function reactorStatus(statusParams)
 		end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
 		-- Allow disabling rod level auto-adjust and only manual rod level control
-		if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		if ((xClick > 23 and xClick < 28 and yClick == 4)
+				or (xClick > 20 and xClick < 27 and yClick == 8))
+				and (sideClick == monitorNames[monitorIndex]) then
 			reactorRodOverride = not reactorRodOverride -- Toggle reactor rod override status
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
@@ -1231,7 +1233,9 @@ local function turbineStatus(turbineIndex, monitorIndex)
 		end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
 		-- Allow disabling/enabling flow rate auto-adjust
-		if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		if ((xClick > 23 and xClick < 28 and yClick == 4)
+				or (xClick > 20 and xClick < 27 and yClick == 10))
+				and (sideClick == monitorNames[monitorIndex]) then
 			turbineFlowRateOverride[turbineIndex] = not turbineFlowRateOverride[turbineIndex] -- Toggle turbine rod override status
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
