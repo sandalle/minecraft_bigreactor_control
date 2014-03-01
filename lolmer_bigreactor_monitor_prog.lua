@@ -145,7 +145,6 @@ local debugMode = false
 local baseControlRodLevel = nil
 local reactorRodOverride = false -- Rod override for Reactors
 local turbineFlowRateOverride = false -- Flow rate override for Turbines
-local baseTurbineFlowRate = nil
 -- End multi-reactor cleanup section
 local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
@@ -1107,7 +1106,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
 
 		-- Save updated Turbine Flow Rate
-		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
+		turbineFlowRate = newTurbineFlowRate
 	end -- if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
@@ -1128,7 +1127,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
 
 		-- Save updated Turbine Flow Rate
-		baseTurbineFlowRate, turbineFlowRate = newTurbineFlowRate, newTurbineFlowRate
+		turbineFlowRate = newTurbineFlowRate
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"  Flow",22,3,monitorIndex}
