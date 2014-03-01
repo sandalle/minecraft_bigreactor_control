@@ -302,6 +302,59 @@ local function printCentered(printString, yPos, monitorIndex)
 end -- function printCentered(printString, yPos, monitorIndex)
 
 
+-- Print text padded from the left side
+-- Clear the left side of the screen
+local function printLeft(printString, yPos, monitorIndex)
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in printLeft() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	local gap = 1
+	local width = monitor.getSize()
+
+	-- Clear left-half of the monitor
+
+	for curXPos = 1, (width / 2) do
+		monitor.setCursorPos(curXPos, yPos)
+		monitor.write(" ")
+	end
+
+	-- Write our string left-aligned
+	monitor.setCursorPos(1+gap, yPos)
+	monitor.write(printString)
+end
+
+
+-- Print text padded from the right side
+-- Clear the right side of the screen
+local function printRight(printString, yPos, monitorIndex)
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+
+	if not monitor then
+		printLog("monitorList["..monitorIndex.."] in printRight() was not a valid monitor")
+		return -- Invalid monitorIndex
+	end
+
+	local gap = 1
+	local width = monitor.getSize()
+
+	-- Clear right-half of the monitor
+	for curXPos = (width/2), width do
+		monitor.setCursorPos(curXPos, yPos)
+		monitor.write(" ")
+	end
+
+	-- Write our string right-aligned
+	monitor.setCursorPos(math.floor(width) - math.ceil(printString:len()+gap), yPos)
+	monitor.write(printString)
+end
+
+
 -- Replaces the one from FC_API (http://pastebin.com/A9hcbZWe) and adding multi-monitor support
 local function clearMonitor(printString, monitorIndex)
 	local monitor = nil
@@ -984,14 +1037,18 @@ local function displayAllStatus()
 	print{"Turbines online/found: "..onlineTurbine.."/"..#turbineList, 2, 4, monitorIndex}
 
 	if totalReactorRF ~= 0 then
-		print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t", 2, 5, monitorIndex}
+		print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t", 2, 9, monitorIndex}
 	end
 
 	if #turbineList then
-		print{"Steam Output: "..math.ceil(totalReactorSteam).." mB/t", 2, 6, monitorIndex}
-		print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t", 2, 7, monitorIndex}
-		print{"Steam "..math.ceil(totalSteamStored).."/"..maxSteamStored.." mB", 2, 8, monitorIndex}
-		print{"Coolant "..math.ceil(totalCoolantStored).."/"..maxCoolantStored.." mB", 2, 9, monitorIndex}
+		-- Display liquids
+		printLeft("Steam (mB)", 6, monitorIndex)
+		printLeft(math.ceil(totalSteamStored).."/"..maxSteamStored, 7, monitorIndex)
+		printLeft(math.ceil(totalReactorSteam).." mB/t", 8, monitorIndex)
+		printRight("Coolant (mB)", 6, monitorIndex)
+		printRight(math.ceil(totalCoolantStored).."/"..maxCoolantStored, 7, monitorIndex)
+
+		print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t", 2, 10, monitorIndex}
 	end -- if #turbineList then
 
 	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t", 2, 11, monitorIndex}
