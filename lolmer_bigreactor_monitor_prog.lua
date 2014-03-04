@@ -54,8 +54,8 @@ Default values:
 	Rod Control: 90% (Let's start off safe and then power up as we can)
 	Minimum Energy Buffer: 15% (will power on below this value)
 	Maximum Energy Buffer: 85% (will power off above this value)
-	Minimum Temperature: 850^C (will raise control rods below this value)
-	Maximum Temperature: 950^C (will lower control rods above this value)
+	Minimum Passive Cooling Temperature: 850^C (will raise control rods below this value)
+	Maximum Passive Temperature: 950^C (will lower control rods above this value)
 	Optimal Turbine RPM: 900 or 1,800
 
 Requirements:
@@ -131,7 +131,8 @@ TODO:
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
-
+- Minimum Active Cooling Temperature: 0^C
+- Maximum Active Cooling Temperature: 300^C (will lower control rods above this value)
 ]]--
 
 
