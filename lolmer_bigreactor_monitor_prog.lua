@@ -1,8 +1,8 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.3
+Version: v0.3.4
 Programmer: Lolmer
-Last update: 2014-02-28
+Last update: 2014-03-05
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -86,6 +86,7 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
 0.3.3 - Add Big Reactor Turbine support
 	First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 	Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
@@ -133,6 +134,7 @@ TODO:
 - Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
 - Minimum Active Cooling Temperature: 0^C
 - Maximum Active Cooling Temperature: 300^C (will lower control rods above this value)
+
 ]]--
 
 
@@ -555,7 +557,7 @@ local function findReactors()
 	reactorList = newReactorList
 
 	-- Check if we have enough monitors for the number of reactors
-	if (#reactorList ~= 1) and ((#turbineList < #reactorList) + 1 < #monitorList) then
+	if (#reactorList ~= 1) and ((#turbineList + #reactorList) + 1 < #monitorList) then
 		printLog("You need "..(#reactorList + 1).." monitors for your "..#reactorList.." connected reactors")
 	end
 
