@@ -1,8 +1,8 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.4
+Version: v0.3.5
 Programmer: Lolmer
-Last update: 2014-03-05
+Last update: 2014-03-06
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -85,6 +85,7 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
 	Turbines are optimal at 900, 1800, *and* 2700 RPM
 	Increase loop timer from 1 to 5 to be nicer to servers
@@ -140,7 +141,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.4"
+local progVer = "0.3.5"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 5
@@ -1290,13 +1291,14 @@ function main()
 	-- Load reactor parameters and initialize systems
 	loadReactorOptions()
 
+	-- Get our initial list of connected monitors and reactors
+	-- and initialize every cycle in case the connected devices change
+	findMonitors()
+	findReactors()
+	findTurbines()
+
 	while not finished do
 		local reactor = nil
-		-- Get our initial list of connected monitors and reactors
-		-- and initialize every cycle in case the connected devices change
-		findMonitors()
-		findReactors()
-		findTurbines()
 
 		-- Loop through found monitors
 		for monitorIndex = 1, #monitorList do

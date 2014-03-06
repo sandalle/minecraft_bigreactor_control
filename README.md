@@ -103,6 +103,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.5
+	- Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
+
 - 0.3.4
 	- Fix arithmetic for checking if we have enough monitors for the number of reactors.
 	- Turbines are optimal at 900, 1800, *and* 2700 RPM
