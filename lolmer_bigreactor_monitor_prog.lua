@@ -87,6 +87,7 @@ Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
 0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
+	Turbines are optimal at 900, 1800, *and* 2700 RPM
 0.3.3 - Add Big Reactor Turbine support
 	First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 	Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
@@ -1274,14 +1275,14 @@ local function flowRateControl(turbineIndex)
 
 		turbineTimeDiff = math.abs(os.time() - turbineLastUpdate[turbineIndex]) -- Difference in turbine flow rate update timestamp and now
 
-		-- If we're outside our optimal rotor speed of 900 RPM or 1800 RPM, do something!
-		if (math.fmod(rotorSpeed,900) ~= 0) then
+		-- If we're outside our optimal rotor speed of 900, 1,800, or 2,700 RPM, do something!
+		if ((rotorSpeed % 900) ~= 0) then
 			-- First simple checks if we're above or below optimal
 			if ((rotorSpeed < 900) and (flowRate == flowRateUserMax)) or -- Don't increment maximum if flowRate isn't keeping up with our maximum setting
-				((rotorSpeed < 1800) and (flowRateUserMax < 2000)) then
+				((rotorSpeed < 2700) and (flowRateUserMax < 2000)) then
 				newFlowRate = flowRateUserMax + flowRateAdjustAmount
 			-- If we're past max optimal RPM or cannot increase flowRate, downgrade to get to 900 RPM
-			elseif (rotorSpeed > 1800) or (rotorSpeed > 900) then
+			elseif (rotorSpeed > 2700) or (rotorSpeed > 900) then
 				newFlowRate = flowRateUserMax - flowRateAdjustAmount
 			end
 
