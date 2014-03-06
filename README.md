@@ -105,6 +105,7 @@ ChangeLog
 ============================
 - 0.3.5
 	- Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
+	- Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 
 - 0.3.4
 	- Fix arithmetic for checking if we have enough monitors for the number of reactors.

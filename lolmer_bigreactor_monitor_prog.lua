@@ -86,6 +86,7 @@ Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
+	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
 	Turbines are optimal at 900, 1800, *and* 2700 RPM
 	Increase loop timer from 1 to 5 to be nicer to servers
@@ -1319,11 +1320,12 @@ function main()
 			else
 				-- This code needs re-factoring once we actually work with multiple reactors
 				for reactorIndex = 1, #reactorList do
-					clearMonitor(progName, monitorIndex) -- Clear monitor and draw borders
-					printCentered(progName, 1, monitorIndex)
+					local reactorMonitorIndex = monitorIndex + reactorIndex - 1 -- reactorIndex starts at 1
+					clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
+					printCentered(progName, 1, reactorMonitorIndex)
 
 					-- Display reactor status, includes "Disconnected" but found reactors
-					reactorStatus{reactorIndex, monitorIndex}
+					reactorStatus{reactorIndex, reactorMonitorIndex}
 
 					reactor = reactorList[reactorIndex]
 					if not reactor then
@@ -1348,7 +1350,7 @@ function main()
 							temperatureControl(reactorIndex)
 						end
 
-						displayReactorBars{reactorIndex,monitorIndex}
+						displayReactorBars{reactorIndex,reactorMonitorIndex}
 					end	-- if reactor.getConnected() then
 				end	-- for reactorIndex = 1, #reactorList do
 
