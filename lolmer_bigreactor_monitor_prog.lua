@@ -156,7 +156,6 @@ local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
 local minReactorTemp = nil -- Minimum reactor temperature (^C) to maintain
 local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
 local autoStart = {} -- Array for automatically starting reactors
-local rodLastUpdate = {} -- Last timestamp update for rod control level update per reactor
 local monitorList = {} -- Empty monitor array
 local monitorNames = {} -- Empty array of monitor names
 local reactorList = {} -- Empty reactor array
@@ -165,7 +164,6 @@ local turbineList = {} -- Empty turbine array
 local trubineNames = {} -- Empty array of turbine names
 local turbineFlowRateOverride = {} -- Flow rate override for each Turbine
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
-local turbineLastUpdate = {} -- Last timestamp update for turbine flow rate update per turbine
 
 term.clear()
 term.setCursorPos(2,1)
@@ -545,9 +543,6 @@ local function findReactors()
 			if #newReactorList ~= #reactorList then
 				reactor.setAllControlRodLevels(baseControlRodLevel)
 
-				-- Initialize rod update timestamp if number of reactors has changed or initial startup
-				rodLastUpdate[reactorIndex] = os.time()
-
 				-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
 				autoStart[reactorIndex] = true
 			end -- if #newReactorList ~= #reactorList then
@@ -590,9 +585,6 @@ local function findTurbines()
 
 			-- If number of found turbines changed, re-initialize them all for now
 			if #newTurbineList ~= #turbineList then
-				-- Initialize turbine flow rate timestamp if number of reactors has changed or initial startup
-				turbineLastUpdate[turbineIndex] = os.time()
-
 				-- Default is to allow flow rate auto-adjust
 				turbineFlowRateOverride[turbineIndex] = false
 			end -- if #newTurbineList ~= #turbineList then
@@ -632,15 +624,12 @@ local function temperatureControl(reactorIndex)
 	end
 
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
-	local rodTimeDiff = 0
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 
 	-- No point modifying control rod levels for temperature if the reactor is offline
 	if reactor.getActive() then
-		rodTimeDiff = math.abs(os.time() - rodLastUpdate[reactorIndex]) -- Difference in rod control level update timestamp and now
-
 		-- Don't bring us to 100, that's effectively a shutdown
-		if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) and (rodTimeDiff > 0.2) then
+		if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) then
 			-- If more than double our maximum temperature, increase rodPercentage faster
 			if reactorTemp > (2 * maxReactorTemp) then
 				-- Check bounds, Big Reactor doesn't do this for us. :)
@@ -657,9 +646,7 @@ local function temperatureControl(reactorIndex)
 					reactor.setAllControlRodLevels(rodPercentage + 1)
 				end
 			end -- if reactorTemp > (2 * maxReactorTemp) then
-
-			rodLastUpdate[reactorIndex] = os.time() -- Last rod control update is now :)
-		elseif (reactorTemp < minReactorTemp) and (rodTimeDiff > 0.2) then
+		elseif (reactorTemp < minReactorTemp) then
 			-- If less than half our minimum temperature, decrease rodPercentage faster
 			if reactorTemp < (minReactorTemp / 2) then
 				-- Check bounds, Big Reactor doesn't do this for us. :)
@@ -677,9 +664,8 @@ local function temperatureControl(reactorIndex)
 				end
 			end -- if reactorTemp < (minReactorTemp / 2) then
 
-			rodLastUpdate[reactorIndex] = os.time() -- Last rod control update is now :)
 			baseControlRodLevel = rodPercentage
-		end -- if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) and (rodTimeDiff > 0.2) then
+		end -- if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) then
 	end -- if reactor.getActive() then
 end -- function temperatureControl(reactorIndex)
 
@@ -1269,11 +1255,8 @@ local function flowRateControl(turbineIndex)
 	if turbine.getActive() then
 		local flowRate = turbine.getFluidFlowRate()
 		local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
-		local turbineTimeDiff = 0
 		local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 		local newFlowRate = 0
-
-		turbineTimeDiff = math.abs(os.time() - turbineLastUpdate[turbineIndex]) -- Difference in turbine flow rate update timestamp and now
 
 		-- If we're not at max flow-rate and an optimal RPM, let's do something
 		-- also don't do anything if the current flow rate hasn't caught up to the user defined flow rate maximum
@@ -1298,7 +1281,6 @@ local function flowRateControl(turbineIndex)
 			end
 
 			turbine.setFluidFlowRateMax(newFlowRate)
-			turbineLastUpdate[turbineIndex] = os.time() -- Last update is now. :)
 		end -- if ((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax) then
 	end -- if turbine.getActive() then
 end -- function flowRateControl(turbineIndex)
