@@ -108,6 +108,7 @@ ChangeLog
 - 0.3.4
 	- Fix arithmetic for checking if we have enough monitors for the number of reactors.
 	- Turbines are optimal at 900, 1800, *and* 2700 RPM
+	- Increase loop timer from 1 to 5 to be nicer to servers
 
 - 0.3.3
 	- Add Big Reactors Turbine support.

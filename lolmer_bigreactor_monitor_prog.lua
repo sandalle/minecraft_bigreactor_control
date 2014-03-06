@@ -88,6 +88,7 @@ Big Reactors API: http://big-reactors.com/cc_api.html
 ChangeLog:
 0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
 	Turbines are optimal at 900, 1800, *and* 2700 RPM
+	Increase loop timer from 1 to 5 to be nicer to servers
 0.3.3 - Add Big Reactor Turbine support
 	First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 	Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
@@ -143,7 +144,7 @@ TODO:
 local progVer = "0.3.3"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
-local loopTime = 1
+local loopTime = 5
 local controlRodAdjustAmount = 5 -- Default Reactor Rod Control % adjustment amount when using UI
 local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount when using UI
 local debugMode = false
