@@ -141,7 +141,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.3"
+local progVer = "0.3.4"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 5
