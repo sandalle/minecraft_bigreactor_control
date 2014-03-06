@@ -1275,15 +1275,19 @@ local function flowRateControl(turbineIndex)
 
 		turbineTimeDiff = math.abs(os.time() - turbineLastUpdate[turbineIndex]) -- Difference in turbine flow rate update timestamp and now
 
-		-- If we're outside our optimal rotor speed of 900, 1,800, or 2,700 RPM, do something!
-		if ((rotorSpeed % 900) ~= 0) then
-			-- First simple checks if we're above or below optimal
-			if ((rotorSpeed < 900) and (flowRate == flowRateUserMax)) or -- Don't increment maximum if flowRate isn't keeping up with our maximum setting
-				((rotorSpeed < 2700) and (flowRateUserMax < 2000)) then
-				newFlowRate = flowRateUserMax + flowRateAdjustAmount
-			-- If we're past max optimal RPM or cannot increase flowRate, downgrade to get to 900 RPM
-			elseif (rotorSpeed > 2700) or (rotorSpeed > 900) then
+		-- If we're not at max flow-rate and an optimal RPM, let's do something
+		-- also don't do anything if the current flow rate hasn't caught up to the user defined flow rate maximum
+		if (((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax))
+			or (flowRate == 0) then
+			-- Make sure we are not going too fast
+			if rotorSpeed > 2700 then
 				newFlowRate = flowRateUserMax - flowRateAdjustAmount
+			-- Make sure we're not going too slow
+			elseif rotorSpeed < 900 then
+				newFlowRate = flowRateUserMax + flowRateAdjustAmount
+			-- We're not at optimal RPM or flow-rate and we're not out-of-bounds
+			else
+				return
 			end
 
 			-- Check bounds [0,2000]
@@ -1295,7 +1299,7 @@ local function flowRateControl(turbineIndex)
 
 			turbine.setFluidFlowRateMax(newFlowRate)
 			turbineLastUpdate[turbineIndex] = os.time() -- Last update is now. :)
-		end -- if (rotorSpeed % 900 == 0) and (turbineTimeDiff > 0.1) then
+		end -- if ((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax) then
 	end -- if turbine.getActive() then
 end -- function flowRateControl(turbineIndex)
 
