@@ -76,8 +76,7 @@ Other reactor control program which I based my program on:
 	http://pastebin.com/aMAu4X5J (ScatmanJohn)
 	http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
 A simpler Big Reactor control program is available from:
-	http://pastebin.com/tFkhQLYn (IronClaymore, only for Big Reactors 0.2 or passively cooled Big Reactors in 0.3)
-	http://pastebin.com/FaccdayZ (IronClaymore's script updated by mechaet for actively cooled Big Ractors)
+	http://pastebin.com/7S5xCvgL (IronClaymore only for passively cooled reactors)
 
 Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
 Computercraft API: http://computercraft.info/wiki/Category:APIs
