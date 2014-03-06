@@ -6,13 +6,9 @@ Last update: 2014-03-06
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
-This program controls a Big Reactors nuclear reactor
-in Minecraft with a Computercraft computer, using Computercraft's
-own wired modem connected to the reactors computer control port.
+This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port.
 
-This program was designed to work with the mods and versions installed on Never Stop Toasting (NST) Diet
-http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
-Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
+This program was designed to work with the mods and versions installed on Never Stop Toasting (NST) Diet http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882 Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
 To simplify the code and guesswork, I assume the following monitor layout:
 1) One Advanced Monitor for overall status display plus
@@ -40,7 +36,6 @@ Features:
 	Auto-adjusts control rods per reactor to maintain temperature.
 	Will display reactor data to all attached monitors of correct dimensions.
 		For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
-		Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
 	For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
 
 GUI Usage:
@@ -65,6 +60,7 @@ Requirements:
 	Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
 	Big Reactors (http://www.big-reactors.com/) 0.3
 	Computercraft (http://computercraft.info/) 1.57+
+	Reset the computer any time number of connected devices change.
 
 Resources:
 This script is available from:
@@ -88,6 +84,7 @@ Big Reactors API: http://big-reactors.com/cc_api.html
 ChangeLog:
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
+	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
 0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
 	Turbines are optimal at 900, 1800, *and* 2700 RPM
 	Increase loop timer from 1 to 5 to be nicer to servers
@@ -886,15 +883,14 @@ local function displayReactorBars(barParams)
 		monitor.setTextColor(colors.red)
 	end -- if not reactorRodOverride then
 
-	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 8, monitorIndex}
+	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
 
     local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
-	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %",2,9,monitorIndex}
-	print{"Consumption: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t",2,10,monitorIndex}
-	print{"Rods: "..(numRods + 1),2,11,monitorIndex} -- numRods index starts at 0
-	print{"Waste: "..reactor.getWasteAmount().." mB",width-(string.len(reactor.getWasteAmount())+10),11,monitorIndex}
+	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %", 2, 10, monitorIndex}
+	print{"Fuel: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t", 2, 11, monitorIndex}
+	print{"Waste: "..reactor.getWasteAmount().." mB", width-(string.len(reactor.getWasteAmount())+10), 11, monitorIndex}
 
 	monitor.setTextColor(colors.blue)
 	printCentered(reactorNames[reactorIndex],12,monitorIndex)
@@ -951,7 +947,7 @@ local function reactorStatus(statusParams)
 
 		-- Allow disabling rod level auto-adjust and only manual rod level control
 		if ((xClick > 23 and xClick < 28 and yClick == 4)
-				or (xClick > 20 and xClick < 27 and yClick == 8))
+				or (xClick > 20 and xClick < 27 and yClick == 9))
 				and (sideClick == monitorNames[monitorIndex]) then
 			reactorRodOverride = not reactorRodOverride -- Toggle reactor rod override status
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it

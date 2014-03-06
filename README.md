@@ -43,7 +43,6 @@ Features
 - Auto-adjusts control rods per reactor to maintain temperature.
 - Will display reactor data to all attached monitors of correct dimensions.
 	- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
-	- Dynamically detect and add/remove monitors as they are connected to the network (not recommended).
 
 GUI Usage
 ----------------------------
@@ -70,6 +69,7 @@ Requirements
 - Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
 - Big Reactors (http://www.big-reactors.com/) 0.3
 - Computercraft (http://computercraft.info/) 1.57+
+- Reset the computer any time number of connected devices change.
 
 Resources
 ----------------------------
@@ -107,6 +107,7 @@ ChangeLog
 - 0.3.5
 	- Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	- Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
+	- Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
 
 - 0.3.4
 	- Fix arithmetic for checking if we have enough monitors for the number of reactors.
