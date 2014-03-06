@@ -33,6 +33,7 @@ When using actively cooled reactors with turbines, keep the following in mind:
 - 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
 - Actively cooled reactors produce steam, not power.
 - You will need about 10 mB of water for each 1 mB of steam that you want to create in a 7^3 reactor.
+- Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam
 
 Features
 ----------------------------

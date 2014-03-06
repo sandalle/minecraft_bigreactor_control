@@ -26,6 +26,7 @@ If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 Notes:
 	Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
 	Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
+	Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam
 
 When using actively cooled reactors with turbines, keep the following in mind:
 	- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
