@@ -87,6 +87,7 @@ ChangeLog:
 	Reactors store 10M RF and Turbines store 1M RF in their buffer.
 	Add more colour to displayAllStatus().
 	Sleep for only three seconds instead of five.
+	Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
@@ -617,7 +618,7 @@ local function getDeviceStoredEnergyBufferPercent(device)
 	end
 
 	local energyBufferStorage = device.getEnergyStored()
-	return (math.floor(energyBufferStorage/10000)) -- (buffer/10000000 RF)*100%
+	return (math.floor(energyBufferStorage/100000)) -- (buffer/10000000 RF)*100%
 end -- function getDeviceStoredEnergyBufferPercent(reactorIndex)
 
 
