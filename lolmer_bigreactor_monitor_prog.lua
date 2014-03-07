@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.5
+Version: v0.3.6
 Programmer: Lolmer
 Last update: 2014-03-06
 Pastebin: http://pastebin.com/fguScPBQ
@@ -82,6 +82,7 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion)
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
@@ -140,7 +141,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.5"
+local progVer = "0.3.6"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 5
@@ -1297,88 +1298,102 @@ function main()
 
 	while not finished do
 		local reactor = nil
+		local monitorIndex = 1
 
-		-- Loop through found monitors
-		for monitorIndex = 1, #monitorList do
-			-- For multiple reactors/monitors, monitor #1 is reserved for overall status
-			-- or for multiple reactors/turbines and only one monitor
-			if (((#reactorList + #turbineList) > 1) and (#monitorList > 1) and (monitorIndex == 1)) or
-				(((#reactorList + #turbineList) > 1) and (#monitorList == 1)) then
-				clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
-				printCentered(progName.." "..progVer, 1, monitorIndex)
-				displayAllStatus()
-			elseif debugMode and (monitorIndex == #monitorList) then
-				break -- We're using this monitor for debug info
-			-- Turbines are taken care of below via an offset, so do not loop through those
-			-- if no turbines are found, use all monitors for reactors
-			-- #turbineMonitorOffset already included #reactorList and +1 for overall status monitor
-			elseif #turbineList and (monitorIndex > turbineMonitorOffset) then
-				break
-			else
-				-- This code needs re-factoring once we actually work with multiple reactors
-				for reactorIndex = 1, #reactorList do
-					local reactorMonitorIndex = monitorIndex + reactorIndex - 1 -- reactorIndex starts at 1
-					clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
-					printCentered(progName, 1, reactorMonitorIndex)
+		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
+		-- or for multiple reactors/turbines and only one monitor
+		if (((#reactorList + #turbineList) > 1) and (#monitorList > 1)) or
+			(((#reactorList + #turbineList) > 1) and (#monitorList == 1)) then
+				local monitor = nil
+				monitor = monitorList[monitorIndex]
+				if not monitor then
+					printLog("monitorList["..monitorIndex.."] in turbineStatus() was not a valid monitor")
+					return -- Invalid monitorIndex
+				end
 
-					-- Display reactor status, includes "Disconnected" but found reactors
-					reactorStatus{reactorIndex, reactorMonitorIndex}
+			clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
+			printCentered(progName.." "..progVer, 1, monitorIndex)
+			displayAllStatus()
+			monitorIndex = 2
+		end
 
-					reactor = reactorList[reactorIndex]
-					if not reactor then
-						printLog("reactorList["..reactorIndex.."] in main() was not a valid Big Reactor")
-						break -- Invalid reactorIndex
-					end
+		-- Iterate through reactors
+		for reactorIndex = 1, #reactorList do
+			local monitor = nil
+			monitor = monitorList[monitorIndex]
+			if not monitor then
+				printLog("monitorList["..monitorIndex.."] in turbineStatus() was not a valid monitor")
+				return -- Invalid monitorIndex
+			end
 
-					if reactor.getConnected() then
-						local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(reactor)
+			local reactorMonitorIndex = monitorIndex + reactorIndex - 1 -- reactorIndex starts at 1
 
-						-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
-						-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
-						if curStoredEnergyPercent >= maxStoredEnergyPercent then
-							reactor.setActive(false)
-						-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
-						elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and (autoStart[reactorIndex] == true) then
-							reactor.setActive(true)
-						end
+			clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
+			printCentered(progName, 1, reactorMonitorIndex)
 
-						-- Don't try to auto-adjust control rods if manual control is requested
-						if not reactorRodOverride then
-							temperatureControl(reactorIndex)
-						end
+			-- Display reactor status, includes "Disconnected" but found reactors
+			reactorStatus{reactorIndex, reactorMonitorIndex}
 
-						displayReactorBars{reactorIndex,reactorMonitorIndex}
-					end	-- if reactor.getConnected() then
-				end	-- for reactorIndex = 1, #reactorList do
+			reactor = reactorList[reactorIndex]
+			if not reactor then
+				printLog("reactorList["..reactorIndex.."] in main() was not a valid Big Reactor")
+				break -- Invalid reactorIndex
+			end
 
-				-- Monitors for turbines start after turbineMonitorOffset
-				for turbineIndex = 1, #turbineList do
-					local turbineMonitorIndex = turbineIndex+turbineMonitorOffset
-					clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
-					printCentered(progName, 1, turbineMonitorIndex)
+			if reactor.getConnected() then
+				local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(reactor)
 
-					-- Display turbine status, includes "Disconnected" but found turbines
-					turbineStatus(turbineIndex, turbineMonitorIndex)
+				-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
+				-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
+				if curStoredEnergyPercent >= maxStoredEnergyPercent then
+					reactor.setActive(false)
+				-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
+				elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and (autoStart[reactorIndex] == true) then
+					reactor.setActive(true)
+				end
 
-					turbine = turbineList[turbineIndex]
-					if not turbine then
-						printLog("turbineList["..turbineIndex.."] in main() was not a valid Big Turbine")
-						break -- Invalid turbineIndex
-					end
+				-- Don't try to auto-adjust control rods if manual control is requested
+				if not reactorRodOverride then
+					temperatureControl(reactorIndex)
+				end
 
-					if turbine.getConnected() then
-						if not turbineFlowRateOverride[turbineIndex] then
-							flowRateControl(turbineIndex)
-						end
+				displayReactorBars{reactorIndex,reactorMonitorIndex}
+			end	-- if reactor.getConnected() then
+		end	-- for reactorIndex = 1, #reactorList do
 
-						displayTurbineBars(turbineIndex,turbineMonitorIndex)
-					end
-				end -- for reactorIndex = 1, #reactorList do
-			end -- if #reactorList > 1 and monitorIndex == 1 then
+		-- Monitors for turbines start after turbineMonitorOffset
+		for turbineIndex = 1, #turbineList do
+			local monitor = nil
+			monitor = monitorList[monitorIndex]
+			if not monitor then
+				printLog("monitorList["..monitorIndex.."] in turbineStatus() was not a valid monitor")
+				return -- Invalid monitorIndex
+			end
 
-			sleep(loopTime)	-- Sleep
-			saveReactorOptions()
-		end -- for monitorIndex = 1, #monitorList do
+			local turbineMonitorIndex = turbineIndex+turbineMonitorOffset
+			clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
+			printCentered(progName, 1, turbineMonitorIndex)
+
+			-- Display turbine status, includes "Disconnected" but found turbines
+			turbineStatus(turbineIndex, turbineMonitorIndex)
+
+			turbine = turbineList[turbineIndex]
+			if not turbine then
+				printLog("turbineList["..turbineIndex.."] in main() was not a valid Big Turbine")
+				break -- Invalid turbineIndex
+			end
+
+			if turbine.getConnected() then
+				if not turbineFlowRateOverride[turbineIndex] then
+					flowRateControl(turbineIndex)
+				end
+
+				displayTurbineBars(turbineIndex,turbineMonitorIndex)
+			end
+		end -- for reactorIndex = 1, #reactorList do
+
+		sleep(loopTime)	-- Sleep
+		saveReactorOptions()
 	end -- while not finished do
 end -- main()
 
