@@ -151,8 +151,8 @@ local progVer = "0.3.6"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
-local controlRodAdjustAmount = 5 -- Default Reactor Rod Control % adjustment amount when using UI
-local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount when using UI
+local controlRodAdjustAmount = 1 -- Default Reactor Rod Control % adjustment amount
+local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount
 local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
@@ -650,34 +650,34 @@ local function temperatureControl(reactorIndex)
 			-- If more than double our maximum temperature, increase rodPercentage faster
 			if reactorTemp > (2 * localMaxReactorTemp) then
 				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage + 10) > 99 then
+				if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
 					reactor.setAllControlRodLevels(99)
 				else
-					reactor.setAllControlRodLevels(rodPercentage + 10)
+					reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
 				end
 			else
 				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage + 1) > 99 then
+				if (rodPercentage + controlRodAdjustAmount) > 99 then
 					reactor.setAllControlRodLevels(99)
 				else
-					reactor.setAllControlRodLevels(rodPercentage + 1)
+					reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
 				end
 			end -- if reactorTemp > (2 * localMaxReactorTemp) then
 		elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~= 0) then
 			-- If less than half our minimum temperature, decrease rodPercentage faster
 			if reactorTemp < (localMinReactorTemp / 2) then
 				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage - 10) < 0 then
+				if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
 					reactor.setAllControlRodLevels(0)
 				else
-					reactor.setAllControlRodLevels(rodPercentage - 10)
+					reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
 				end
 			else
 				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage - 1) < 0 then
+				if (rodPercentage - controlRodAdjustAmount) < 0 then
 					reactor.setAllControlRodLevels(0)
 				else
-					reactor.setAllControlRodLevels(rodPercentage - 1)
+					reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
 				end
 			end -- if reactorTemp < (localMinReactorTemp / 2) then
 
@@ -829,7 +829,7 @@ local function displayReactorBars(barParams)
 	-- Increase rod button: 28X, 4Y
 	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Decrease rod level by amount
-		newRodPercentage = rodPercentage - controlRodAdjustAmount
+		newRodPercentage = rodPercentage - (5 * controlRodAdjustAmount)
 		if newRodPercentage < 0 then
 			newRodPercentage = 0
 		end
@@ -844,7 +844,7 @@ local function displayReactorBars(barParams)
 
 	if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		--Increase rod level by amount
-		newRodPercentage = rodPercentage + controlRodAdjustAmount
+		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
 		if newRodPercentage > 100 then
 			newRodPercentage = 100
 		end
