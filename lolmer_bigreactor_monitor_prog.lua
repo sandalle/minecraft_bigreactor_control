@@ -2,7 +2,7 @@
 Program name: Lolmer's EZ-NUKE reactor control system
 Version: v0.3.6
 Programmer: Lolmer
-Last update: 2014-03-06
+Last update: 2014-03-07
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -84,6 +84,7 @@ Big Reactors API: http://big-reactors.com/cc_api.html
 ChangeLog:
 0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
 	Fix rod auto-adjust text position.
+	Reactors store 10M RF and Turbines store 1M RF in their buffer.
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
@@ -972,7 +973,7 @@ local function displayAllStatus()
 	local onlineReactor, onlineTurbine = 0, 0
 	local totalReactorRF, totalReactorSteam, totalTurbineRF = 0, 0, 0
 	local totalReactorFuelConsumed = 0
-	local totalCoolantStored, totalSteamStored, totalEnergy, totalEnergyStores = 0, 0, 0, 0 -- Total turbine and reactor energy buffer and overall capacity
+	local totalCoolantStored, totalSteamStored, totalEnergy, totalMaxEnergyStored = 0, 0, 0, 0 -- Total turbine and reactor energy buffer and overall capacity
 	local maxSteamStored = (2000*#turbineList)+(5000*#reactorList)
 	local maxCoolantStored = (2000*#turbineList)+(5000*#reactorList)
 
@@ -998,7 +999,7 @@ local function displayAllStatus()
 
 			-- Actively cooled reactors do not produce or store energy
 			if not reactor.isActivelyCooled() then
-				totalEnergyStores = totalEnergyStores + 1
+				totalMaxEnergyStored = totalMaxEnergyStored + 10000000 -- Reactors store 10M RF
 				totalEnergy = totalEnergy + reactor.getEnergyStored()
 				totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
 			else
@@ -1021,7 +1022,7 @@ local function displayAllStatus()
 				onlineTurbine = onlineTurbine + 1
 			end
 
-			totalEnergyStores = totalEnergyStores + 1
+			totalMaxEnergyStored = totalMaxEnergyStored + 1000000 -- Turbines store 1M RF
 			totalEnergy = totalEnergy + turbine.getEnergyStored()
 			totalTurbineRF = totalTurbineRF + turbine.getEnergyProducedLastTick()
 			totalSteamStored = totalSteamStored + turbine.getInputAmount()
@@ -1048,7 +1049,7 @@ local function displayAllStatus()
 	end -- if #turbineList then
 
 	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t", 2, 11, monitorIndex}
-	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..(1000000*totalEnergyStores).." RF", 2, 12, monitorIndex}
+	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..totalMaxEnergyStored.." RF", 2, 12, monitorIndex}
 end -- function displayAllStatus()
 
 
