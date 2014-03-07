@@ -88,6 +88,7 @@ ChangeLog:
 	Add more colour to displayAllStatus().
 	Sleep for only three seconds instead of five.
 	Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
+	Keep actively cooled reactors between 0-300^C (non-configurable for now).
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
@@ -634,13 +635,20 @@ local function temperatureControl(reactorIndex)
 
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
+	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
 
 	-- No point modifying control rod levels for temperature if the reactor is offline
 	if reactor.getActive() then
+		-- Actively cooled reactors should range between 0^C-300^C
+		if reactor.isActivelyCooled() then
+			localMinReactorTemp = 0
+			localMaxReactorTemp = 300
+		end
+
 		-- Don't bring us to 100, that's effectively a shutdown
-		if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) then
+		if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
 			-- If more than double our maximum temperature, increase rodPercentage faster
-			if reactorTemp > (2 * maxReactorTemp) then
+			if reactorTemp > (2 * localMaxReactorTemp) then
 				-- Check bounds, Big Reactor doesn't do this for us. :)
 				if (rodPercentage + 10) > 99 then
 					reactor.setAllControlRodLevels(99)
@@ -654,10 +662,10 @@ local function temperatureControl(reactorIndex)
 				else
 					reactor.setAllControlRodLevels(rodPercentage + 1)
 				end
-			end -- if reactorTemp > (2 * maxReactorTemp) then
-		elseif (reactorTemp < minReactorTemp) then
+			end -- if reactorTemp > (2 * localMaxReactorTemp) then
+		elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~= 0) then
 			-- If less than half our minimum temperature, decrease rodPercentage faster
-			if reactorTemp < (minReactorTemp / 2) then
+			if reactorTemp < (localMinReactorTemp / 2) then
 				-- Check bounds, Big Reactor doesn't do this for us. :)
 				if (rodPercentage - 10) < 0 then
 					reactor.setAllControlRodLevels(0)
@@ -671,10 +679,10 @@ local function temperatureControl(reactorIndex)
 				else
 					reactor.setAllControlRodLevels(rodPercentage - 1)
 				end
-			end -- if reactorTemp < (minReactorTemp / 2) then
+			end -- if reactorTemp < (localMinReactorTemp / 2) then
 
 			baseControlRodLevel = rodPercentage
-		end -- if (reactorTemp > maxReactorTemp) and (rodPercentage < 99) then
+		end -- if (reactorTemp > localMaxReactorTemp) and (rodPercentage < 99) then
 	end -- if reactor.getActive() then
 end -- function temperatureControl(reactorIndex)
 
@@ -913,7 +921,7 @@ local function reactorStatus(statusParams)
 	local reactorIndex, monitorIndex =
 		statusParams[1] or statusParams.reactorIndex,
 		statusParams[2] or statusParams.monitorIndex
-	
+
 	-- Grab current monitor
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
@@ -1205,7 +1213,7 @@ end -- function displayTurbineBars(statusParams)
 
 
 -- Display turbine status
-local function turbineStatus(turbineIndex, monitorIndex)	
+local function turbineStatus(turbineIndex, monitorIndex)
 	-- Grab current monitor
 	local monitor = nil
 	monitor = monitorList[monitorIndex]

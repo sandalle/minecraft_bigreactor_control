@@ -111,6 +111,7 @@ ChangeLog
 	- Add more colour to displayAllStatus().
 	- Sleep for only three seconds instead of five.
 	- Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
+	- Keep actively cooled reactors between 0-300^C (non-configurable for now).
 
 - 0.3.5
 	- Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
