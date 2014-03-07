@@ -82,7 +82,8 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion)
+0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
+	Fix rod auto-adjust text position.
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
@@ -874,7 +875,7 @@ local function displayReactorBars(barParams)
 	-- Print rod override status
 	local reactorRodOverrideStatus = ""
 
-	print{"Rod Auto-adjust:",2,8,monitorIndex}
+	print{"Rod Auto-adjust:",2,9,monitorIndex}
 
 	if not reactorRodOverride then
 		reactorRodOverrideStatus = "Enabled"

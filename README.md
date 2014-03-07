@@ -105,7 +105,8 @@ Resources
 ChangeLog
 ============================
 - 0.3.6
-	- Fix multi-reactors displaying on the correct monitors (thanks HybridFusion)
+	- Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
+	- Fix rod auto-adjust text position.
 
 - 0.3.5
 	- Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
