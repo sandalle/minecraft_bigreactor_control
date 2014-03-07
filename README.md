@@ -108,6 +108,7 @@ ChangeLog
 	- Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
 	- Fix rod auto-adjust text position.
 	- Reactors store 10M RF and Turbines store 1M RF in their buffer.
+	- Add more colour to displayAllStatus().
 
 - 0.3.5
 	- Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.

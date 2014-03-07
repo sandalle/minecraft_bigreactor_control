@@ -85,6 +85,7 @@ ChangeLog:
 0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
 	Fix rod auto-adjust text position.
 	Reactors store 10M RF and Turbines store 1M RF in their buffer.
+	Add more colour to displayAllStatus().
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
 	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
 	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
@@ -345,6 +346,9 @@ local function printRight(printString, yPos, monitorIndex)
 		printLog("monitorList["..monitorIndex.."] in printRight() was not a valid monitor")
 		return -- Invalid monitorIndex
 	end
+
+	-- Make sure printString is a string
+	printString = tostring(printString)
 
 	local gap = 1
 	local width = monitor.getSize()
@@ -1034,21 +1038,31 @@ local function displayAllStatus()
 	print{"Turbines online/found: "..onlineTurbine.."/"..#turbineList, 2, 4, monitorIndex}
 
 	if totalReactorRF ~= 0 then
-		print{"Reactor Output: "..math.ceil(totalReactorRF).." RF/t", 2, 9, monitorIndex}
+		monitor.setTextColor(colors.blue)
+		printRight("Reactor", 9, monitorIndex)
+		monitor.setTextColor(colors.white)
+		printRight(math.ceil(totalReactorRF).." (RF/t)", 10, monitorIndex)
 	end
 
 	if #turbineList then
 		-- Display liquids
+		monitor.setTextColor(colors.blue)
 		printLeft("Steam (mB)", 6, monitorIndex)
+		monitor.setTextColor(colors.white)
 		printLeft(math.ceil(totalSteamStored).."/"..maxSteamStored, 7, monitorIndex)
 		printLeft(math.ceil(totalReactorSteam).." mB/t", 8, monitorIndex)
+		monitor.setTextColor(colors.blue)
 		printRight("Coolant (mB)", 6, monitorIndex)
+		monitor.setTextColor(colors.white)
 		printRight(math.ceil(totalCoolantStored).."/"..maxCoolantStored, 7, monitorIndex)
 
-		print{"Turbine Output: "..math.ceil(totalTurbineRF).." RF/t", 2, 10, monitorIndex}
+		monitor.setTextColor(colors.blue)
+		printLeft("Turbine", 9, monitorIndex)
+		monitor.setTextColor(colors.white)
+		printLeft(math.ceil(totalTurbineRF).." RF/t", 10, monitorIndex)
 	end -- if #turbineList then
 
-	print{"Fuel consumed: "..round(totalReactorFuelConsumed,3).." mB/t", 2, 11, monitorIndex}
+	printRight("Fuel: "..round(totalReactorFuelConsumed,3).." mB/t", 11, monitorIndex)
 	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..totalMaxEnergyStored.." RF", 2, 12, monitorIndex}
 end -- function displayAllStatus()
 
