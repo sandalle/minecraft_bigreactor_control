@@ -109,7 +109,7 @@ ChangeLog
 	- Fix rod auto-adjust text position.
 	- Reactors store 10M RF and Turbines store 1M RF in their buffer.
 	- Add more colour to displayAllStatus().
-	- Sleep for only three seconds instead of five.
+	- Sleep for only two seconds instead of five.
 	- Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
 	- Keep actively cooled reactors between 0-300^C (non-configurable for now).
 

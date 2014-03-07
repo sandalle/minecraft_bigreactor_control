@@ -86,7 +86,7 @@ ChangeLog:
 	Fix rod auto-adjust text position.
 	Reactors store 10M RF and Turbines store 1M RF in their buffer.
 	Add more colour to displayAllStatus().
-	Sleep for only three seconds instead of five.
+	Sleep for only two seconds instead of five.
 	Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
 	Keep actively cooled reactors between 0-300^C (non-configurable for now).
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
@@ -150,7 +150,7 @@ TODO:
 local progVer = "0.3.6"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
-local loopTime = 3
+local loopTime = 2
 local controlRodAdjustAmount = 5 -- Default Reactor Rod Control % adjustment amount when using UI
 local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount when using UI
 local debugMode = false
