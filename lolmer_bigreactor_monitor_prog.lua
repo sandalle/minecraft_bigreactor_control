@@ -617,7 +617,11 @@ local function getDeviceStoredEnergyBufferPercent(device)
 	end
 
 	local energyBufferStorage = device.getEnergyStored()
-	return (math.floor(energyBufferStorage/100000)) -- (buffer/10000000 RF)*100%
+	if device == turbine then
+	return (math.floor(energyBufferStorage/10000)) -- (buffer/10000000 RF)*100%
+	else
+		return (math.floor(energyBufferStorage/100000)) -- (buffer/10000000 RF)*100%
+		end
 end -- function getDeviceStoredEnergyBufferPercent(reactorIndex)
 
 
@@ -1174,8 +1178,9 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	-- Draw stored energy buffer bar
 	drawBar(1,8,28,8,colors.gray,monitorIndex)
 	--paintutils.drawLine(2, 8, 28, 8, colors.gray)
-
+	
 	local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(turbine)
+	
 	if curStoredEnergyPercent > 4 then
 		drawBar(1, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
 	elseif curStoredEnergyPercent > 0 then
