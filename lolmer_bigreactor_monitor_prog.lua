@@ -618,10 +618,10 @@ local function getDeviceStoredEnergyBufferPercent(device)
 
 	local energyBufferStorage = device.getEnergyStored()
 	if device == turbine then
-	return (math.floor(energyBufferStorage/10000)) -- (buffer/10000000 RF)*100%
+		return (math.floor(energyBufferStorage/10000)) -- (buffer/10000000 RF)*100%
 	else
 		return (math.floor(energyBufferStorage/100000)) -- (buffer/10000000 RF)*100%
-		end
+	end
 end -- function getDeviceStoredEnergyBufferPercent(reactorIndex)
 
 
