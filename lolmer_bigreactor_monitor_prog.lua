@@ -166,7 +166,7 @@ local monitorNames = {} -- Empty array of monitor names
 local reactorList = {} -- Empty reactor array
 local reactorNames = {} -- Empty array of reactor names
 local turbineList = {} -- Empty turbine array
-local trubineNames = {} -- Empty array of turbine names
+local turbineNames = {} -- Empty array of turbine names
 local turbineFlowRateOverride = {} -- Flow rate override for each Turbine
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 
