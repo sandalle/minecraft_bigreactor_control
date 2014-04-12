@@ -1,8 +1,8 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.6
+Version: v0.3.7
 Programmer: Lolmer
-Last update: 2014-03-07
+Last update: 2014-04-12
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -82,6 +82,8 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+0.3.7 - Fix typo when initializing TurbineNames array.
+	Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
 0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
 	Fix rod auto-adjust text position.
 	Reactors store 10M RF and Turbines store 1M RF in their buffer.
@@ -145,7 +147,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.6"
+local progVer = "0.3.7"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -610,15 +612,27 @@ end -- function findTurbines()
 
 
 -- Return current energy buffer in a specific reactor by %
-local function getDeviceStoredEnergyBufferPercent(device)
-	if not device then
-		printLog("getDeviceStoredEnergyBufferPercent() did not receive a valid Big Reactor device")
+local function getReactorStoredEnergyBufferPercent(reactor)
+	if not reactor then
+		printLog("getReactorStoredEnergyBufferPercent() did not receive a valid Big Reactor Reactor")
 		return -- Invalid reactorIndex
 	end
 
-	local energyBufferStorage = device.getEnergyStored()
+	local energyBufferStorage = reactor.getEnergyStored()
 	return (math.floor(energyBufferStorage/100000)) -- (buffer/10000000 RF)*100%
-end -- function getDeviceStoredEnergyBufferPercent(reactorIndex)
+end -- function getReactorStoredEnergyBufferPercent(reactor)
+
+
+-- Return current energy buffer in a specific Turbine by %
+local function getTurbineStoredEnergyBufferPercent(turbine)
+	if not turbine then
+		printLog("getTurbineStoredEnergyBufferPercent() did not receive a valid Big Reactor Turbine")
+		return -- Invalid reactorIndex
+	end
+
+	local energyBufferStorage = turbine.getEnergyStored()
+	return (math.floor(energyBufferStorage/10000)) -- (buffer/1000000 RF)*100%
+end -- function getTurbineStoredEnergyBufferPercent(turbine)
 
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
@@ -869,7 +883,7 @@ local function displayReactorBars(barParams)
 		-- Draw stored energy buffer bar
 		drawBar(2,8,28,8,colors.gray,monitorIndex)
 
-		local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(reactor)
+		local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactor)
 		if curStoredEnergyPercent > 4 then
 			drawBar(2, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow, monitorIndex)
 		elseif curStoredEnergyPercent > 0 then
@@ -1175,7 +1189,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	drawBar(1,8,28,8,colors.gray,monitorIndex)
 	--paintutils.drawLine(2, 8, 28, 8, colors.gray)
 
-	local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(turbine)
+	local curStoredEnergyPercent = getTurbineStoredEnergyBufferPercent(turbine)
 	if curStoredEnergyPercent > 4 then
 		drawBar(1, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
 	elseif curStoredEnergyPercent > 0 then
@@ -1365,7 +1379,7 @@ function main()
 			end
 
 			if reactor.getConnected() then
-				local curStoredEnergyPercent = getDeviceStoredEnergyBufferPercent(reactor)
+				local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactor)
 
 				-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
 				-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once

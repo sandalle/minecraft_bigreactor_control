@@ -104,6 +104,10 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.7
+	- Fix typo when initializing TurbineNames array.
+	- Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
+
 - 0.3.6
 	- Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
 	- Fix rod auto-adjust text position.
