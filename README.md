@@ -67,8 +67,8 @@ Requirements
 - Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 - Computer or Advanced Computer
 - Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-- Big Reactors (http://www.big-reactors.com/) 0.3
-- Computercraft (http://computercraft.info/) 1.57+
+- Big Reactors (http://www.big-reactors.com/) 0.3.2A+
+- Computercraft (http://computercraft.info/) 1.63+
 - Reset the computer any time number of connected devices change.
 
 Resources
@@ -104,6 +104,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.8
+	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
+
 - 0.3.7
 	- Fix typo when initializing TurbineNames array.
 	- Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).

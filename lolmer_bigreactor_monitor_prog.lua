@@ -1,8 +1,8 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.7
+Version: v0.3.8
 Programmer: Lolmer
-Last update: 2014-04-12
+Last update: 2014-04-18
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -58,8 +58,8 @@ Requirements:
 	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 	Computer or Advanced Computer
 	Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-	Big Reactors (http://www.big-reactors.com/) 0.3
-	Computercraft (http://computercraft.info/) 1.57+
+	Big Reactors (http://www.big-reactors.com/) 0.3.2A+
+	Computercraft (http://computercraft.info/) 1.63+
 	Reset the computer any time number of connected devices change.
 
 Resources:
@@ -82,6 +82,7 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+0.3.8 - Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
 0.3.7 - Fix typo when initializing TurbineNames array.
 	Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
 0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
@@ -242,7 +243,7 @@ local function printLog(printStr)
 			term.redirect(monitorList[#monitorList]) -- Redirect to last monitor for debugging
 			monitorList[#monitorList].setTextScale(0.5) -- Fit more logs on screen
 			write(printStr.."\n")	-- May need to use term.scroll(x) if we output too much, not sure
-			term.restore()
+			term.native()
 		end -- if #monitorList > 1 then
 
 		local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
@@ -454,7 +455,7 @@ local function drawBar(startXPos, startYPos, endXPos, endYPos, color, monitorInd
 	term.redirect(monitor)
 	paintutils.drawLine(startXPos, startYPos, endXPos, endYPos, color)
 	monitor.setBackgroundColor(colors.black) -- PaintUtils doesn't restore the color
-	term.restore()
+	term.native()
 end -- function drawBar(startXPos, startYPos,endXPos,endYPos,color,monitorIndex)
 
 
@@ -473,7 +474,7 @@ local function drawPixel(xPos, yPos, color, monitorIndex)
 	term.redirect(monitor)
 	paintutils.drawPixel(xPos, yPos, color)
 	monitor.setBackgroundColor(colors.black) -- PaintUtils doesn't restore the color
-	term.restore()
+	term.native()
 end -- function drawPixel(xPos, yPos, color, monitorIndex)
 
 
@@ -512,7 +513,7 @@ local function findMonitors()
 				monitor.setCursorPos(1,2)
 				write("Monitor is the wrong size!\n")
 				write("Needs to be 3x2.")
-				term.restore()
+				term.native()
 
 				table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
 				if monitorIndex == #monitorList then	-- If we're at the end already, break from loop
