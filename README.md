@@ -60,7 +60,7 @@ Default values
 - Maximum Energy Buffer: 85% (will power off above this value)
 - Minimum Temperature: 850^C (will raise control rods below this value)
 - Maximum Temperature: 950^C (will lower control rods above this value)
-- Optimal Turbine RPM: 900 or 1,80
+- Optimal Turbine RPM: 900 or 1,800
 
 Requirements
 ----------------------------
