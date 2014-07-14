@@ -60,7 +60,10 @@ Default values
 - Maximum Energy Buffer: 85% (will power off above this value)
 - Minimum Temperature: 850^C (will raise control rods below this value)
 - Maximum Temperature: 950^C (will lower control rods above this value)
-- Optimal Turbine RPM: 900 or 1,800
+- Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
+- Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
+- Optimal Turbine RPM: 900, 1,800, or 2,700 (divisible by 900)
+	- New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
 
 Requirements
 ----------------------------
@@ -104,6 +107,10 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.9
+	- Algorithm pass by Mechaet
+	- Additional user config options by Mechaet
+
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
 

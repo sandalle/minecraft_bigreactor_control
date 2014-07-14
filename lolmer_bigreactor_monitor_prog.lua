@@ -3,7 +3,7 @@ Program name: Lolmer's EZ-NUKE reactor control system
 Version: v0.3.9
 Programmer: Lolmer
 Minor assistance by Mechaet
-Last update: 2014-04-18
+Last update: 2014-07-14
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -52,8 +52,11 @@ Default values:
         Minimum Energy Buffer: 15% (will power on below this value)
         Maximum Energy Buffer: 85% (will power off above this value)
         Minimum Passive Cooling Temperature: 850^C (will raise control rods below this value)
-        Maximum Passive Temperature: 950^C (will lower control rods above this value)
-        Optimal Turbine RPM: 900 or 1,800
+        Maximum Passive Cooling Temperature: 950^C (will lower control rods above this value)
+		Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
+		Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
+        Optimal Turbine RPM:  900, 1,800, or 2,700 (divisible by 900)
+			New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
 
 Requirements:
         Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
@@ -83,7 +86,7 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.9?- Algorithm pass by Mechaet
+0.3.9 - Algorithm pass by Mechaet
 		Additional user config options
 0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
