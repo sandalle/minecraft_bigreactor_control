@@ -713,7 +713,7 @@ local function temperatureControl(reactorIndex)
 
 				baseControlRodLevel = rodPercentage
 			end -- if (reactorTemp > localMaxReactorTemp) and (rodPercentage < 99) then
-		if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp) then
+		if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
 			--engage cruise mode
 			reactorCruising = true
 			lastTempPoll = reactorTemp
@@ -733,7 +733,7 @@ local function reactorCruise(cruiseMinTemp, cruiseMaxTemp, lastPolledTemp, react
 		local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 		local reactorTemp = math.ceil(reactor.getFuelTemperature())		
 		
-		if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp) then
+		if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
 			if (reactorTemp > lastPolledTemp) then
 				rodPercentage = (rodPercentage - 1)
 				--Boundary check
@@ -1558,3 +1558,4 @@ end -- while not finished do
 -- Clear up after an exit
 term.clear()
 term.setCursorPos(1,1)
+end
