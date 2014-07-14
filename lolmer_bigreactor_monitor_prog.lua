@@ -86,8 +86,9 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.9 - Algorithm pass by Mechaet
-		Additional user config options
+0.3.9 - Algorithm pass by Mechaet.
+		Additional user config options.
+		Fix multiple reactors and none or more turbines with only one status monitor.
 0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
 		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
@@ -570,11 +571,6 @@ local function findReactors()
 	-- Overwrite old reactor list with the now updated list
 	reactorList = newReactorList
 
-	-- Check if we have enough monitors for the number of reactors
-	if (#reactorList ~= 1) and ((#turbineList + #reactorList) + 1 < #monitorList) then
-		printLog("You need "..(#reactorList + 1).." monitors for your "..#reactorList.." connected reactors")
-	end
-
 	-- Start turbine monitor offset after reactors get monitors
 	-- This assumes that there is a monitor for each turbine and reactor, plus the overall monitor display
 	turbineMonitorOffset = #reactorList + 1 -- #turbineList will start at "1" if turbines found and move us just beyond #reactorList and status monitor range
@@ -610,11 +606,6 @@ local function findTurbines()
 
 		-- Overwrite old turbine list with the now updated list
 		turbineList = newTurbineList
-
-		-- Check if we have enough monitors for the number of turbines
-		if #monitorList < (#reactorList + #turbineList + 1) then
-			printLog("You need "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines")
-		end
 	end -- if #newTurbineList == 0 then
 end -- function findTurbines()
 
@@ -1361,12 +1352,11 @@ function main()
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
-		if (((#reactorList + #turbineList) > 1) and (#monitorList > 1)) or
-			(((#reactorList + #turbineList) > 1) and (#monitorList == 1)) then
+		if (((#reactorList + #turbineList) > 1) and (#monitorList >= 1)) then
 				local monitor = nil
 				monitor = monitorList[monitorIndex]
 				if not monitor then
-					printLog("monitorList["..monitorIndex.."] in turbineStatus() was not a valid monitor")
+					printLog("monitorList["..monitorIndex.."] in main() was not a valid monitor")
 					return -- Invalid monitorIndex
 				end
 
@@ -1376,22 +1366,26 @@ function main()
 			monitorIndex = 2
 		end
 
-		-- Iterate through reactors
+		-- Iterate through reactors, continue to run even if not enough monitors are connected
 		for reactorIndex = 1, #reactorList do
 			local monitor = nil
-			monitor = monitorList[monitorIndex]
-			if not monitor then
-				printLog("monitorList["..monitorIndex.."] in turbineStatus() was not a valid monitor")
-				return -- Invalid monitorIndex
-			end
-
 			local reactorMonitorIndex = monitorIndex + reactorIndex - 1 -- reactorIndex starts at 1
 
-			clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
-			printCentered(progName, 1, reactorMonitorIndex)
+			-- Only attempt to assign a monitor if we found enough monitors for all reactors and turbines
+			if (#reactorList ~= 1) and ((#turbineList + #reactorList + 1) <= #monitorList) then
+				monitor = monitorList[reactorMonitorIndex]
+			end
 
-			-- Display reactor status, includes "Disconnected" but found reactors
-			reactorStatus{reactorIndex, reactorMonitorIndex}
+			if not monitor then
+				printLog("monitorList["..reactorMonitorIndex.."] in turbineStatus() was not a valid monitor")
+				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines")
+			else
+				clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
+				printCentered(progName, 1, reactorMonitorIndex)
+
+				-- Display reactor status, includes "Disconnected" but found reactors
+				reactorStatus{reactorIndex, reactorMonitorIndex}
+			end -- if not monitor
 
 			reactor = reactorList[reactorIndex]
 			if not reactor then
@@ -1416,25 +1410,33 @@ function main()
 					temperatureControl(reactorIndex)
 				end
 
-				displayReactorBars{reactorIndex,reactorMonitorIndex}
+				-- Only attempt to display bars if there is a monitor connected
+				if monitor then
+					displayReactorBars{reactorIndex, reactorMonitorIndex}
+				end
 			end     -- if reactor.getConnected() then
 		end     -- for reactorIndex = 1, #reactorList do
 
 		-- Monitors for turbines start after turbineMonitorOffset
 		for turbineIndex = 1, #turbineList do
 			local monitor = nil
-			monitor = monitorList[monitorIndex]
-			if not monitor then
-				printLog("monitorList["..monitorIndex.."] in turbineStatus() was not a valid monitor")
-				return -- Invalid monitorIndex
+			local turbineMonitorIndex = turbineIndex + turbineMonitorOffset
+
+			-- Only attempt to assign a monitor if we found enough monitors for all reactors and turbines
+			if (#reactorList ~= 1) and ((#turbineList + #reactorList + 1) <= #monitorList) then
+				monitor = monitorList[turbineMonitorIndex]
 			end
 
-			local turbineMonitorIndex = turbineIndex+turbineMonitorOffset
-			clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
-			printCentered(progName, 1, turbineMonitorIndex)
+			if not monitor then
+				printLog("monitorList["..turbineMonitorIndex.."] in main() was not a valid monitor")
+				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines")
+			else
+				clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
+				printCentered(progName, 1, turbineMonitorIndex)
 
-			-- Display turbine status, includes "Disconnected" but found turbines
-			turbineStatus(turbineIndex, turbineMonitorIndex)
+				-- Display turbine status, includes "Disconnected" but found turbines
+				turbineStatus(turbineIndex, turbineMonitorIndex)
+			end -- if not monitor
 
 			turbine = turbineList[turbineIndex]
 			if not turbine then
@@ -1447,7 +1449,10 @@ function main()
 					flowRateControl(turbineIndex)
 				end
 
-				displayTurbineBars(turbineIndex,turbineMonitorIndex)
+				-- Only attempt to display bars if there is a monitor connected
+				if monitor then
+					displayTurbineBars(turbineIndex, turbineMonitorIndex)
+				end
 			end
 		end -- for reactorIndex = 1, #reactorList do
 

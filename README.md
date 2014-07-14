@@ -108,8 +108,9 @@ Resources
 ChangeLog
 ============================
 - 0.3.9
-	- Algorithm pass by Mechaet
-	- Additional user config options by Mechaet
+	- Algorithm pass by Mechaet.
+	- Additional user config options by Mechaet.
+	- Fix multiple reactors and none or more turbines with only one status monitor.
 
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
