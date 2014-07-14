@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.4.0A
+Version: v0.3.9
 Programmer: Lolmer
 Minor assistance by Mechaet
 Last update: 2014-07-14
@@ -86,9 +86,9 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.4.0A- Cruise mode implemented, defaults off but is saved between boots
 0.3.9 - Algorithm pass by Mechaet
 		Additional user config options
+		Cruise mode implemented, defaults off but is saved between boots
 0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
 		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
@@ -155,7 +155,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.4.0A"
+local progVer = "0.3.9"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -671,6 +671,7 @@ local function temperatureControl(reactorIndex)
 		-- below was 300
 			localMaxReactorTemp = 420
 		end
+		
 		if reactorCruising then
 			--let's bypass all this math and hit the much-more-subtle cruise feature
 			reactorCruise(localMinReactorTemp, localMaxReactorTemp, lastTempPoll, reactorIndex)
@@ -713,10 +714,11 @@ local function temperatureControl(reactorIndex)
 
 				baseControlRodLevel = rodPercentage
 			end -- if (reactorTemp > localMaxReactorTemp) and (rodPercentage < 99) then
-		if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
-			--engage cruise mode
-			reactorCruising = true
-			lastTempPoll = reactorTemp
+			if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+				--engage cruise mode
+				reactorCruising = true
+				lastTempPoll = reactorTemp
+			end
 		end
 	end -- if reactor.getActive() then
 end -- function temperatureControl(reactorIndex)
@@ -1558,4 +1560,3 @@ end -- while not finished do
 -- Clear up after an exit
 term.clear()
 term.setCursorPos(1,1)
-end
