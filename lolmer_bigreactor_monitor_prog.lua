@@ -390,6 +390,7 @@ local function clearMonitor(printString, monitorIndex)
 	local gap = 2
 	monitor.clear()
 	local width, height = monitor.getSize()
+	monitor.setTextScale(1.0)	-- Make sure scale is correct
 
 	printCentered(printString, 1, monitorIndex)
 	monitor.setTextColor(colors.blue)

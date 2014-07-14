@@ -111,6 +111,7 @@ ChangeLog
 	- Algorithm pass by Mechaet.
 	- Additional user config options by Mechaet.
 	- Fix multiple reactors and none or more turbines with only one status monitor.
+	- Fix monitor scaling after one was used as debug (or in case of other modifications).
 
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
