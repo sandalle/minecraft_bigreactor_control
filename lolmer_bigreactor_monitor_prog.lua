@@ -516,10 +516,10 @@ local function findMonitors()
 			if monitorX < 29 or monitorY < 12 then
 				term.redirect(monitor)
 				monitor.clear()
-				printLog("Removing monitor "..monitorIndex.." for incorrect size")
+				printLog("Removing monitor "..monitorIndex.." for being too small")
 				monitor.setCursorPos(1,2)
 				write("Monitor is the wrong size!\n")
-				write("Needs to be 3x2.")
+				write("Needs to be at least 3x2.")
 				term.native()
 
 				table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
