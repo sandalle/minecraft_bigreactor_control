@@ -1,8 +1,9 @@
-	--[[
+--[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.8
+Version: v0.3.9
 Programmer: Lolmer
-Last update: 2014-04-18
+Minor assistance by Mechaet
+Last update: 2014-07-14
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -12,68 +13,71 @@ This program was designed to work with the mods and versions installed on Never 
 
 To simplify the code and guesswork, I assume the following monitor layout:
 1) One Advanced Monitor for overall status display plus
-	one or more Reactors plus
-	none or more Turbines.
+		one or more Reactors plus
+		none or more Turbines.
 2) One Advanced Monitor for overall status display plus (first found monitor)
-	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
-	one Advanced Monitor for each connected Turbine (last group of monitors found).
+		one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
+		one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
 Notes:
-	Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
-	Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
-	Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam
+		Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
+		Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
+		Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam.
 
 When using actively cooled reactors with turbines, keep the following in mind:
-	- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
-	- Actively cooled reactors produce steam, not power.
-	- You will need about 10 mB of water for each 1 mB of steam that you want to create in a 7^3 reactor.
+		- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
+		- Actively cooled reactors produce steam, not power.
+		- You will need about 10 mB of water for each 1 mB of steam that you want to create in a 7^3 reactor.
 
 Features:
-	Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
-	ReactorOptions is read on start and then current values are saved every program cycle.
-	Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
-	Auto-adjusts control rods per reactor to maintain temperature.
-	Will display reactor data to all attached monitors of correct dimensions.
+		Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
+		ReactorOptions is read on start and then current values are saved every program cycle.
+		Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
+		Auto-adjusts control rods per reactor to maintain temperature.
+		Will display reactor data to all attached monitors of correct dimensions.
+			For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
 		For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
-	For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
 
 GUI Usage:
-	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
-		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
-		"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
-	Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
-		Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
-	Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
+		The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
+			"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
+			"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+		Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
+			Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
+		Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
 
 Default values:
-	Rod Control: 90% (Let's start off safe and then power up as we can)
-	Minimum Energy Buffer: 15% (will power on below this value)
-	Maximum Energy Buffer: 85% (will power off above this value)
-	Minimum Passive Cooling Temperature: 850^C (will raise control rods below this value)
-	Maximum Passive Temperature: 950^C (will lower control rods above this value)
-	Optimal Turbine RPM: 900 or 1,800
+		Rod Control: 90% (Let's start off safe and then power up as we can)
+		Minimum Energy Buffer: 15% (will power on below this value)
+		Maximum Energy Buffer: 85% (will power off above this value)
+		Minimum Passive Cooling Temperature: 850^C (will raise control rods below this value)
+		Maximum Passive Cooling Temperature: 950^C (will lower control rods above this value)
+		Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
+		Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
+		Optimal Turbine RPM:  900, 1,800, or 2,700 (divisible by 900)
+		New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
 
 Requirements:
-	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
-	Computer or Advanced Computer
-	Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-	Big Reactors (http://www.big-reactors.com/) 0.3.2A+
-	Computercraft (http://computercraft.info/) 1.63+
-	Reset the computer any time number of connected devices change.
+		Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
+		Computer or Advanced Computer
+		Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
+		Big Reactors (http://www.big-reactors.com/) 0.3.2A+
+		Computercraft (http://computercraft.info/) 1.63+
+		Reset the computer any time number of connected devices change.
 
 Resources:
 This script is available from:
-	http://pastebin.com/fguScPBQ
-	https://github.com/sandalle/minecraft_bigreactor_control
+		http://pastebin.com/fguScPBQ
+		https://github.com/sandalle/minecraft_bigreactor_control
 Start-up script is available from:
-	http://pastebin.com/ZTMzRLez
-	https://github.com/sandalle/minecraft_bigreactor_control
+		http://pastebin.com/ZTMzRLez
+		https://github.com/sandalle/minecraft_bigreactor_control
 Other reactor control program which I based my program on:
-	http://pastebin.com/aMAu4X5J (ScatmanJohn)
-	http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
+		http://pastebin.com/aMAu4X5J (ScatmanJohn)
+		http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
 A simpler Big Reactor control program is available from:
-	http://pastebin.com/7S5xCvgL (IronClaymore only for passively cooled reactors)
+		http://pastebin.com/7S5xCvgL (IronClaymore only for passively cooled reactors)
 
 Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
 Computercraft API: http://computercraft.info/wiki/Category:APIs
@@ -82,60 +86,62 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.8 - Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
+0.3.9 - Algorithm pass by Mechaet
+		Additional user config options
+0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
-	Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
+		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
 0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
-	Fix rod auto-adjust text position.
-	Reactors store 10M RF and Turbines store 1M RF in their buffer.
-	Add more colour to displayAllStatus().
-	Sleep for only two seconds instead of five.
-	Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
-	Keep actively cooled reactors between 0-300^C (non-configurable for now).
+		Fix rod auto-adjust text position.
+		Reactors store 10M RF and Turbines store 1M RF in their buffer.
+		Add more colour to displayAllStatus().
+		Sleep for only two seconds instead of five.
+		Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
+		Keep actively cooled reactors between 0-300^C (non-configurable for now).
 0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
-	Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
-	Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
+		Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
+		Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
 0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
-	Turbines are optimal at 900, 1800, *and* 2700 RPM
-	Increase loop timer from 1 to 5 to be nicer to servers
+		Turbines are optimal at 900, 1800, *and* 2700 RPM
+		Increase loop timer from 1 to 5 to be nicer to servers
 0.3.3 - Add Big Reactor Turbine support
-	First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
-	Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
-	Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
-	Add monitor layout requirements to simplify code
-	Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
-	Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
-	Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
-	Allow for one monitor for n number of reactors and m number of turbines
-	Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
-	Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
-	Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
-	Remove version number from monitors to free up space for monitor names.
-	Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
+		First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
+		Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
+		Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
+		Add monitor layout requirements to simplify code
+		Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
+		Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
+		Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
+		Allow for one monitor for n number of reactors and m number of turbines
+		Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
+		Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
+		Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
+		Remove version number from monitors to free up space for monitor names.
+		Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
 0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 0.3.1 - Add fuel consumption per tick to display
 0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
-	print function now takes table to support optional specified monitor
-	Set "numRods" every cycle for some people (mechaet)
-	Don't redirect terminal output with multiple monitor support
-	Log troubleshooting data to reactorcontrol.log
-	FC_API no longer used (copied and modified what I needed)
-	Multi-reactor support is theoretically implemented, but it is UNTESTED!
-	Updated for Big Reactor 0.3 (no longer works with 0.2)
-	BR getFuelTemperature() now returns many significant digits, just use math.ceil()
-	BR 0.3 removed individual rod temperatures, now it's only reactor-level temperature
+		print function now takes table to support optional specified monitor
+		Set "numRods" every cycle for some people (mechaet)
+		Don't redirect terminal output with multiple monitor support
+		Log troubleshooting data to reactorcontrol.log
+		FC_API no longer used (copied and modified what I needed)
+		Multi-reactor support is theoretically implemented, but it is UNTESTED!
+		Updated for Big Reactor 0.3 (no longer works with 0.2)
+		BR getFuelTemperature() now returns many significant digits, just use math.ceil()
+		BR 0.3 removed individual rod temperatures, now it's only reactor-level temperature
 0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
-	Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
+		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
 0.2.2 - Do not auto-start the reactor if it was manually powered off (autoStart=false)
 0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
-	"<" Rod Control buttons was off by one (to the left)
+		"<" Rod Control buttons was off by one (to the left)
 0.2.0 - Lolmer Edition :)
-	Add min/max stored energy percentage (default is 15%/85%), configurable via ReactorOptions file.
-	No reason to keep burning fuel if our power output is going nowhere. :)
-	Use variables variable for the title and version.
-	Try to keep the temperature between configured values (default is 850^C-950^C)
-	Add Waste and number of Control/Fuel Rods to displayBards()
+		Add min/max stored energy percentage (default is 15%/85%), configurable via ReactorOptions file.
+		No reason to keep burning fuel if our power output is going nowhere. :)
+		Use variables variable for the title and version.
+		Try to keep the temperature between configured values (default is 850^C-950^C)
+		Add Waste and number of Control/Fuel Rods to displayBards()
 
 TODO:
 - Save parameters per reactor instead of one global set for all reactors
@@ -143,13 +149,12 @@ TODO:
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
-- Still requires a monitor for reach reactor and turbine to function.
 
 ]]--
 
 
 -- Some global variables
-local progVer = "0.3.8"
+local progVer = "0.3.9"
 local progName = "EZ-NUKE "
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -164,6 +169,7 @@ local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
 local minReactorTemp = nil -- Minimum reactor temperature (^C) to maintain
 local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
+local turbineBaseSpeed = nil -- Target (user-configured in ReactorOptions) turbine speed, default 2726RPM
 local autoStart = {} -- Array for automatically starting reactors
 local monitorList = {} -- Empty monitor array
 local monitorNames = {} -- Empty array of monitor names
@@ -215,23 +221,23 @@ local function round(num, places)
 
 	local newNum = ""
 	for i=num:len(), 1, -1 do
-			digit = tonumber(num:sub(i))
-			if digit == 9 then
-					if i > 1 then
-							newNum = "0"..newNum
-					else
-							newNum = "10"..newNum
-					end
-			elseif digit == nil then
-					newNum = "."..newNum
-			else
-					if i > 1 then
-							newNum = num:sub(1,i-1)..(digit + 1)..newNum
-					else
-							newNum = (digit + 1)..newNum
-					end
-					return tonumber(newNum) --No more 9s found, so we are done incrementing. Copy remaining digits, then return number.
-			end -- if digit == 9 then
+		digit = tonumber(num:sub(i))
+		if digit == 9 then
+		if i > 1 then
+			newNum = "0"..newNum
+		else
+			newNum = "10"..newNum
+		end
+		elseif digit == nil then
+		newNum = "."..newNum
+		else
+		if i > 1 then
+			newNum = num:sub(1,i-1)..(digit + 1)..newNum
+		else
+			newNum = (digit + 1)..newNum
+		end
+		return tonumber(newNum) --No more 9s found, so we are done incrementing. Copy remaining digits, then return number.
+		end -- if digit == 9 then
 	end -- for i=num:len(), 1, -1 do
 	return tonumber(newNum)
 end -- function round(num, places
@@ -243,7 +249,7 @@ local function printLog(printStr)
 		if #monitorList > 1 then
 			term.redirect(monitorList[#monitorList]) -- Redirect to last monitor for debugging
 			monitorList[#monitorList].setTextScale(0.5) -- Fit more logs on screen
-			write(printStr.."\n")	-- May need to use term.scroll(x) if we output too much, not sure
+			write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
 			term.native()
 		end -- if #monitorList > 1 then
 
@@ -517,7 +523,7 @@ local function findMonitors()
 				term.native()
 
 				table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
-				if monitorIndex == #monitorList then	-- If we're at the end already, break from loop
+				if monitorIndex == #monitorList then    -- If we're at the end already, break from loop
 					break
 				else
 					monitorIndex = monitorIndex - 1 -- We just removed an element
@@ -654,9 +660,13 @@ local function temperatureControl(reactorIndex)
 	-- No point modifying control rod levels for temperature if the reactor is offline
 	if reactor.getActive() then
 		-- Actively cooled reactors should range between 0^C-300^C
+		-- Actually, active-cooled reactors should range between 300 and 420C (Mechaet)
+		-- Accordingly I changed the below lines
 		if reactor.isActivelyCooled() then
-			localMinReactorTemp = 0
-			localMaxReactorTemp = 300
+		-- below was 0
+			localMinReactorTemp = 300
+		-- below was 300
+			localMaxReactorTemp = 420
 		end
 
 		-- Don't bring us to 100, that's effectively a shutdown
@@ -713,6 +723,8 @@ local function loadReactorOptions()
 		minReactorTemp = reactorOptions.readLine()
 		maxReactorTemp = reactorOptions.readLine()
 		reactorRodOverride = reactorOptions.readLine() -- Should be string "true" or "false"
+		--added by Mechaet
+		turbineBaseSpeed = reactorOptions.readLine()
 
 		-- If we succeeded in reading a string, convert it to a number
 		if baseControlRodLevel ~= nil then
@@ -739,6 +751,12 @@ local function loadReactorOptions()
 			reactorRodOverride = true
 		else
 			reactorRodOverride = false
+		end
+
+		if turbineBaseSpeed ~= nil then
+		turbineBaseSpeed = tonumber(turbineBaseSpeed)
+		else
+		turbineBaseSpeed = 2726
 		end
 
 		reactorOptions.close()
@@ -781,6 +799,7 @@ local function saveReactorOptions()
 		reactorOptions.writeLine(minReactorTemp)
 		reactorOptions.writeLine(maxReactorTemp)
 		reactorOptions.writeLine(reactorRodOverride)
+		reactorOptions.writeLine(turbineBaseSpeed)
 		reactorOptions.close()
 	else
 		printLog("Failed to open file ReactorOptions for writing!")
@@ -917,7 +936,7 @@ local function displayReactorBars(barParams)
 	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
 
-    local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
+local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %", 2, 10, monitorIndex}
 	print{"Fuel: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t", 2, 11, monitorIndex}
@@ -1303,10 +1322,14 @@ local function flowRateControl(turbineIndex)
 		if (((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax))
 			or (flowRate == 0) then
 			-- Make sure we are not going too fast
-			if rotorSpeed > 2700 then
+			--if rotorSpeed > 2700 then
+			--changed by Mechaet
+			if rotorSpeed > turbineBaseSpeed then
 				newFlowRate = flowRateUserMax - flowRateAdjustAmount
 			-- Make sure we're not going too slow
-			elseif rotorSpeed < 900 then
+			--elseif rotorSpeed < 900 then
+			--changed by Mechaet
+			elseif rotorSpeed < turbineBaseSpeed then
 				newFlowRate = flowRateUserMax + flowRateAdjustAmount
 			-- We're not at optimal RPM or flow-rate and we're not out-of-bounds
 			else
@@ -1398,8 +1421,8 @@ function main()
 				end
 
 				displayReactorBars{reactorIndex,reactorMonitorIndex}
-			end	-- if reactor.getConnected() then
-		end	-- for reactorIndex = 1, #reactorList do
+			end     -- if reactor.getConnected() then
+		end     -- for reactorIndex = 1, #reactorList do
 
 		-- Monitors for turbines start after turbineMonitorOffset
 		for turbineIndex = 1, #turbineList do
@@ -1432,7 +1455,7 @@ function main()
 			end
 		end -- for reactorIndex = 1, #reactorList do
 
-		sleep(loopTime)	-- Sleep
+		sleep(loopTime) -- Sleep
 		saveReactorOptions()
 	end -- while not finished do
 end -- main()
