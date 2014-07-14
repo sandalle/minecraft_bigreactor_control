@@ -936,7 +936,7 @@ local function displayReactorBars(barParams)
 	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
 
-local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
+	local numRods = reactor.getNumberOfControlRods() - 1 -- Call every time as some people modify their reactor without rebooting the computer
 
 	print{"Reactivity: "..math.ceil(reactor.getFuelReactivity()).." %", 2, 10, monitorIndex}
 	print{"Fuel: "..round(reactor.getFuelConsumedLastTick(),3).." mB/t", 2, 11, monitorIndex}
@@ -1322,12 +1322,10 @@ local function flowRateControl(turbineIndex)
 		if (((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax))
 			or (flowRate == 0) then
 			-- Make sure we are not going too fast
-			--if rotorSpeed > 2700 then
 			--changed by Mechaet
 			if rotorSpeed > turbineBaseSpeed then
 				newFlowRate = flowRateUserMax - flowRateAdjustAmount
 			-- Make sure we're not going too slow
-			--elseif rotorSpeed < 900 then
 			--changed by Mechaet
 			elseif rotorSpeed < turbineBaseSpeed then
 				newFlowRate = flowRateUserMax + flowRateAdjustAmount
