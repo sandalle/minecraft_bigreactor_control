@@ -645,6 +645,46 @@ local function getTurbineStoredEnergyBufferPercent(turbine)
 	return (math.floor(energyBufferStorage/10000)) -- (buffer/1000000 RF)*100%
 end -- function getTurbineStoredEnergyBufferPercent(turbine)
 
+local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, reactorIndex)
+
+	if ((lastPolledTemp < cruiseMaxTemp) and (lastPolledTemp > cruiseMinTemp)) then
+		local reactor = nil
+		reactor = reactorList[reactorIndex]
+		if not reactor then
+			printLog("reactorList["..reactorIndex.."] in temperatureControl() was not a valid Big Reactor")
+			return -- Invalid reactorIndex
+		end
+
+		local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
+		local reactorTemp = math.ceil(reactor.getFuelTemperature())		
+		
+		if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
+			if (reactorTemp > lastPolledTemp) then
+				rodPercentage = (rodPercentage - 1)
+				--Boundary check
+				if rodPercentage < 0 then
+					reactor.setAllControlRodLevels(0)
+				else
+					reactor.setAllControlRodLevels(rodPercentage)
+				end
+			else
+				rodPercentage = (rodPercentage + 1)
+				--Boundary check
+				if rodPercentage > 99 then
+					reactor.setAllControlRodLevels(99)
+				else
+					reactor.setAllControlRodLevels(rodPercentage)
+				end
+			end
+		else
+			--disengage cruise, we've fallen out of the ideal temperature range
+			reactorCruising = false
+		end
+	else
+		--I don't know how we'd get here, but let's turn the cruise mode off
+		reactorCruising = false
+	end
+end
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
 -- wait an in-game half-hour for the temperature to stabalize before modifying again
@@ -656,6 +696,7 @@ local function temperatureControl(reactorIndex)
 		return -- Invalid reactorIndex
 	end
 
+	local reactorNum = reactorIndex
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
@@ -674,7 +715,8 @@ local function temperatureControl(reactorIndex)
 		
 		if reactorCruising then
 			--let's bypass all this math and hit the much-more-subtle cruise feature
-			reactorCruise(localMinReactorTemp, localMaxReactorTemp, lastTempPoll, reactorIndex)
+			--printLog("min: "..localMinReactorTemp..", max: "..localMaxReactorTemp..", lasttemp: "..lastTempPoll..", ri: "..reactorIndex.."  EOL")
+			reactorCruise(localMaxReactorTemp, localMinReactorTemp, lastTempPoll, reactorIndex)
 		else
 			-- Don't bring us to 100, that's effectively a shutdown
 			if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
@@ -722,46 +764,6 @@ local function temperatureControl(reactorIndex)
 		end
 	end -- if reactor.getActive() then
 end -- function temperatureControl(reactorIndex)
-
-local function reactorCruise(cruiseMinTemp, cruiseMaxTemp, lastPolledTemp, reactorIndex)
-	if ((lastPolledTemp < cruiseMaxTemp) and (lastPolledTemp > cruiseMinTemp)) then
-		local reactor = nil
-		reactor = reactorList[reactorIndex]
-		if not reactor then
-			printLog("reactorList["..reactorIndex.."] in temperatureControl() was not a valid Big Reactor")
-			return -- Invalid reactorIndex
-		end
-
-		local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
-		local reactorTemp = math.ceil(reactor.getFuelTemperature())		
-		
-		if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
-			if (reactorTemp > lastPolledTemp) then
-				rodPercentage = (rodPercentage - 1)
-				--Boundary check
-				if rodPercentage < 0 then
-					reactor.setAllControlRodLevels(0)
-				else
-					reactor.setAllControlRodLevels(rodPercentage)
-				end
-			else
-				rodPercentage = (rodPercentage + 1)
-				--Boundary check
-				if rodPercentage > 99 then
-					reactor.setAllControlRodLevels(99)
-				else
-					reactor.setAllControlRodLevels(rodPercentage)
-				end
-			end
-		else
-			--disengage cruise, we've fallen out of the ideal temperature range
-			reactorCruising = false
-		end
-	else
-		--I don't know how we'd get here, but let's turn the cruise mode off
-		reactorCruising = false
-	end
-end
 
 -- Load saved reactor parameters if ReactorOptions file exists
 local function loadReactorOptions()
