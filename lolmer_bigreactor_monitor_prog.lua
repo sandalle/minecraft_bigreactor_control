@@ -90,8 +90,9 @@ ChangeLog:
 		Additional user config options.
 		Fix multiple reactors and none or more turbines with only one status monitor.
 		Fix monitor scaling after one was used as debug (or in case of other modifications).
-		Fix energy/% displays to match Big Reactors' GUI (Issue #9)
-		Cruise mode implemented, defaults off but is saved between boots
+		Fix energy/% displays to match Big Reactors' GUI (Issue #9).
+		Cruise mode implemented, defaults off but is saved between boots.
+		Always write out found devices on computer terminal.
 0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
 		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
@@ -188,7 +189,7 @@ local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 
 term.clear()
 term.setCursorPos(2,1)
-term.write("Initializing program...")
+write("Initializing program...\n")
 
 
 -- File needs to exist for append "a" later and zero it out if it already exists
@@ -426,6 +427,7 @@ local function getDevices(deviceType)
 		if (string.lower(peripheral.getType(peripheralList[peripheralIndex])) == deviceType) then
 			-- Log devices found which match deviceType and which device index we give them
 			printLog("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] as index \"["..deviceIndex.."]\" attached as \""..peripheralList[peripheralIndex].."\".")
+			write("Found "..peripheral.getType(peripheralList[peripheralIndex]).."["..peripheralIndex.."] as index \"["..deviceIndex.."]\" attached as \""..peripheralList[peripheralIndex].."\".\n")
 			deviceNames[deviceIndex] = peripheralList[peripheralIndex]
 			deviceList[deviceIndex] = peripheral.wrap(peripheralList[peripheralIndex])
 			deviceIndex = deviceIndex + 1
@@ -1450,7 +1452,7 @@ function main()
 			end
 
 			if not monitor then
-				printLog("monitorList["..reactorMonitorIndex.."] in turbineStatus() was not a valid monitor")
+				printLog("monitorList["..reactorMonitorIndex.."] in main() was not a valid monitor")
 				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines")
 			else
 				clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
