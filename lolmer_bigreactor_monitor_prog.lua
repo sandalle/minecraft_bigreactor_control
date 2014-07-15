@@ -89,6 +89,8 @@ ChangeLog:
 0.3.9 - Algorithm pass by Mechaet.
 		Additional user config options.
 		Fix multiple reactors and none or more turbines with only one status monitor.
+		Fix monitor scaling after one was used as debug (or in case of other modifications).
+		Fix energy/% displays to match Big Reactors' GUI (Issue #9)
 0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
 		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
@@ -241,7 +243,7 @@ local function round(num, places)
 		end -- if digit == 9 then
 	end -- for i=num:len(), 1, -1 do
 	return tonumber(newNum)
-end -- function round(num, places
+end -- function round(num, places)
 
 
 local function printLog(printStr)
@@ -619,7 +621,7 @@ local function getReactorStoredEnergyBufferPercent(reactor)
 	end
 
 	local energyBufferStorage = reactor.getEnergyStored()
-	return (math.floor(energyBufferStorage/100000)) -- (buffer/10000000 RF)*100%
+	return round(energyBufferStorage/100000, 1) -- (buffer/10000000 RF)*100%
 end -- function getReactorStoredEnergyBufferPercent(reactor)
 
 
@@ -631,7 +633,7 @@ local function getTurbineStoredEnergyBufferPercent(turbine)
 	end
 
 	local energyBufferStorage = turbine.getEnergyStored()
-	return (math.floor(energyBufferStorage/10000)) -- (buffer/1000000 RF)*100%
+	return round(energyBufferStorage/10000, 1) -- (buffer/1000000 RF)*100%
 end -- function getTurbineStoredEnergyBufferPercent(turbine)
 
 
@@ -840,7 +842,7 @@ local function displayReactorBars(barParams)
 
 	local padding = math.max(string.len(fuelString), string.len(tempString), string.len(energyBufferString))
 
-	local fuelPercentage = math.ceil(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100)
+	local fuelPercentage = round(reactor.getFuelAmount()/reactor.getFuelAmountMax()*100,1)
 	print{fuelString,2,3,monitorIndex}
 	print{fuelPercentage.." %",padding+2,3,monitorIndex}
 
@@ -884,7 +886,7 @@ local function displayReactorBars(barParams)
 
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
-	print{rodPercentage,25,4,monitorIndex}
+	print{round(rodPercentage,0),25,4,monitorIndex}
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
 	local energyBuffer = reactor.getEnergyProducedLastTick()
@@ -1177,7 +1179,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 	print{"  Flow",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
-	print{turbineFlowRate,23,4,monitorIndex}
+	print{round(turbineFlowRate,0),23,4,monitorIndex}
 	print{"  mB/t",22,5,monitorIndex}
 
 	local rotorSpeedString = "Speed: "
