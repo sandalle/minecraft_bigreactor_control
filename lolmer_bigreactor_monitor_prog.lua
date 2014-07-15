@@ -86,11 +86,13 @@ Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/
 Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+<<<<<<< HEAD
 0.3.9 - Algorithm pass by Mechaet.
 		Additional user config options.
 		Fix multiple reactors and none or more turbines with only one status monitor.
 		Fix monitor scaling after one was used as debug (or in case of other modifications).
 		Fix energy/% displays to match Big Reactors' GUI (Issue #9)
+		Cruise mode implemented, defaults off but is saved between boots
 0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
 		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
@@ -173,6 +175,8 @@ local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
 local minReactorTemp = nil -- Minimum reactor temperature (^C) to maintain
 local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
 local turbineBaseSpeed = nil -- Target (user-configured in ReactorOptions) turbine speed, default 2726RPM
+local reactorCruising = false -- Cruise mode for active-cooled reactors, enable/disable switch
+local lastTempPoll = 0 -- Cruise mode global temperature comparator
 local autoStart = {} -- Array for automatically starting reactors
 local monitorList = {} -- Empty monitor array
 local monitorNames = {} -- Empty array of monitor names
@@ -636,6 +640,46 @@ local function getTurbineStoredEnergyBufferPercent(turbine)
 	return round(energyBufferStorage/10000, 1) -- (buffer/1000000 RF)*100%
 end -- function getTurbineStoredEnergyBufferPercent(turbine)
 
+local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, reactorIndex)
+
+	if ((lastPolledTemp < cruiseMaxTemp) and (lastPolledTemp > cruiseMinTemp)) then
+		local reactor = nil
+		reactor = reactorList[reactorIndex]
+		if not reactor then
+			printLog("reactorList["..reactorIndex.."] in temperatureControl() was not a valid Big Reactor")
+			return -- Invalid reactorIndex
+		end
+
+		local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
+		local reactorTemp = math.ceil(reactor.getFuelTemperature())		
+		
+		if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
+			if (reactorTemp > lastPolledTemp) then
+				rodPercentage = (rodPercentage - 1)
+				--Boundary check
+				if rodPercentage < 0 then
+					reactor.setAllControlRodLevels(0)
+				else
+					reactor.setAllControlRodLevels(rodPercentage)
+				end
+			else
+				rodPercentage = (rodPercentage + 1)
+				--Boundary check
+				if rodPercentage > 99 then
+					reactor.setAllControlRodLevels(99)
+				else
+					reactor.setAllControlRodLevels(rodPercentage)
+				end
+			end
+		else
+			--disengage cruise, we've fallen out of the ideal temperature range
+			reactorCruising = false
+		end
+	else
+		--I don't know how we'd get here, but let's turn the cruise mode off
+		reactorCruising = false
+	end
+end
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
 -- wait an in-game half-hour for the temperature to stabalize before modifying again
@@ -647,6 +691,7 @@ local function temperatureControl(reactorIndex)
 		return -- Invalid reactorIndex
 	end
 
+	local reactorNum = reactorIndex
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
@@ -662,48 +707,58 @@ local function temperatureControl(reactorIndex)
 		-- below was 300
 			localMaxReactorTemp = 420
 		end
+		
+		if reactorCruising then
+			--let's bypass all this math and hit the much-more-subtle cruise feature
+			--printLog("min: "..localMinReactorTemp..", max: "..localMaxReactorTemp..", lasttemp: "..lastTempPoll..", ri: "..reactorIndex.."  EOL")
+			reactorCruise(localMaxReactorTemp, localMinReactorTemp, lastTempPoll, reactorIndex)
+		else
+			-- Don't bring us to 100, that's effectively a shutdown
+			if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+				-- If more than double our maximum temperature, increase rodPercentage faster
+				if reactorTemp > (2 * localMaxReactorTemp) then
+					-- Check bounds, Big Reactor doesn't do this for us. :)
+					if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
+						reactor.setAllControlRodLevels(99)
+					else
+						reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
+					end
+				else
+					-- Check bounds, Big Reactor doesn't do this for us. :)
+					if (rodPercentage + controlRodAdjustAmount) > 99 then
+						reactor.setAllControlRodLevels(99)
+					else
+						reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
+					end
+				end -- if reactorTemp > (2 * localMaxReactorTemp) then
+			elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~= 0) then
+				-- If less than half our minimum temperature, decrease rodPercentage faster
+				if reactorTemp < (localMinReactorTemp / 2) then
+					-- Check bounds, Big Reactor doesn't do this for us. :)
+					if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
+						reactor.setAllControlRodLevels(0)
+					else
+						reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
+					end
+				else
+					-- Check bounds, Big Reactor doesn't do this for us. :)
+					if (rodPercentage - controlRodAdjustAmount) < 0 then
+						reactor.setAllControlRodLevels(0)
+					else
+						reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
+					end
+				end -- if reactorTemp < (localMinReactorTemp / 2) then
 
-		-- Don't bring us to 100, that's effectively a shutdown
-		if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
-			-- If more than double our maximum temperature, increase rodPercentage faster
-			if reactorTemp > (2 * localMaxReactorTemp) then
-				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
-					reactor.setAllControlRodLevels(99)
-				else
-					reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
-				end
-			else
-				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage + controlRodAdjustAmount) > 99 then
-					reactor.setAllControlRodLevels(99)
-				else
-					reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
-				end
-			end -- if reactorTemp > (2 * localMaxReactorTemp) then
-		elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~= 0) then
-			-- If less than half our minimum temperature, decrease rodPercentage faster
-			if reactorTemp < (localMinReactorTemp / 2) then
-				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
-					reactor.setAllControlRodLevels(0)
-				else
-					reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
-				end
-			else
-				-- Check bounds, Big Reactor doesn't do this for us. :)
-				if (rodPercentage - controlRodAdjustAmount) < 0 then
-					reactor.setAllControlRodLevels(0)
-				else
-					reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
-				end
-			end -- if reactorTemp < (localMinReactorTemp / 2) then
-
-			baseControlRodLevel = rodPercentage
-		end -- if (reactorTemp > localMaxReactorTemp) and (rodPercentage < 99) then
+				baseControlRodLevel = rodPercentage
+			end -- if (reactorTemp > localMaxReactorTemp) and (rodPercentage < 99) then
+			if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+				--engage cruise mode
+				reactorCruising = true
+				lastTempPoll = reactorTemp
+			end
+		end
 	end -- if reactor.getActive() then
 end -- function temperatureControl(reactorIndex)
-
 
 -- Load saved reactor parameters if ReactorOptions file exists
 local function loadReactorOptions()
@@ -719,6 +774,8 @@ local function loadReactorOptions()
 		reactorRodOverride = reactorOptions.readLine() -- Should be string "true" or "false"
 		--added by Mechaet
 		turbineBaseSpeed = reactorOptions.readLine()
+		reactorCruising = reactorOptions.readLine() -- Should be string "true" or "false"
+		lastTempPoll = reactorOptions.readLine() -- number as a string
 
 		-- If we succeeded in reading a string, convert it to a number
 		if baseControlRodLevel ~= nil then
@@ -751,6 +808,18 @@ local function loadReactorOptions()
 		turbineBaseSpeed = tonumber(turbineBaseSpeed)
 		else
 		turbineBaseSpeed = 2726
+		end
+		
+		if reactorCruising == "true" then
+			reactorCruising = true
+		else
+			reactorCruising = false
+		end
+		
+		if lastTempPoll ~=nil then
+			lastTempPoll = tonumber(lastTempPoll)
+		else
+			lastTempPoll = 0
 		end
 
 		reactorOptions.close()
@@ -794,6 +863,8 @@ local function saveReactorOptions()
 		reactorOptions.writeLine(maxReactorTemp)
 		reactorOptions.writeLine(reactorRodOverride)
 		reactorOptions.writeLine(turbineBaseSpeed)
+		reactorOptions.writeLine(reactorCruising)
+		reactorOptions.writeLine(lastTempPoll)
 		reactorOptions.close()
 	else
 		printLog("Failed to open file ReactorOptions for writing!")
