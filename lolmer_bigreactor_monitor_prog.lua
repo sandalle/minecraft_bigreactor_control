@@ -1090,7 +1090,7 @@ local function reactorStatus(statusParams)
 
 		if reactor.getActive() then
 			reactorStatus = "ONLINE"
-			
+
 			-- Set "ONLINE" to blue if the actively cooled reactor is both in cruise mode and online
 			if reactorCruising and reactor.isActivelyCooled() then
 				monitor.setTextColor(colors.blue)
