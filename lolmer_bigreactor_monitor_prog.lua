@@ -769,11 +769,11 @@ local function temperatureControl(reactorIndex)
 								end --if ((reactorTemp - lastTempPoll) > 100) then
 							elseif (reactorTemp = lastTempPoll) then
 								--temperature has stangnated, kick it very lightly
-								controlRodAdjustAmount = 1
-								if (rodPercentage + controlRodAdjustAmount) > 99 then
+								local controlRodAdjustment = 1
+								if (rodPercentage + controlRodAdjustment) > 99 then
                                         reactor.setAllControlRodLevels(99)
                                 else
-                                        reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
+                                        reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustment)
                                 end
 							end --if (reactorTemp > lastTempPoll) then
 								--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
@@ -800,8 +800,20 @@ local function temperatureControl(reactorIndex)
                                             reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
                                     end
 								end --if ((lastTempPoll - reactorTemp) > 100) then
+							elseif (reactorTemp = lastTempPoll) then
+								--temperature has stagnated, kick it very lightly
+								local controlRodAdjustment = 1
+								if (rodPercentage - controlRodAdjustment) < 0 then
+									reactor.setAllControlRodLevels(0)
+								else
+									reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustment)
+								end --if (rodPercentage - controlRodAdjustment) < 0 then
+									
 							end --if (reactorTemp < lastTempPoll) then
+							--if we're below temp but increasing, do nothing and let it continue to rise.
 						end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+						
+						
 						--[[
 						--the old functions are here for posterity
                         if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
