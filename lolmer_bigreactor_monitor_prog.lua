@@ -246,30 +246,33 @@ local function round(num, places)
 	num = num:sub(1, decimal + places)
 
 	if digit <= 4 then
-		printLog("Called as round(num="..origNum..",places="..places.."), no incrementing needed, returns \""..num.."\"")
-		return tonumber(num)
+		printLog("Called as round(num="..origNum..",places="..places.."), no incrementing needed, returns \""..origNum.."\"")
+		return tonumber(origNum)
 	end --no incrementation needed, return truncated number
 
 	local newNum = ""
 	for i=num:len(), 1, -1 do
 		digit = tonumber(num:sub(i))
-		if digit == 9 then
-		if i > 1 then
-			newNum = "0"..newNum
-		else
-			newNum = "10"..newNum
-		end
-		elseif digit == nil then
-		newNum = "."..newNum
-		else
-		if i > 1 then
-			newNum = num:sub(1,i-1)..(digit + 1)..newNum
-		else
-			newNum = (digit + 1)..newNum
-		end
 
-		printLog("Called as round(num="..origNum..",places="..places.."), returns \""..newNum.."\"")
-		return tonumber(newNum) --No more 9s found, so we are done incrementing. Copy remaining digits, then return number.
+		printLog("In round(num="..origNum..",places="..places.."), i="..i..", num="..num..", newNum="..newNum..", digit="..digit..".")
+
+		if digit == 9 then
+			if i > 1 then
+				newNum = "0"..newNum
+			else
+				newNum = "10"..newNum
+			end
+		elseif digit == nil then
+			newNum = "."..newNum
+		else
+			if i > 1 then
+				newNum = num:sub(1,i-1)..(digit + 1)..newNum
+			else
+				newNum = (digit + 1)..newNum
+			end
+
+			printLog("Called as round(num="..origNum..",places="..places.."), returns \""..newNum.."\"")
+			return tonumber(newNum) --No more 9s found, so we are done incrementing. Copy remaining digits, then return number.
 		end -- if digit == 9 then
 	end -- for i=num:len(), 1, -1 do
 
