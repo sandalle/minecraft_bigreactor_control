@@ -203,4 +203,3 @@ TODO
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
 - Lookup using pcall for better error handling - http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
-- Still requires a monitor for reach reactor and turbine to function.
