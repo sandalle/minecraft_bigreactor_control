@@ -722,7 +722,6 @@ local function temperatureControl(reactorIndex)
 		end -- if reactor.getConnected() then
 	end
 
-	local reactorNum = reactorIndex
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
