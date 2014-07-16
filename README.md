@@ -115,6 +115,7 @@ ChangeLog
 	- Cruise mode implemented, defaults off but is saved between boots.
 	- Fix energy/% displays to match Big Reactors' GUI (Issue #9).
 	- Always write out found devices on computer terminal.
+	- Much improved round() function from mechaet (Issue #14).
 
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).

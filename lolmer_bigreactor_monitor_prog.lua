@@ -93,6 +93,7 @@ ChangeLog:
 		Fix energy/% displays to match Big Reactors' GUI (Issue #9).
 		Cruise mode implemented, defaults off but is saved between boots.
 		Always write out found devices on computer terminal.
+		Much improved round() function from mechaet (Issue #14).
 0.3.8 - Update to ComputerCraft 1.6 API.
 0.3.7 - Fix typo when initializing TurbineNames array.
 		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
@@ -228,58 +229,20 @@ local function printLog(printStr)
 end -- function printLog(printStr)
 
 
--- round() function from
--- http://www.computercraft.info/forums2/index.php?/topic/4023-lua-printformat-with-floating-point-numbers/page__view__findpost__p__31037
+-- round() function from mechaet
 local function round(num, places)
-	local origNum = num
-	num = tostring(num)
-	local inc = false
+	local mult = 10^places
+	local addon = nil
+	if ((num * mult) < 0) then
+		addon = -.5
+	else
+		addon = .5
+	end
 
-	-- Make sure decimal is a valid integer for later arithmetic
-	local decimal = string.find(num, "%.") or 0
-
-	if (num:len() - decimal) <= places then
-		printLog("Called as round(num="..origNum..",places="..places.."), already rounded, returns \""..num.."\"")
-		return tonumber(num)
-	end --already rounded, nothing to do.
-
-	local digit = tonumber(num:sub(decimal + places + 1))
-	num = num:sub(1, decimal + places)
-
-	if digit <= 4 then
-		printLog("Called as round(num="..origNum..",places="..places.."), no incrementing needed, returns \""..origNum.."\"")
-		return tonumber(origNum)
-	end --no incrementation needed, return truncated number
-
-	local newNum = ""
-	for i=num:len(), 1, -1 do
-		digit = tonumber(num:sub(i))
-
-		printLog("In round(num="..origNum..",places="..places.."), i="..i..", num="..num..", newNum="..newNum..", digit="..digit..".")
-
-		if digit == 9 then
-			if i > 1 then
-				newNum = "0"..newNum
-			else
-				newNum = "10"..newNum
-			end
-		elseif digit == nil then
-			newNum = "."..newNum
-		else
-			if i > 1 then
-				newNum = num:sub(1,i-1)..(digit + 1)..newNum
-			else
-				newNum = (digit + 1)..newNum
-			end
-
-			printLog("Called as round(num="..origNum..",places="..places.."), returns \""..newNum.."\"")
-			return tonumber(newNum) --No more 9s found, so we are done incrementing. Copy remaining digits, then return number.
-		end -- if digit == 9 then
-	end -- for i=num:len(), 1, -1 do
-
-	printLog("Called as round(num="..origNum..",places="..places.."), returns \""..newNum.."\"")
-
-	return tonumber(newNum)
+	Integer, decimal = math.modf(num*mult+addon)
+	newNum = Integer/mult
+	printLog("Called round(num="..num..",places="..places..") returns \""..newNum.."\".")
+	return newNum
 end -- function round(num, places)
 
 
