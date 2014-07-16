@@ -149,11 +149,12 @@ ChangeLog:
 		Add Waste and number of Control/Fuel Rods to displayBards()
 
 TODO:
-- Save parameters per reactor instead of one global set for all reactors
-- Add min/max RF/t output and have it override temperature concerns (maybe?)
+- Save parameters per reactor instead of one global set for all reactors.
+- Add min/max RF/t output and have it override temperature concerns (maybe?).
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
-- Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-- Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
+- Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment.
+- Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/ .
+- Update cruise mode to work independently for each actively-cooled reactor.
 
 ]]--
 
@@ -586,6 +587,12 @@ local function findReactors()
 				return -- Invalid reactorIndex
 			else
 				printLog("reactor["..reactorIndex.."] in findReactors() is a valid Big Reactor.")
+				if reactor.getConnected() then
+					printLog("reactor["..reactorIndex.."] in findReactors() is connected.")
+				else
+					printLog("reactor["..reactorIndex.."] in findReactors() is NOT connected.")
+					return -- Disconnected reactor
+				end
 			end
 
 			-- If number of found reactors changed, re-initialize them all for now
@@ -624,8 +631,16 @@ local function findTurbines()
 			turbine = newTurbineList[turbineIndex]
 
 			if not turbine then
-				printLog("turbineList["..turbineIndex.."] is not a valid Big Reactors Turbine.")
+				printLog("turbineList["..turbineIndex.."] in findTurbines() is not a valid Big Reactors Turbine.")
 				return -- Invalid turbineIndex
+			else
+				printLog("turbineList["..turbineIndex.."] in findTurbines() is a valid Big Reactors Turbine.")
+				if turbine.getConnected() then
+					printLog("turbine["..turbineIndex.."] in findTurbines() is connected.")
+				else
+					printLog("turbine["..turbineIndex.."] in findTurbines() is NOT connected.")
+					return -- Disconnected turbine
+				end
 			end
 
 			-- If number of found turbines changed, re-initialize them all for now
@@ -679,11 +694,17 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, react
 		local reactor = nil
 		reactor = reactorList[reactorIndex]
 		if not reactor then
-			printLog("reactor["..reactorIndex.."] in temperatureControl() is NOT a valid Big Reactor.")
+			printLog("reactor["..reactorIndex.."] in reactorCruise() is NOT a valid Big Reactor.")
 			return -- Invalid reactorIndex
 		else
-			printLog("reactor["..reactorIndex.."] in temperatureControl() is a valid Big Reactor.")
-		end
+			printLog("reactor["..reactorIndex.."] in reactorCruise() is a valid Big Reactor.")
+			if reactor.getConnected() then
+				printLog("reactor["..reactorIndex.."] in reactorCruise() is connected.")
+			else
+				printLog("reactor["..reactorIndex.."] in reactorCruise() is NOT connected.")
+				return -- Disconnected reactor
+			end -- if reactor.getConnected() then
+		end -- if not reactor then
 
 		local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 		local reactorTemp = math.ceil(reactor.getFuelTemperature())
@@ -705,16 +726,16 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, react
 				else
 					reactor.setAllControlRodLevels(rodPercentage)
 				end
-			end
+			end -- if (reactorTemp > lastPolledTemp) then
 		else
 			--disengage cruise, we've fallen out of the ideal temperature range
 			reactorCruising = false
-		end
+		end -- if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
 	else
 		--I don't know how we'd get here, but let's turn the cruise mode off
 		reactorCruising = false
-	end
-end
+	end -- if ((lastPolledTemp < cruiseMaxTemp) and (lastPolledTemp > cruiseMinTemp)) then
+end -- function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, reactorIndex)
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
 -- wait an in-game half-hour for the temperature to stabalize before modifying again
@@ -728,6 +749,13 @@ local function temperatureControl(reactorIndex)
 		return -- Invalid reactorIndex
 	else
 		printLog("reactor["..reactorIndex.."] in temperatureControl() is a valid Big Reactor.")
+
+		if reactor.getConnected() then
+			printLog("reactor["..reactorIndex.."] in temperatureControl() is connected.")
+		else
+			printLog("reactor["..reactorIndex.."] in temperatureControl() is NOT connected.")
+			return -- Disconnected reactor
+		end -- if reactor.getConnected() then
 	end
 
 	local reactorNum = reactorIndex
@@ -741,9 +769,9 @@ local function temperatureControl(reactorIndex)
 		-- Actually, active-cooled reactors should range between 300 and 420C (Mechaet)
 		-- Accordingly I changed the below lines
 		if reactor.isActivelyCooled() then
-		-- below was 0
+			-- below was 0
 			localMinReactorTemp = 300
-		-- below was 300
+			-- below was 300
 			localMaxReactorTemp = 420
 		end
 
@@ -937,9 +965,9 @@ local function displayReactorBars(barParams)
 	else
 		printLog("reactor["..reactorIndex.."] in displayReactorBars() is a valid Big Reactor.")
 		if reactor.getConnected() then
-			printLog("reactor["..reactorIndex.."] in reactorStatus() is connected.")
+			printLog("reactor["..reactorIndex.."] in displayReactorBars() is connected.")
 		else
-			printLog("reactor["..reactorIndex.."] in reactorStatus() is NOT connected.")
+			printLog("reactor["..reactorIndex.."] in displayReactorBars() is NOT connected.")
 			return -- Disconnected reactor
 		end -- if reactor.getConnected() then
 	end -- if not reactor then
@@ -1460,7 +1488,13 @@ local function flowRateControl(turbineIndex)
 		return -- Invalid turbineIndex
 	else
 		printLog("turbine["..turbineIndex.."] in flowRateControl() is a valid Big Turbine.")
-	end
+
+		if turbine.getConnected() then
+			printLog("turbine["..turbineIndex.."] in turbineStatus() is connected.")
+		else
+			printLog("turbine["..turbineIndex.."] in turbineStatus() is NOT connected.")
+		end -- if turbine.getConnected() then
+	end -- if not turbine then
 
 	-- No point modifying control rod levels for temperature if the turbine is offline
 	if turbine.getActive() then
@@ -1486,14 +1520,14 @@ local function flowRateControl(turbineIndex)
 			-- We're not at optimal RPM or flow-rate and we're not out-of-bounds
 			else
 				return
-			end
+			end -- if rotorSpeed > turbineBaseSpeed then
 
 			-- Check bounds [0,2000]
 			if newFlowRate > 2000 then
 				newFlowRate = 2000
 			elseif newFlowRate < 0 then
 				newFlowRate = 25 -- Don't go to zero, might as well power off
-			end
+			end -- if newFlowRate > 2000 then
 
 			turbine.setFluidFlowRateMax(newFlowRate)
 		end -- if ((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax) then
