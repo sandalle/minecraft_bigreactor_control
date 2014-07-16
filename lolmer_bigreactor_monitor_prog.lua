@@ -38,6 +38,7 @@ Features:
 		Will display reactor data to all attached monitors of correct dimensions.
 			For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
 		For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+		A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
 GUI Usage:
 		The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
@@ -239,8 +240,8 @@ local function round(num, places)
 		addon = .5
 	end
 
-	Integer, decimal = math.modf(num*mult+addon)
-	newNum = Integer/mult
+	local integer, decimal = math.modf(num*mult+addon)
+	newNum = integer/mult
 	printLog("Called round(num="..num..",places="..places..") returns \""..newNum.."\".")
 	return newNum
 end -- function round(num, places)
@@ -1089,7 +1090,13 @@ local function reactorStatus(statusParams)
 
 		if reactor.getActive() then
 			reactorStatus = "ONLINE"
-			monitor.setTextColor(colors.green)
+			
+			-- Set "ONLINE" to blue if the actively cooled reactor is both in cruise mode and online
+			if reactorCruising and reactor.isActivelyCooled() then
+				monitor.setTextColor(colors.blue)
+			else
+				monitor.setTextColor(colors.green)
+			end -- if reactorCruising and reactor.isActivelyCooled() then
 		else
 			reactorStatus = "OFFLINE"
 			monitor.setTextColor(colors.red)

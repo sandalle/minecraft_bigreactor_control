@@ -43,6 +43,7 @@ Features
 - Auto-adjusts control rods per reactor to maintain temperature.
 - Will display reactor data to all attached monitors of correct dimensions.
 	- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+- A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
 GUI Usage
 ----------------------------
