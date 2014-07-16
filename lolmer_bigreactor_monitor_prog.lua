@@ -165,7 +165,7 @@ local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
 local controlRodAdjustAmount = 1 -- Default Reactor Rod Control % adjustment amount
 local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount
-local debugMode = true
+local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
 local reactorRodOverride = false -- Rod override for Reactors
