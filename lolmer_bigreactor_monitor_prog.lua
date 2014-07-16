@@ -1553,7 +1553,7 @@ function main()
 			end -- 	if not reactor then
 
 			-- Only attempt to assign a monitor if we have a monitor for this reactor
-			if (#reactorList ~= 1) and (reactorMonitorIndex < #monitorList) then
+			if (#reactorList ~= 1) and (reactorMonitorIndex <= #monitorList) then
 				printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
 				monitor = monitorList[reactorMonitorIndex]
 
@@ -1603,7 +1603,7 @@ function main()
 			printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...")
 
 			-- Only attempt to assign a monitor if we found a monitor for this turbine
-			if (#reactorList ~= 1) and (turbineMonitorIndex < #monitorList) then
+			if (#reactorList ~= 1) and (turbineMonitorIndex <= #monitorList) then
 				printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
 				monitor = monitorList[turbineMonitorIndex]
 				if not monitor then
