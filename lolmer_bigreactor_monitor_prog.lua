@@ -770,7 +770,7 @@ local function temperatureControl(reactorIndex)
 							reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
 						end
 					end --if ((reactorTemp - lastTempPoll) > 100) then
-				elseif (reactorTemp = lastTempPoll) then
+				elseif (reactorTemp == lastTempPoll) then
 					--temperature has stangnated, kick it very lightly
 					local controlRodAdjustment = 1
 					if (rodPercentage + controlRodAdjustment) > 99 then
@@ -803,7 +803,7 @@ local function temperatureControl(reactorIndex)
 							reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
 						end
 					end --if ((lastTempPoll - reactorTemp) > 100) then
-				elseif (reactorTemp = lastTempPoll) then
+				elseif (reactorTemp == lastTempPoll) then
 					--temperature has stagnated, kick it very lightly
 					local controlRodAdjustment = 1
 					if (rodPercentage - controlRodAdjustment) < 0 then
