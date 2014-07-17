@@ -118,7 +118,8 @@ ChangeLog
 	- Always write out found devices on computer terminal.
 	- Much improved round() function from mechaet (Issue #14).
 	- Refactoring pass/algorithm change on the reactor temperature control. Should now adjust in increments to achieve the desired temperature range quicker and more accurately.
-	- Optimal passive-cooled reactor temperature range changed from 850-900 to 950-1400
+	- Optimal passive-cooled reactor temperature range changed from 850-900 to 950-1400.
+	- Fix display Issue #15.
 
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
