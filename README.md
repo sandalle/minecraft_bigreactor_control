@@ -108,8 +108,11 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.10
+	- Turbine algorithm pass by Mechaet.
+
 - 0.3.9
-	- Algorithm pass by Mechaet.
+	- Reactor algorithm pass by Mechaet.
 	- Additional user config options by Mechaet.
 	- Fix multiple reactors and none or more turbines with only one status monitor.
 	- Fix monitor scaling after one was used as debug (or in case of other modifications).
