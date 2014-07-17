@@ -59,8 +59,8 @@ Default values
 - Rod Control: 90% (Let's start off safe and then power up as we can)
 - Minimum Energy Buffer: 15% (will power on below this value)
 - Maximum Energy Buffer: 85% (will power off above this value)
-- Minimum Temperature: 850^C (will raise control rods below this value)
-- Maximum Temperature: 950^C (will lower control rods above this value)
+- Minimum Temperature: 950^C (will raise control rods below this value)
+- Maximum Temperature: 1,400^C (will lower control rods above this value)
 - Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
 - Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
 - Optimal Turbine RPM: 900, 1,800, or 2,700 (divisible by 900)
@@ -118,8 +118,8 @@ ChangeLog
 	- Always write out found devices on computer terminal.
 	- Much improved round() function from mechaet (Issue #14).
 	- Refactoring pass/algorithm change on the reactor temperature control. Should now adjust in increments to achieve the desired temperature range quicker and more accurately.
-	- Optimal passive-cooled reactor temperature range changed from 850-900 to 950-1400
-	- Change the display percentages on status monitors to get rid of superfluous decimals.
+	- Optimal passive-cooled reactor temperature range changed from 850-900 to 950-1400.
+	- Fix display Issue #15.
 
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
