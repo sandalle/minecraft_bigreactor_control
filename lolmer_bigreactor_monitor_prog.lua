@@ -3,7 +3,7 @@ Program name: Lolmer's EZ-NUKE reactor control system
 Version: v0.3.9
 Programmer: Lolmer
 Minor assistance by Mechaet
-Last update: 2014-07-15
+Last update: 2014-07-16
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -170,7 +170,7 @@ local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
 local controlRodAdjustAmount = 1 -- Default Reactor Rod Control % adjustment amount
 local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount
-local debugMode = false
+local debugMode = true
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
 local reactorRodOverride = false -- Rod override for Reactors
@@ -262,7 +262,7 @@ local function print(printParams)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in print() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in print() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -277,7 +277,7 @@ local function printCentered(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printCentered() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printCentered() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -312,7 +312,7 @@ local function printLeft(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printLeft() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printLeft() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -339,7 +339,7 @@ local function printRight(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printRight() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printRight() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -369,7 +369,7 @@ local function clearMonitor(printString, monitorIndex)
 	printLog("Called as clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..").")
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in clearMonitor() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -424,10 +424,8 @@ local function drawLine(yPos, monitorIndex)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 
-	printLog("Called as drawLine(yPos="..yPos..",monitorIndex="..monitorIndex..").")
-
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in drawLine() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in drawLine() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -445,10 +443,8 @@ local function drawBar(startXPos, startYPos, endXPos, endYPos, color, monitorInd
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 
-	printLog("Called as drawBar(startXPos="..startXPos..",startYPos="..startYPos..",endXPos="..endXPos..",endYPos="..endYPos..",color="..color..",monitorIndex="..monitorIndex..").")
-
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in drawBar() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in drawBar() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -466,10 +462,8 @@ local function drawPixel(xPos, yPos, color, monitorIndex)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 
-	printLog("Called as drawPixel(xPos="..xPos..",yPos="..yPos..",color="..color..",monitorIndex="..monitorIndex..").")
-
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in drawPixel() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in drawPixel() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -502,7 +496,7 @@ local function findMonitors()
 			monitor = monitorList[monitorIndex]
 
 			if not monitor then
-				printLog("monitorList["..monitorIndex.."] in findMonitors() is not a valid monitor.")
+				printLog("monitorList["..monitorIndex.."] in findMonitors() is NOT a valid monitor.")
 				break -- Invalid monitorIndex
 			end
 
@@ -529,6 +523,8 @@ local function findMonitors()
 			end -- if monitorX ~= 29 or monitorY ~= 12 then
 		end -- for monitorIndex = 1, #monitorList do
 	end -- if #monitorList == 0 then
+
+	printLog("Found "..#monitorList.." monitor(s) in findMonitors().")
 end -- local function findMonitors()
 
 
@@ -578,6 +574,9 @@ local function findReactors()
 	-- Start turbine monitor offset after reactors get monitors
 	-- This assumes that there is a monitor for each turbine and reactor, plus the overall monitor display
 	turbineMonitorOffset = #reactorList + 1 -- #turbineList will start at "1" if turbines found and move us just beyond #reactorList and status monitor range
+
+	printLog("Found "..#reactorList.." reactor(s) in findReactors().")
+	printLog("Set turbineMonitorOffset to "..turbineMonitorOffset.." in findReactors().")
 end -- function findReactors()
 
 
@@ -597,7 +596,7 @@ local function findTurbines()
 			turbine = newTurbineList[turbineIndex]
 
 			if not turbine then
-				printLog("turbineList["..turbineIndex.."] in findTurbines() is not a valid Big Reactors Turbine.")
+				printLog("turbineList["..turbineIndex.."] in findTurbines() is NOT a valid Big Reactors Turbine.")
 				return -- Invalid turbineIndex
 			else
 				printLog("turbineList["..turbineIndex.."] in findTurbines() is a valid Big Reactors Turbine.")
@@ -619,6 +618,8 @@ local function findTurbines()
 		-- Overwrite old turbine list with the now updated list
 		turbineList = newTurbineList
 	end -- if #newTurbineList == 0 then
+
+	printLog("Found "..#turbineList.." turbine(s) in findTurbines().")
 end -- function findTurbines()
 
 
@@ -660,14 +661,14 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, react
 		local reactor = nil
 		reactor = reactorList[reactorIndex]
 		if not reactor then
-			printLog("reactor["..reactorIndex.."] in reactorCruise() is NOT a valid Big Reactor.")
+			printLog("reactor["..reactorIndex.."] in reactorCruise(cruiseMaxTemp="..cruiseMaxTemp..",cruiseMinTemp="..cruiseMinTemp..",lastPolledTemp="..lastPolledTemp..",reactorIndex="..reactorIndex..") is NOT a valid Big Reactor.")
 			return -- Invalid reactorIndex
 		else
-			printLog("reactor["..reactorIndex.."] in reactorCruise() is a valid Big Reactor.")
+			printLog("reactor["..reactorIndex.."] in reactorCruise(cruiseMaxTemp="..cruiseMaxTemp..",cruiseMinTemp="..cruiseMinTemp..",lastPolledTemp="..lastPolledTemp..",reactorIndex="..reactorIndex..") is a valid Big Reactor.")
 			if reactor.getConnected() then
-				printLog("reactor["..reactorIndex.."] in reactorCruise() is connected.")
+				printLog("reactor["..reactorIndex.."] in reactorCruise(cruiseMaxTemp="..cruiseMaxTemp..",cruiseMinTemp="..cruiseMinTemp..",lastPolledTemp="..lastPolledTemp..",reactorIndex="..reactorIndex..") is connected.")
 			else
-				printLog("reactor["..reactorIndex.."] in reactorCruise() is NOT connected.")
+				printLog("reactor["..reactorIndex.."] in reactorCruise(cruiseMaxTemp="..cruiseMaxTemp..",cruiseMinTemp="..cruiseMinTemp..",lastPolledTemp="..lastPolledTemp..",reactorIndex="..reactorIndex..") is NOT connected.")
 				return -- Disconnected reactor
 			end -- if reactor.getConnected() then
 		end -- if not reactor then
@@ -712,15 +713,15 @@ local function temperatureControl(reactorIndex)
 	local reactor = nil
 	reactor = reactorList[reactorIndex]
 	if not reactor then
-		printLog("reactor["..reactorIndex.."] in temperatureControl() is NOT a valid Big Reactor.")
+		printLog("reactor["..reactorIndex.."] in temperatureControl(reactorIndex="..reactorIndex..") is NOT a valid Big Reactor.")
 		return -- Invalid reactorIndex
 	else
-		printLog("reactor["..reactorIndex.."] in temperatureControl() is a valid Big Reactor.")
+		printLog("reactor["..reactorIndex.."] in temperatureControl(reactorIndex="..reactorIndex..") is a valid Big Reactor.")
 
 		if reactor.getConnected() then
-			printLog("reactor["..reactorIndex.."] in temperatureControl() is connected.")
+			printLog("reactor["..reactorIndex.."] in temperatureControl(reactorIndex="..reactorIndex..") is connected.")
 		else
-			printLog("reactor["..reactorIndex.."] in temperatureControl() is NOT connected.")
+			printLog("reactor["..reactorIndex.."] in temperatureControl(reactorIndex="..reactorIndex..") is NOT connected.")
 			return -- Disconnected reactor
 		end -- if reactor.getConnected() then
 	end
@@ -951,7 +952,7 @@ local function displayReactorBars(barParams)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in displayReactorBars() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -959,14 +960,14 @@ local function displayReactorBars(barParams)
 	local reactor = nil
 	reactor = reactorList[reactorIndex]
 	if not reactor then
-		printLog("reactor["..reactorIndex.."] in displayReactorBars() is NOT a valid Big Reactor.")
+		printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Reactor.")
 		return -- Invalid reactorIndex
 	else
-		printLog("reactor["..reactorIndex.."] in displayReactorBars() is a valid Big Reactor.")
+		printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is a valid Big Reactor.")
 		if reactor.getConnected() then
-			printLog("reactor["..reactorIndex.."] in displayReactorBars() is connected.")
+			printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is connected.")
 		else
-			printLog("reactor["..reactorIndex.."] in displayReactorBars() is NOT connected.")
+			printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 			return -- Disconnected reactor
 		end -- if reactor.getConnected() then
 	end -- if not reactor then
@@ -1103,7 +1104,7 @@ local function reactorStatus(statusParams)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in reactorStatus() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -1111,17 +1112,17 @@ local function reactorStatus(statusParams)
 	local reactor = nil
 	reactor = reactorList[reactorIndex]
 	if not reactor then
-		printLog("reactor["..reactorIndex.."] in reactorStatus() is NOT a valid Big Reactor.")
+		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Reactor.")
 		return -- Invalid reactorIndex
 	else
-		printLog("reactor["..reactorIndex.."] in reactorStatus() is a valid Big Reactor.")
+		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is a valid Big Reactor.")
 	end
 
 	local width, height = monitor.getSize()
 	local reactorStatus = ""
 
 	if reactor.getConnected() then
-		printLog("reactor["..reactorIndex.."] in reactorStatus() is connected.")
+		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is connected.")
 
 		if reactor.getActive() then
 			reactorStatus = "ONLINE"
@@ -1158,7 +1159,7 @@ local function reactorStatus(statusParams)
 		end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	else
-		printLog("reactor["..reactorIndex.."] in reactorStatus() is NOT connected.")
+		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		reactorStatus = "DISCONNECTED"
 		monitor.setTextColor(colors.red)
 	end -- if reactor.getConnected() then
@@ -1182,7 +1183,7 @@ local function displayAllStatus()
 	local monitor, monitorIndex = nil, 1
 	monitor = monitorList[monitorIndex]
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in displayAllStatus() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in displayAllStatus() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -1283,7 +1284,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	local monitor = nil
 	monitor = monitorList[monitorIndex]
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in displayTurbineBars() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -1291,14 +1292,14 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	local turbine = nil
 	turbine = turbineList[turbineIndex]
 	if not turbine then
-		printLog("turbine["..turbineIndex.."] in displayTurbineBars() is NOT a valid Big Turbine.")
+		printLog("turbine["..turbineIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Turbine.")
 		return -- Invalid turbineIndex
 	else
-		printLog("turbine["..turbineIndex.."] in displayTurbineBars() is a valid Big Turbine.")
+		printLog("turbine["..turbineIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is a valid Big Turbine.")
 		if turbine.getConnected() then
-			printLog("turbine["..turbineIndex.."] in displayTurbineBars() is connected.")
+			printLog("turbine["..turbineIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is connected.")
 		else
-			printLog("turbine["..turbineIndex.."] in displayTurbineBars() is NOT connected.")
+			printLog("turbine["..turbineIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 			return -- Disconnected turbine
 		end -- if turbine.getConnected() then
 	end -- if not turbine then
@@ -1428,7 +1429,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 
 	monitor = monitorList[monitorIndex]
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in turbineStatus() is not a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
 		return -- Invalid monitorIndex
 	end
 
@@ -1436,17 +1437,17 @@ local function turbineStatus(turbineIndex, monitorIndex)
 	local turbine = nil
 	turbine = turbineList[turbineIndex]
 	if not turbine then
-		printLog("turbine["..turbineIndex.."] in turbineStatus() is NOT a valid Big Turbine.")
+		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Turbine.")
 		return -- Invalid turbineIndex
 	else
-		printLog("turbine["..turbineIndex.."] in turbineStatus() is a valid Big Turbine.")
+		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is a valid Big Turbine.")
 	end
 
 	local width, height = monitor.getSize()
 	local turbineStatus = ""
 
 	if turbine.getConnected() then
-		printLog("turbine["..turbineIndex.."] in turbineStatus() is connected.")
+		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is connected.")
 		if turbine.getActive() then
 			turbineStatus = "ONLINE"
 			monitor.setTextColor(colors.green)
@@ -1470,7 +1471,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
 	else
-		printLog("turbine["..turbineIndex.."] in turbineStatus() is NOT connected.")
+		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		turbineStatus = "DISCONNECTED"
 		monitor.setTextColor(colors.red)
 	end -- if turbine.getConnected() then
@@ -1488,21 +1489,21 @@ local function flowRateControl(turbineIndex)
 	local turbine = nil
 	turbine = turbineList[turbineIndex]
 	if not turbine then
-		printLog("turbine["..turbineIndex.."] in flowRateControl() is NOT a valid Big Turbine.")
+		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT a valid Big Turbine.")
 		return -- Invalid turbineIndex
 	else
-		printLog("turbine["..turbineIndex.."] in flowRateControl() is a valid Big Turbine.")
+		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is a valid Big Turbine.")
 
 		if turbine.getConnected() then
-			printLog("turbine["..turbineIndex.."] in turbineStatus() is connected.")
+			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is connected.")
 		else
-			printLog("turbine["..turbineIndex.."] in turbineStatus() is NOT connected.")
+			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT connected.")
 		end -- if turbine.getConnected() then
 	end -- if not turbine then
 
 	-- No point modifying control rod levels for temperature if the turbine is offline
 	if turbine.getActive() then
-		printLog("turbine["..turbineIndex.."] in flowRateControl() is active.")
+		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is active.")
 
 		local flowRate = turbine.getFluidFlowRate()
 		local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
@@ -1536,7 +1537,7 @@ local function flowRateControl(turbineIndex)
 			turbine.setFluidFlowRateMax(newFlowRate)
 		end -- if ((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax) then
 	else
-		printLog("turbine["..turbineIndex.."] in flowRateControl() is NOT active.")
+		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT active.")
 	end -- if turbine.getActive() then
 end -- function flowRateControl(turbineIndex)
 
@@ -1561,7 +1562,7 @@ function main()
 			local monitor = nil
 			monitor = monitorList[monitorIndex]
 			if not monitor then
-				printLog("monitor["..monitorIndex.."] in main() is not a valid monitor.")
+				printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor.")
 				return -- Invalid monitorIndex
 			end
 
@@ -1587,12 +1588,12 @@ function main()
 			end --  if not reactor then
 
 			-- Only attempt to assign a monitor if we have a monitor for this reactor
-			if (#reactorList ~= 1) and (reactorMonitorIndex <= #monitorList) then
+			if (#monitorList > 1) and (reactorMonitorIndex <= #monitorList) then
 				printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
 				monitor = monitorList[reactorMonitorIndex]
 
 				if not monitor then
-					printLog("monitor["..reactorMonitorIndex.."] in main() is not a valid monitor.")
+					printLog("monitor["..reactorMonitorIndex.."] in main() is NOT a valid monitor.")
 				else
 					clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
 					printCentered(progName, 1, reactorMonitorIndex)
@@ -1605,7 +1606,7 @@ function main()
 				end -- if not monitor
 			else
 				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
-			end -- if (#reactorList ~= 1) and (reactorMonitorIndex < #monitorList) then
+			end -- if (#monitorList ~= 1) and (reactorMonitorIndex < #monitorList) then
 
 			if reactor.getConnected() then
 				printLog("reactor["..reactorIndex.."] is connected.")
@@ -1637,11 +1638,11 @@ function main()
 			printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...")
 
 			-- Only attempt to assign a monitor if we found a monitor for this turbine
-			if (#reactorList ~= 1) and (turbineMonitorIndex <= #monitorList) then
+			if (#monitorList > 1) and (turbineMonitorIndex <= #monitorList) then
 				printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
 				monitor = monitorList[turbineMonitorIndex]
 				if not monitor then
-					printLog("monitor["..turbineMonitorIndex.."] in main() is not a valid monitor.")
+					printLog("monitor["..turbineMonitorIndex.."] in main() is NOT a valid monitor.")
 				else
 					clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
 					printCentered(progName, 1, turbineMonitorIndex)
@@ -1654,7 +1655,7 @@ function main()
 				end -- if not monitor
 			else
 				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
-			end -- if (#reactorList ~= 1) and (turbineMonitorIndex < #monitorList) then
+			end -- if (#monitorList ~= 1) and (turbineMonitorIndex < #monitorList) then
 
 			turbine = turbineList[turbineIndex]
 			if not turbine then
