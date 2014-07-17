@@ -1334,6 +1334,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	-- Increase flow rate button: 28X, 4Y
 	local turbineFlowRate = math.ceil(turbine.getFluidFlowRateMax())
 	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decrease to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Decrease rod level by amount
 		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
 		if newTurbineFlowRate < 0 then
@@ -1352,9 +1353,8 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = newTurbineFlowRate
-	end -- if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
-	if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increase to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Increase rod level by amount
 		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
 		if newTurbineFlowRate > 2000 then
@@ -1373,6 +1373,8 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = math.ceil(newTurbineFlowRate)
+	else
+		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"  Flow",22,3,monitorIndex}
