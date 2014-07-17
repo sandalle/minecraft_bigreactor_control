@@ -170,7 +170,7 @@ local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
 local controlRodAdjustAmount = 1 -- Default Reactor Rod Control % adjustment amount
 local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount
-local debugMode = true
+local debugMode = false
 -- These need to be updated for multiple reactors
 local baseControlRodLevel = nil
 local reactorRodOverride = false -- Rod override for Reactors
@@ -974,6 +974,7 @@ local function displayReactorBars(barParams)
 
 	-- Draw border lines
 	local width, height = monitor.getSize()
+	printLog("Size of monitor is "..width.."w x"..height.."h in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..")")
 
 	for i=3, 5 do
 		monitor.setCursorPos(22, i)
@@ -1039,11 +1040,16 @@ local function displayReactorBars(barParams)
 
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
-	print{newRodPercentage,25,4,monitorIndex}
+	print{rodPercentage,25,4,monitorIndex}
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
 	local energyBuffer = reactor.getEnergyProducedLastTick()
-	printLog("reactor["..reactorIndex.."] produced "..energyBuffer.." RF last tick in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+	if reactor.isActivelyCooled() then
+		printLog("reactor["..reactorIndex.."] produced "..energyBuffer.." mB last tick in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+	else
+		printLog("reactor["..reactorIndex.."] produced "..energyBuffer.." RF last tick in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+	end
+
 	print{energyBufferString,2,4,monitorIndex}
 
 	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
@@ -1083,7 +1089,7 @@ local function displayReactorBars(barParams)
 		reactorRodOverrideStatus = "Disabled"
 		monitor.setTextColor(colors.red)
 	end -- if not reactorRodOverride then
-	printLog("reactorRodOverride is \""..reactorRodOverride.."\" in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+	printLog("reactorRodOverrideStatus is \""..reactorRodOverrideStatus.."\" in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 
 	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
