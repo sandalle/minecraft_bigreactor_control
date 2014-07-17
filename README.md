@@ -43,6 +43,7 @@ Features
 - Auto-adjusts control rods per reactor to maintain temperature.
 - Will display reactor data to all attached monitors of correct dimensions.
 	- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+- A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
 GUI Usage
 ----------------------------
@@ -108,8 +109,14 @@ Resources
 ChangeLog
 ============================
 - 0.3.9
-	- Algorithm pass by Mechaet
-	- Additional user config options by Mechaet
+	- Algorithm pass by Mechaet.
+	- Additional user config options by Mechaet.
+	- Fix multiple reactors and none or more turbines with only one status monitor.
+	- Fix monitor scaling after one was used as debug (or in case of other modifications).
+	- Cruise mode implemented, defaults off but is saved between boots.
+	- Fix energy/% displays to match Big Reactors' GUI (Issue #9).
+	- Always write out found devices on computer terminal.
+	- Much improved round() function from mechaet (Issue #14).
 
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
@@ -193,9 +200,9 @@ ChangeLog
 
 TODO
 ============================
-- Save parameters per reactor instead of one global set for all reactors
-- Add min/max RF/t output and have it override temperature concerns (maybe?)
+- Save parameters per reactor instead of one global set for all reactors.
+- Add min/max RF/t output and have it override temperature concerns (maybe?).
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
-- Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment
-- Lookup using pcall for better error handling - http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/
-- Still requires a monitor for reach reactor and turbine to function.
+- Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment.
+- Lookup using pcall for better error handling - http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/ .
+- Update cruise mode to work independently for each actively-cooled reactor.
