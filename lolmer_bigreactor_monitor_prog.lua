@@ -1018,9 +1018,7 @@ local function displayReactorBars(barParams)
 		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
 		rodPercentage = newRodPercentage
-	end -- if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
-	if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		--Increase rod level by amount
 		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
@@ -1035,6 +1033,8 @@ local function displayReactorBars(barParams)
 		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
 		rodPercentage = round(newRodPercentage,0)
+	else
+		printLog("No change to Rod Levels requested by "..progName.." GUI in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	print{"Rod (%)",23,3,monitorIndex}
@@ -1043,6 +1043,7 @@ local function displayReactorBars(barParams)
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
 	local energyBuffer = reactor.getEnergyProducedLastTick()
+	printLog("reactor["..reactorIndex.."] produced "..energyBuffer.." RF last tick in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 	print{energyBufferString,2,4,monitorIndex}
 
 	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
