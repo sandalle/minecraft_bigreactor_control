@@ -183,6 +183,7 @@ local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
 local turbineBaseSpeed = nil -- Target (user-configured in ReactorOptions) turbine speed, default 2726RPM
 local reactorCruising = false -- Cruise mode for active-cooled reactors, enable/disable switch
 local lastTempPoll = 0 -- Cruise mode global temperature comparator
+local lastTurbineSpeed = 0 -- Turbine adjustment global comparator
 local autoStart = {} -- Array for automatically starting reactors
 local monitorList = {} -- Empty monitor array
 local monitorNames = {} -- Empty array of monitor names
@@ -192,6 +193,8 @@ local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
 local turbineFlowRateOverride = {} -- Flow rate override for each Turbine
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
+local turbineBaseSpeedA = {} -- Individual Turbine Base Speeds
+local turbineLastSpeedA = {} -- Individual turbine Last Speed
 
 term.clear()
 term.setCursorPos(2,1)
@@ -613,6 +616,8 @@ local function findTurbines()
 			if #newTurbineList ~= #turbineList then
 				-- Default is to allow flow rate auto-adjust
 				turbineFlowRateOverride[turbineIndex] = false
+				turbineLastSpeedA[turbineIndex] = 0
+				turbineBaseSpeedA[turbineIndex] = 2726
 			end -- if #newTurbineList ~= #turbineList then
 		end -- for turbineIndex = 1, #newTurbineList do
 
@@ -1043,6 +1048,7 @@ local function displayReactorBars(barParams)
 	print{"<     >",23,4,monitorIndex}
 	print{rodPercentage,25,4,monitorIndex}
 
+
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
 	local energyBuffer = reactor.getEnergyProducedLastTick()
 	if reactor.isActivelyCooled() then
@@ -1052,7 +1058,7 @@ local function displayReactorBars(barParams)
 	end
 
 	print{energyBufferString,2,4,monitorIndex}
-
+	
 	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
 	-- still uses getEnergyProducedLastTick for mB/t of hot fluid generated
 	if not reactor.isActivelyCooled() then
@@ -1317,17 +1323,20 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 			return -- Disconnected turbine
 		end -- if turbine.getConnected() then
 	end -- if not turbine then
-
+	
+	--local variable to match the view on the monitor
+	turbineBaseSpeed = turbineBaseSpeedA[turbineIndex]
+	
 	-- Draw border lines
 	local width, height = monitor.getSize()
 
-	for i=3, 5 do
+	for i=3, 6 do
 		monitor.setCursorPos(21, i)
 		monitor.write("|")
 	end
 
 	drawLine(2,monitorIndex)
-	drawLine(6,monitorIndex)
+	drawLine(7,monitorIndex)
 
 	-- Allow controlling Turbine Flow Rate from GUI
 	-- Decrease flow rate button: 22X, 4Y
@@ -1341,7 +1350,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 			newTurbineFlowRate = 0
 		end
 		sideClick, xClick, yClick = 0, 0, 0
-
+		
 		-- Check bounds [0,2000]
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
@@ -1376,41 +1385,64 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	else
 		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
+	
+	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		rpmRateAdjustment = 909
+		newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
+		if newTurbineBaseSpeed < 908 then
+			newTurbineBaseSpeed = 908
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+		turbineBaseSpeedA[turbineIndex] = newTurbineBaseSpeed
+	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increase to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		rpmRateAdjustment = 909
+		newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
+		if newTurbineBaseSpeed > 2726 then
+			newTurbineBaseSpeed = 2726
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+		turbineBaseSpeedA[turbineIndex] = newTurbineBaseSpeed
+	else
+		printLog("No change to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 	print{"  Flow",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
 	print{turbineFlowRate,23,4,monitorIndex}
 	print{"  mB/t",22,5,monitorIndex}
-
+	print{"<      >",22,6,monitorIndex}
+	print{turbineBaseSpeed,23,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Producing: "
-
+	local rotorTargetString = "Target Turbine RPM: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
 
 	local energyBuffer = turbine.getEnergyProducedLastTick()
 	print{energyBufferString,1,4,monitorIndex}
-	print{math.ceil(energyBuffer).." RF/t",padding+1,4,monitorIndex}
+	print{math.ceil(energyBuffer).."RF/t",padding+1,4,monitorIndex}
 
 	local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 	print{rotorSpeedString,1,5,monitorIndex}
 	print{rotorSpeed.." RPM",padding+1,5,monitorIndex}
+	print{rotorTargetString,1,6,monitorIndex}
 
 	-- PaintUtils only outputs to term., not monitor.
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
 
 	-- Draw stored energy buffer bar
-	drawBar(1,8,28,8,colors.gray,monitorIndex)
+	drawBar(1,9,28,9,colors.gray,monitorIndex)
 
 	local curStoredEnergyPercent = getTurbineStoredEnergyBufferPercent(turbine)
 	if curStoredEnergyPercent > 4 then
-		drawBar(1, 8, math.floor(26*curStoredEnergyPercent/100)+2, 8, colors.yellow,monitorIndex)
+		drawBar(1, 9, math.floor(26*curStoredEnergyPercent/100)+2, 9, colors.yellow,monitorIndex)
 	elseif curStoredEnergyPercent > 0 then
-		drawPixel(1, 8, colors.yellow, monitorIndex)
+		drawPixel(1, 9, colors.yellow, monitorIndex)
 	end -- if curStoredEnergyPercent > 4 then
 
-	print{"Energy Buffer",1,7,monitorIndex}
-	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+2),7,monitorIndex}
-	print{"%",28,7,monitorIndex}
+	print{"Energy Buffer",1,8,monitorIndex}
+	print{curStoredEnergyPercent, width-(string.len(curStoredEnergyPercent)+2),8,monitorIndex}
+	print{"%",28,8,monitorIndex}
 
 	-- Print rod override status
 	local turbineFlowRateOverrideStatus = ""
@@ -1504,6 +1536,20 @@ local function flowRateControl(turbineIndex)
 	-- Grab current turbine
 	local turbine = nil
 	turbine = turbineList[turbineIndex]
+	
+	--set initial base speed
+	if (turbineBaseSpeedA[turbineIndex] == nil) then
+		turbineBaseSpeedA[turbineIndex] = turbineBaseSpeed
+	end
+	--set initial last speed
+	if (turbineLastSpeedA[turbineIndex] == nil) then
+		turbineLaseSpeedA[turbineIndex] = lastTurbineSpeed
+	end
+	
+	-- now that we've covered nil values, assign for the duration of this run
+	lastTurbineSpeed = turbineLastSpeedA[turbineIndex]
+	turbineBaseSpeed = turbineBaseSpeedA[turbineIndex]
+	
 	if not turbine then
 		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT a valid Big Turbine.")
 		return -- Invalid turbineIndex
@@ -1526,35 +1572,77 @@ local function flowRateControl(turbineIndex)
 		local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 		local newFlowRate = 0
 
-		-- If we're not at max flow-rate and an optimal RPM, let's do something
-		-- also don't do anything if the current flow rate hasn't caught up to the user defined flow rate maximum
-		if (((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax))
-				or (flowRate == 0) then
-			-- Make sure we are not going too fast
-			--changed by Mechaet
-			if rotorSpeed > turbineBaseSpeed then
-				newFlowRate = flowRateUserMax - flowRateAdjustAmount
-			-- Make sure we're not going too slow
-			--changed by Mechaet
-			elseif rotorSpeed < turbineBaseSpeed then
-				newFlowRate = flowRateUserMax + flowRateAdjustAmount
-			-- We're not at optimal RPM or flow-rate and we're not out-of-bounds
+		-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
+		if (rotorSpeed < turbineBaseSpeed) then
+			printLog("BELOW COMMANDED SPEED")
+			if (rotorSpeed > lastTurbineSpeed) then
+				--we're still increasing, let's let it level off
+				--also lets the first control pass go by on startup
+			elseif (rotorSpeed < lastTurbineSpeed) then
+				--we're decreasing where we should be increasing, do something
+				if ((lastTurbineSpeed - rotorSpeed) > 100) then
+					--kick it harder
+					newFlowRate = 2000
+					printLog("HARD KICK")
+				else
+					--let's adjust based on proximity
+					flowAdjustment = (turbineBaseSpeed - rotorSpeed)/5
+					newFlowRate = flowRate + flowAdjustment
+					printLog("Light Kick: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+				end
 			else
-				return
-			end -- if rotorSpeed > turbineBaseSpeed then
-
-			-- Check bounds [0,2000]
+				--we've stagnated, kick it.
+				flowAdjustment = (turbineBaseSpeed - lastTurbineSpeed)
+				newFlowRate = flowRate + flowAdjustment
+				printLog("Stagnated: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+			end --if (rotorSpeed > lastTurbineSpeed) then
+		else
+			--we're above commanded turbine speed
+			printLog("ABOVE COMMANDED SPEED")
+			if (rotorSpeed < lastTurbineSpeed) then
+			--we're decreasing, let it level off
+			--also bypasses first control pass on startup
+			elseif (rotorSpeed > lastTurbineSpeed) then
+				--we're above and ascending.
+				if ((rotorSpeed - lastTurbineSpeed) > 100) then
+					--halt
+					newFlowRate = 25
+				else
+					--let's adjust based on proximity
+					flowAdjustment = (rotorSpeed - turbineBaseSpeed)/5
+					newFlowRate = flowRate - flowAdjustment
+					printLog("Light Kick: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+				end
+			else
+				--we've stagnated, kick it.
+				flowAdjustment = (lastTurbineSpeed - turbineBaseSpeed)
+				newFlowRate = flowRate - flowAdjustment
+				printLog("Stagnated: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+			end --if (rotorSpeed < lastTurbineSpeed) then
+		end --if (rotorSpeed < turbineBaseSpeed)
+		
+		--check to make sure an adjustment was made
+		if (newFlowRate == 0) then
+			--do nothing, we didn't ask for anything this pass
+		else
+			--boundary check
 			if newFlowRate > 2000 then
 				newFlowRate = 2000
-			elseif newFlowRate < 0 then
+			elseif newFlowRate < 25 then
 				newFlowRate = 25 -- Don't go to zero, might as well power off
 			end -- if newFlowRate > 2000 then
-
-			turbine.setFluidFlowRateMax(newFlowRate)
-		end -- if ((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax) then
+			--no sense running an adjustment if it's not necessary
+			if ((newFlowRate < flowRate) or (newFlowRate > flowRate)) then
+				printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is being commanded to "..newFlowRate.." mB/t flow")
+				turbine.setFluidFlowRateMax(newFlowRate)
+			end
+		end
+		--always set this
+		turbineLastSpeedA[turbineIndex] = rotorSpeed
 	else
 		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT active.")
 	end -- if turbine.getActive() then
+	
 end -- function flowRateControl(turbineIndex)
 
 
