@@ -13,78 +13,78 @@ This program was designed to work with the mods and versions installed on Never 
 
 To simplify the code and guesswork, I assume the following monitor layout:
 1) One Advanced Monitor for overall status display plus
-		one or more Reactors plus
-		none or more Turbines.
+	one or more Reactors plus
+	none or more Turbines.
 2) One Advanced Monitor for overall status display plus (first found monitor)
-		one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
-		one Advanced Monitor for each connected Turbine (last group of monitors found).
+	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
+	one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
 Notes:
-		Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
-		Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
-		Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam.
+	Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
+	Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
+	Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam.
 
 When using actively cooled reactors with turbines, keep the following in mind:
-		- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
-		- Actively cooled reactors produce steam, not power.
-		- You will need about 10 mB of water for each 1 mB of steam that you want to create in a 7^3 reactor.
+	- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
+	- Actively cooled reactors produce steam, not power.
+	- You will need about 10 mB of water for each 1 mB of steam that you want to create in a 7^3 reactor.
 
 Features:
-		Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
-		ReactorOptions is read on start and then current values are saved every program cycle.
-		Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
-		Auto-adjusts control rods per reactor to maintain temperature.
-		Will display reactor data to all attached monitors of correct dimensions.
-			For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+	Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
+	ReactorOptions is read on start and then current values are saved every program cycle.
+	Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
+	Auto-adjusts control rods per reactor to maintain temperature.
+	Will display reactor data to all attached monitors of correct dimensions.
 		For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
-		A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
+	For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+	A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
 GUI Usage:
-		The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
-			"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
-			"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
-		Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
-			Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
-		Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
+	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
+		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
+		"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+	Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
+		Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
+	Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
 
 Default values:
-		Rod Control: 90% (Let's start off safe and then power up as we can)
-		Minimum Energy Buffer: 15% (will power on below this value)
-		Maximum Energy Buffer: 85% (will power off above this value)
-		Minimum Passive Cooling Temperature: 850^C (will raise control rods below this value)
-		Maximum Passive Cooling Temperature: 950^C (will lower control rods above this value)
-		Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
-		Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
-		Optimal Turbine RPM:  900, 1,800, or 2,700 (divisible by 900)
-		New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
+	Rod Control: 90% (Let's start off safe and then power up as we can)
+	Minimum Energy Buffer: 15% (will power on below this value)
+	Maximum Energy Buffer: 85% (will power off above this value)
+	Minimum Passive Cooling Temperature: 850^C (will raise control rods below this value)
+	Maximum Passive Cooling Temperature: 950^C (will lower control rods above this value)
+	Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
+	Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
+	Optimal Turbine RPM:  900, 1,800, or 2,700 (divisible by 900)
+	New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
 
 Requirements:
-		Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
-		Computer or Advanced Computer
-		Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-		Big Reactors (http://www.big-reactors.com/) 0.3.2A+
-		Computercraft (http://computercraft.info/) 1.63+
-		Reset the computer any time number of connected devices change.
+	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
+	Computer or Advanced Computer
+	Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
+	Big Reactors (http://www.big-reactors.com/) 0.3.2A+
+	Computercraft (http://computercraft.info/) 1.63+
+	Reset the computer any time number of connected devices change.
 
 Resources:
 This script is available from:
-		http://pastebin.com/fguScPBQ
-		https://github.com/sandalle/minecraft_bigreactor_control
+	http://pastebin.com/fguScPBQ
+	https://github.com/sandalle/minecraft_bigreactor_control
 Start-up script is available from:
-		http://pastebin.com/ZTMzRLez
-		https://github.com/sandalle/minecraft_bigreactor_control
+	http://pastebin.com/ZTMzRLez
+	https://github.com/sandalle/minecraft_bigreactor_control
 Other reactor control program which I based my program on:
-		http://pastebin.com/aMAu4X5J (ScatmanJohn)
-		http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
+	http://pastebin.com/aMAu4X5J (ScatmanJohn)
+	http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
 A simpler Big Reactor control program is available from:
-		http://pastebin.com/7S5xCvgL (IronClaymore only for passively cooled reactors)
+	http://pastebin.com/7S5xCvgL (IronClaymore only for passively cooled reactors)
 
-Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
-Computercraft API: http://computercraft.info/wiki/Category:APIs
-Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
-Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
-Big Reactors API: http://big-reactors.com/cc_api.html
+	Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
+	Computercraft API: http://computercraft.info/wiki/Category:APIs
+	Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
+	Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
+	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
 0.3.9 - Algorithm pass by Mechaet.
@@ -374,7 +374,7 @@ local function clearMonitor(printString, monitorIndex)
 	local gap = 2
 	monitor.clear()
 	local width, height = monitor.getSize()
-	monitor.setTextScale(1.0)	-- Make sure scale is correct
+	monitor.setTextScale(1.0)       -- Make sure scale is correct
 
 	printCentered(printString, 1, monitorIndex)
 	monitor.setTextColor(colors.blue)
@@ -722,6 +722,7 @@ local function temperatureControl(reactorIndex)
 		end -- if reactor.getConnected() then
 	end
 
+	local reactorNum = reactorIndex
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
 	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
@@ -744,49 +745,122 @@ local function temperatureControl(reactorIndex)
 			reactorCruise(localMaxReactorTemp, localMinReactorTemp, lastTempPoll, reactorIndex)
 		else
 			-- Don't bring us to 100, that's effectively a shutdown
-			if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
-				-- If more than double our maximum temperature, increase rodPercentage faster
-				if reactorTemp > (2 * localMaxReactorTemp) then
-					-- Check bounds, Big Reactor doesn't do this for us. :)
-					if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
-						reactor.setAllControlRodLevels(99)
-					else
-						reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
-					end
-				else
-					-- Check bounds, Big Reactor doesn't do this for us. :)
-					if (rodPercentage + controlRodAdjustAmount) > 99 then
-						reactor.setAllControlRodLevels(99)
-					else
-						reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
-					end
-				end -- if reactorTemp > (2 * localMaxReactorTemp) then
-			elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~= 0) then
-				-- If less than half our minimum temperature, decrease rodPercentage faster
-				if reactorTemp < (localMinReactorTemp / 2) then
-					-- Check bounds, Big Reactor doesn't do this for us. :)
-					if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
-						reactor.setAllControlRodLevels(0)
-					else
-						reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
-					end
-				else
-					-- Check bounds, Big Reactor doesn't do this for us. :)
-					if (rodPercentage - controlRodAdjustAmount) < 0 then
-						reactor.setAllControlRodLevels(0)
-					else
-						reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
-					end
-				end -- if reactorTemp < (localMinReactorTemp / 2) then
+				if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+					--increase the rods, but by how much?
+					if (reactorTemp > lastTempPoll) then
+						--we're climbing, we need to get this to decrease
+						if ((reactorTemp - lastTempPoll) > 100) then
+							--we're climbing really fast, arrest it
+							if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
+								reactor.setAllControlRodLevels(99)
+							else
+								reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
+							end
+						else
+							--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
+							local diffAmount = reactorTemp - lastTempPoll
+							diffAmount = round(diffAmount/10, 0)
+							controlRodAdjustAmount = diffAmount
+							if (rodPercentage + controlRodAdjustAmount) > 99 then
+							    reactor.setAllControlRodLevels(99)
+						    else
+							    reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
+						    end
+						end --if ((reactorTemp - lastTempPoll) > 100) then
+					elseif (reactorTemp = lastTempPoll) then
+						--temperature has stangnated, kick it very lightly
+						local controlRodAdjustment = 1
+						if (rodPercentage + controlRodAdjustment) > 99 then
+							reactor.setAllControlRodLevels(99)
+						else
+							reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustment)
+						end
+					end --if (reactorTemp > lastTempPoll) then
+						--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
 
-				baseControlRodLevel = rodPercentage
+				elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~=0) then
+					--we're too cold. time to warm up, but by how much?
+					if (reactorTemp < lastTempPoll) then
+						--we're descending, let's stop that.
+						if ((lastTempPoll - reactorTemp) > 100) then
+							--we're headed for a new ice age, bring the heat
+							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
+							    reactor.setAllControlRodLevels(0)
+						    else
+							    reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
+						    end
+						else
+							--we're not descending quickly, let's bump it based on descent rate
+							local diffAmount = lastTempPoll - reactorTemp
+							diffAmount = round(diffAmount/10, 0)
+							controlRodAdjustAmount = diffAmount
+							if (rodPercentage - controlRodAdjustAmount) < 0 then
+							    reactor.setAllControlRodLevels(0)
+						    else
+							    reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
+						    end
+						end --if ((lastTempPoll - reactorTemp) > 100) then
+					elseif (reactorTemp = lastTempPoll) then
+						--temperature has stagnated, kick it very lightly
+						local controlRodAdjustment = 1
+						if (rodPercentage - controlRodAdjustment) < 0 then
+							reactor.setAllControlRodLevels(0)
+						else
+							reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustment)
+						end --if (rodPercentage - controlRodAdjustment) < 0 then
+
+					end --if (reactorTemp < lastTempPoll) then
+					--if we're below temp but increasing, do nothing and let it continue to rise.
+				end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+
+
+				--[[
+				--the old functions are here for posterity
+			if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+						-- If more than double our maximum temperature, increase rodPercentage faster
+						if reactorTemp > (2 * localMaxReactorTemp) then
+							-- Check bounds, Big Reactor doesn't do this for us. :)
+							if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
+										reactor.setAllControlRodLevels(99)
+							else
+										reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
+							end
+						else
+							-- Check bounds, Big Reactor doesn't do this for us. :)
+							if (rodPercentage + controlRodAdjustAmount) > 99 then
+										reactor.setAllControlRodLevels(99)
+							else
+										reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
+							end
+						end -- if reactorTemp > (2 * localMaxReactorTemp) then
+			elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~= 0) then
+						-- If less than half our minimum temperature, decrease rodPercentage faster
+						if reactorTemp < (localMinReactorTemp / 2) then
+							-- Check bounds, Big Reactor doesn't do this for us. :)
+							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
+										reactor.setAllControlRodLevels(0)
+							else
+										reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
+							end
+						else
+							-- Check bounds, Big Reactor doesn't do this for us. :)
+							if (rodPercentage - controlRodAdjustAmount) < 0 then
+										reactor.setAllControlRodLevels(0)
+							else
+										reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
+							end
+						end -- if reactorTemp < (localMinReactorTemp / 2) then
+
+						baseControlRodLevel = rodPercentage
 			end -- if (reactorTemp > localMaxReactorTemp) and (rodPercentage < 99) then
+				]]--
 			if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
-				--engage cruise mode
-				reactorCruising = true
-				lastTempPoll = reactorTemp
+						--engage cruise mode
+						reactorCruising = true
 			end
 		end
+		--always set this number
+		lastTempPoll = reactorTemp
 	end -- if reactor.getActive() then
 end -- function temperatureControl(reactorIndex)
 
@@ -869,11 +943,11 @@ local function loadReactorOptions()
 	end
 
 	if minReactorTemp == nil then
-		minReactorTemp = 850
+		minReactorTemp = 950
 	end
 
 	if maxReactorTemp == nil then
-		maxReactorTemp = 950
+		maxReactorTemp = 1400
 	end
 end -- function loadReactorOptions()
 
@@ -992,12 +1066,14 @@ local function displayReactorBars(barParams)
 
 		-- Save updated rod percentage
 		baseControlRodLevel = newRodPercentage
-		rodPercentage = newRodPercentage
+		rodPercentage = round(newRodPercentage,0)
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
+	--convert to a whole number for display purposes
+	local wholeRodPercentage = nil
+	wholeRodPercentage, decimal = math.modf(rodPercentage)
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
-	print{rodPercentage,25,4,monitorIndex}
+	print{wholeRodPercentage,25,4,monitorIndex}
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
 	local energyBuffer = reactor.getEnergyProducedLastTick()
@@ -1321,12 +1397,15 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
 
 		-- Save updated Turbine Flow Rate
-		turbineFlowRate = newTurbineFlowRate
+		turbineFlowRate = math.ceil(newTurbineFlowRate)
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+	--convert the number into a whole number for display purposes
+	local wholeFlowRate = nil
+	wholeFlowRate, decimal = math.modf(turbineFlowRate)
 
 	print{"  Flow",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
-	print{turbineFlowRate,23,4,monitorIndex}
+	print{wholeFlowRate,23,4,monitorIndex}
 	print{"  mB/t",22,5,monitorIndex}
 
 	local rotorSpeedString = "Speed: "
@@ -1549,7 +1628,7 @@ function main()
 				break -- Invalid reactorIndex
 			else
 				printLog("reactor["..reactorIndex.."] in main() is a valid Big Reactor.")
-			end -- 	if not reactor then
+			end --  if not reactor then
 
 			-- Only attempt to assign a monitor if we have a monitor for this reactor
 			if (#reactorList ~= 1) and (reactorMonitorIndex <= #monitorList) then
