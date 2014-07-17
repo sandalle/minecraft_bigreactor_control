@@ -167,7 +167,7 @@ TODO:
 
 -- Some global variables
 local progVer = "0.3.10"
-local progName = "EZ-NUKE "
+local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
 local controlRodAdjustAmount = 1 -- Default Reactor Rod Control % adjustment amount
