@@ -999,10 +999,12 @@ local function displayReactorBars(barParams)
 	print{reactorTemp.." C",padding+2,5,monitorIndex}
 
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
+	printLog("Current Rod Percentage for reactor["..reactorIndex.."] is "..rodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 	-- Allow controlling Reactor Control Rod Level from GUI
 	-- Decrease rod button: 23X, 4Y
 	-- Increase rod button: 28X, 4Y
 	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decreasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		--Decrease rod level by amount
 		newRodPercentage = rodPercentage - (5 * controlRodAdjustAmount)
 		if newRodPercentage < 0 then
@@ -1010,6 +1012,7 @@ local function displayReactorBars(barParams)
 		end
 		sideClick, xClick, yClick = 0, 0, 0
 
+		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		reactor.setAllControlRodLevels(newRodPercentage)
 
 		-- Save updated rod percentage
@@ -1018,6 +1021,7 @@ local function displayReactorBars(barParams)
 	end -- if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
 	if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		--Increase rod level by amount
 		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
 		if newRodPercentage > 100 then
@@ -1025,6 +1029,7 @@ local function displayReactorBars(barParams)
 		end
 		sideClick, xClick, yClick = 0, 0, 0
 
+		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		reactor.setAllControlRodLevels(newRodPercentage)
 
 		-- Save updated rod percentage
@@ -1043,7 +1048,7 @@ local function displayReactorBars(barParams)
 	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
 	-- still uses getEnergyProducedLastTick for mB/t of hot fluid generated
 	if not reactor.isActivelyCooled() then
-		printLog("reactor["..reactorIndex.."] in displayReactorBars is NOT an actively cooled reactor.")
+		printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT an actively cooled reactor.")
 
 		-- Draw stored energy buffer bar
 		drawBar(2,8,28,8,colors.gray,monitorIndex)
@@ -1061,7 +1066,7 @@ local function displayReactorBars(barParams)
 
 		print{math.ceil(energyBuffer).." RF/t",padding+2,4,monitorIndex}
 	else
-		printLog("reactor["..reactorIndex.."] in displayReactorBars is an actively cooled reactor.")
+		printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is an actively cooled reactor.")
 		print{math.ceil(energyBuffer).." mB/t",padding+2,4,monitorIndex}
 	end -- if not reactor.isActivelyCooled() then
 
@@ -1077,6 +1082,7 @@ local function displayReactorBars(barParams)
 		reactorRodOverrideStatus = "Disabled"
 		monitor.setTextColor(colors.red)
 	end -- if not reactorRodOverride then
+	printLog("reactorRodOverride is \""..reactorRodOverride.."\" in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 
 	print{reactorRodOverrideStatus, width - string.len(reactorRodOverrideStatus) - 1, 9, monitorIndex}
 	monitor.setTextColor(colors.white)
