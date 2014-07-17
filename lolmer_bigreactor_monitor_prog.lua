@@ -677,7 +677,7 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, react
 		local reactorTemp = math.ceil(reactor.getFuelTemperature())
 
 		if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
-			if (reactorTemp > lastPolledTemp) then
+			if (reactorTemp < lastPolledTemp) then
 				rodPercentage = (rodPercentage - 1)
 				--Boundary check
 				if rodPercentage < 0 then
@@ -702,6 +702,7 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, react
 		--I don't know how we'd get here, but let's turn the cruise mode off
 		reactorCruising = false
 	end -- if ((lastPolledTemp < cruiseMaxTemp) and (lastPolledTemp > cruiseMinTemp)) then
+	lastTempPoll = reactorTemp
 end -- function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, reactorIndex)
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
@@ -1030,12 +1031,10 @@ local function displayReactorBars(barParams)
 		baseControlRodLevel = newRodPercentage
 		rodPercentage = round(newRodPercentage,0)
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-	--convert to a whole number for display purposes
-	local wholeRodPercentage = nil
-	wholeRodPercentage, decimal = math.modf(rodPercentage)
+
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
-	print{wholeRodPercentage,25,4,monitorIndex}
+	print{newRodPercentage,25,4,monitorIndex}
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
 	local energyBuffer = reactor.getEnergyProducedLastTick()
@@ -1361,13 +1360,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = math.ceil(newTurbineFlowRate)
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-	--convert the number into a whole number for display purposes
-	local wholeFlowRate = nil
-	wholeFlowRate, decimal = math.modf(turbineFlowRate)
 
 	print{"  Flow",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
-	print{wholeFlowRate,23,4,monitorIndex}
+	print{turbineFlowRate,23,4,monitorIndex}
 	print{"  mB/t",22,5,monitorIndex}
 
 	local rotorSpeedString = "Speed: "
