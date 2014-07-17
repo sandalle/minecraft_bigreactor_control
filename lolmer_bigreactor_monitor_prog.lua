@@ -374,7 +374,7 @@ local function clearMonitor(printString, monitorIndex)
 	local gap = 2
 	monitor.clear()
 	local width, height = monitor.getSize()
-	monitor.setTextScale(1.0)       -- Make sure scale is correct
+	monitor.setTextScale(1.0) -- Make sure scale is correct
 
 	printCentered(printString, 1, monitorIndex)
 	monitor.setTextColor(colors.blue)
@@ -745,120 +745,79 @@ local function temperatureControl(reactorIndex)
 			reactorCruise(localMaxReactorTemp, localMinReactorTemp, lastTempPoll, reactorIndex)
 		else
 			-- Don't bring us to 100, that's effectively a shutdown
-				if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
-					--increase the rods, but by how much?
-					if (reactorTemp > lastTempPoll) then
-						--we're climbing, we need to get this to decrease
-						if ((reactorTemp - lastTempPoll) > 100) then
-							--we're climbing really fast, arrest it
-							if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
-								reactor.setAllControlRodLevels(99)
-							else
-								reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
-							end
-						else
-							--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
-							local diffAmount = reactorTemp - lastTempPoll
-							diffAmount = round(diffAmount/10, 0)
-							controlRodAdjustAmount = diffAmount
-							if (rodPercentage + controlRodAdjustAmount) > 99 then
-							    reactor.setAllControlRodLevels(99)
-						    else
-							    reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
-						    end
-						end --if ((reactorTemp - lastTempPoll) > 100) then
-					elseif (reactorTemp = lastTempPoll) then
-						--temperature has stangnated, kick it very lightly
-						local controlRodAdjustment = 1
-						if (rodPercentage + controlRodAdjustment) > 99 then
+			if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+				--increase the rods, but by how much?
+				if (reactorTemp > lastTempPoll) then
+					--we're climbing, we need to get this to decrease
+					if ((reactorTemp - lastTempPoll) > 100) then
+						--we're climbing really fast, arrest it
+						if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
 							reactor.setAllControlRodLevels(99)
 						else
-							reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustment)
+							reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
 						end
-					end --if (reactorTemp > lastTempPoll) then
-						--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
-
-				elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~=0) then
-					--we're too cold. time to warm up, but by how much?
-					if (reactorTemp < lastTempPoll) then
-						--we're descending, let's stop that.
-						if ((lastTempPoll - reactorTemp) > 100) then
-							--we're headed for a new ice age, bring the heat
-							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
-							    reactor.setAllControlRodLevels(0)
-						    else
-							    reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
-						    end
+					else
+						--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
+						local diffAmount = reactorTemp - lastTempPoll
+						diffAmount = round(diffAmount/10, 0)
+						controlRodAdjustAmount = diffAmount
+						if (rodPercentage + controlRodAdjustAmount) > 99 then
+							reactor.setAllControlRodLevels(99)
 						else
-							--we're not descending quickly, let's bump it based on descent rate
-							local diffAmount = lastTempPoll - reactorTemp
-							diffAmount = round(diffAmount/10, 0)
-							controlRodAdjustAmount = diffAmount
-							if (rodPercentage - controlRodAdjustAmount) < 0 then
-							    reactor.setAllControlRodLevels(0)
-						    else
-							    reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
-						    end
-						end --if ((lastTempPoll - reactorTemp) > 100) then
-					elseif (reactorTemp = lastTempPoll) then
-						--temperature has stagnated, kick it very lightly
-						local controlRodAdjustment = 1
-						if (rodPercentage - controlRodAdjustment) < 0 then
+							reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
+						end
+					end --if ((reactorTemp - lastTempPoll) > 100) then
+				elseif (reactorTemp = lastTempPoll) then
+					--temperature has stangnated, kick it very lightly
+					local controlRodAdjustment = 1
+					if (rodPercentage + controlRodAdjustment) > 99 then
+						reactor.setAllControlRodLevels(99)
+					else
+						reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustment)
+					end
+				end --if (reactorTemp > lastTempPoll) then
+					--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
+
+			elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~=0) then
+				--we're too cold. time to warm up, but by how much?
+				if (reactorTemp < lastTempPoll) then
+					--we're descending, let's stop that.
+					if ((lastTempPoll - reactorTemp) > 100) then
+						--we're headed for a new ice age, bring the heat
+						if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
 							reactor.setAllControlRodLevels(0)
 						else
-							reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustment)
-						end --if (rodPercentage - controlRodAdjustment) < 0 then
-
-					end --if (reactorTemp < lastTempPoll) then
-					--if we're below temp but increasing, do nothing and let it continue to rise.
-				end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
-
-
-				--[[
-				--the old functions are here for posterity
-			if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
-						-- If more than double our maximum temperature, increase rodPercentage faster
-						if reactorTemp > (2 * localMaxReactorTemp) then
-							-- Check bounds, Big Reactor doesn't do this for us. :)
-							if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
-										reactor.setAllControlRodLevels(99)
-							else
-										reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
-							end
+							reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
+						end
+					else
+						--we're not descending quickly, let's bump it based on descent rate
+						local diffAmount = lastTempPoll - reactorTemp
+						diffAmount = round(diffAmount/10, 0)
+						controlRodAdjustAmount = diffAmount
+						if (rodPercentage - controlRodAdjustAmount) < 0 then
+							reactor.setAllControlRodLevels(0)
 						else
-							-- Check bounds, Big Reactor doesn't do this for us. :)
-							if (rodPercentage + controlRodAdjustAmount) > 99 then
-										reactor.setAllControlRodLevels(99)
-							else
-										reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
-							end
-						end -- if reactorTemp > (2 * localMaxReactorTemp) then
-			elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~= 0) then
-						-- If less than half our minimum temperature, decrease rodPercentage faster
-						if reactorTemp < (localMinReactorTemp / 2) then
-							-- Check bounds, Big Reactor doesn't do this for us. :)
-							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
-										reactor.setAllControlRodLevels(0)
-							else
-										reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
-							end
-						else
-							-- Check bounds, Big Reactor doesn't do this for us. :)
-							if (rodPercentage - controlRodAdjustAmount) < 0 then
-										reactor.setAllControlRodLevels(0)
-							else
-										reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
-							end
-						end -- if reactorTemp < (localMinReactorTemp / 2) then
+							reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
+						end
+					end --if ((lastTempPoll - reactorTemp) > 100) then
+				elseif (reactorTemp = lastTempPoll) then
+					--temperature has stagnated, kick it very lightly
+					local controlRodAdjustment = 1
+					if (rodPercentage - controlRodAdjustment) < 0 then
+						reactor.setAllControlRodLevels(0)
+					else
+						reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustment)
+					end --if (rodPercentage - controlRodAdjustment) < 0 then
 
-						baseControlRodLevel = rodPercentage
-			end -- if (reactorTemp > localMaxReactorTemp) and (rodPercentage < 99) then
-				]]--
+				end --if (reactorTemp < lastTempPoll) then
+				--if we're below temp but increasing, do nothing and let it continue to rise.
+			end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+
 			if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
-						--engage cruise mode
-						reactorCruising = true
-			end
-		end
+				--engage cruise mode
+				reactorCruising = true
+			end -- if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+		end -- if reactorCruising then
 		--always set this number
 		lastTempPoll = reactorTemp
 	end -- if reactor.getActive() then
@@ -1426,7 +1385,6 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 	-- Draw stored energy buffer bar
 	drawBar(1,8,28,8,colors.gray,monitorIndex)
-	--paintutils.drawLine(2, 8, 28, 8, colors.gray)
 
 	local curStoredEnergyPercent = getTurbineStoredEnergyBufferPercent(turbine)
 	if curStoredEnergyPercent > 4 then
@@ -1556,7 +1514,7 @@ local function flowRateControl(turbineIndex)
 		-- If we're not at max flow-rate and an optimal RPM, let's do something
 		-- also don't do anything if the current flow rate hasn't caught up to the user defined flow rate maximum
 		if (((rotorSpeed % 900) ~= 0) and (flowRate ~= 2000) and (flowRate == flowRateUserMax))
-			or (flowRate == 0) then
+				or (flowRate == 0) then
 			-- Make sure we are not going too fast
 			--changed by Mechaet
 			if rotorSpeed > turbineBaseSpeed then
