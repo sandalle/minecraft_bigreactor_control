@@ -1284,7 +1284,7 @@ local function displayAllStatus()
 		printLeft(math.ceil(totalTurbineRF).." RF/t", 10, monitorIndex)
 	end -- if #turbineList then
 
-	printRight("Fuel: "..round(totalReactorFuelConsumed,3).." mB/t", 11, monitorIndex)
+	printCentered("Fuel: "..round(totalReactorFuelConsumed,3).." mB/t", 11, monitorIndex)
 	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..totalMaxEnergyStored.." RF", 2, 12, monitorIndex}
 end -- function displayAllStatus()
 
