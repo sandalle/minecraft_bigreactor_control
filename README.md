@@ -119,7 +119,6 @@ ChangeLog
 	- Much improved round() function from mechaet (Issue #14).
 	- Refactoring pass/algorithm change on the reactor temperature control. Should now adjust in increments to achieve the desired temperature range quicker and more accurately.
 	- Optimal passive-cooled reactor temperature range changed from 850-900 to 950-1400
-	- Change the display percentages on status monitors to get rid of superfluous decimals.
 
 - 0.3.8
 	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
