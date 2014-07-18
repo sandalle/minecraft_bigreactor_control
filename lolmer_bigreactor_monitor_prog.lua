@@ -996,7 +996,13 @@ local function displayReactorBars(barParams)
 	-- Draw some text
 	local fuelString = "Fuel: "
 	local tempString = "Temp: "
-	local energyBufferString = "Producing: "
+	local energyBufferString = ""
+
+	if reactor.isActivelyCooled() then
+		energyBufferString = "Steam: "
+	else
+		energyBufferString = "Energy: "
+	end
 
 	local padding = math.max(string.len(fuelString), string.len(tempString), string.len(energyBufferString))
 
@@ -1417,7 +1423,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{"<      >",22,6,monitorIndex}
 	print{turbineBaseSpeed,23,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
-	local energyBufferString = "Producing: "
+	local energyBufferString = "Energy: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
 
 	local energyBuffer = turbine.getEnergyProducedLastTick()
