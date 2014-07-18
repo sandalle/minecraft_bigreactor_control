@@ -49,7 +49,8 @@ GUI Usage
 ----------------------------
 - The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 	- "Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
-	- "Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+	- "mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+	- "RPM" will lower/raise the target Turbine RPM for that Turbine
 - Right-clicking between the "<" and ">" (not on) will disable auto-adjust of that value for attached device.
 	- Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
 - Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
@@ -108,8 +109,13 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.10
+	- Turbine algorithm pass by Mechaet.
+	- Updated turbine GUI.
+	- Fix single monitor (again) for Issue #22.
+
 - 0.3.9
-	- Algorithm pass by Mechaet.
+	- Reactor algorithm pass by Mechaet.
 	- Additional user config options by Mechaet.
 	- Fix multiple reactors and none or more turbines with only one status monitor.
 	- Fix monitor scaling after one was used as debug (or in case of other modifications).

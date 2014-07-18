@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.9
+Version: v0.3.10
 Programmer: Lolmer
 Minor assistance by Mechaet
-Last update: 2014-07-16
+Last update: 2014-07-17
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -43,7 +43,8 @@ Features:
 GUI Usage:
 	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
-		"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+		"mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+		"RPM" will lower/raise the target Turbine RPM for that Turbine
 	Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
 		Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
 	Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
@@ -87,7 +88,10 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.9 - Algorithm pass by Mechaet.
+0.3.10 - Turbine algorithm pass by Mechaet.
+		Updated turbine GUI.
+		Fix single monitor (again) for Issue #22.
+0.3.9 - Reactor algorithm pass by Mechaet.
 		Additional user config options.
 		Fix multiple reactors and none or more turbines with only one status monitor.
 		Fix monitor scaling after one was used as debug (or in case of other modifications).
@@ -165,8 +169,8 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.9"
-local progName = "EZ-NUKE "
+local progVer = "0.3.10"
+local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
 local controlRodAdjustAmount = 1 -- Default Reactor Rod Control % adjustment amount
@@ -993,7 +997,13 @@ local function displayReactorBars(barParams)
 	-- Draw some text
 	local fuelString = "Fuel: "
 	local tempString = "Temp: "
-	local energyBufferString = "Producing: "
+	local energyBufferString = ""
+
+	if reactor.isActivelyCooled() then
+		energyBufferString = "Steam: "
+	else
+		energyBufferString = "Energy: "
+	end
 
 	local padding = math.max(string.len(fuelString), string.len(tempString), string.len(energyBufferString))
 
@@ -1058,7 +1068,7 @@ local function displayReactorBars(barParams)
 	end
 
 	print{energyBufferString,2,4,monitorIndex}
-	
+
 	-- Actively cooled reactors do not produce energy, only hot fluid mB/t to be used in a turbine
 	-- still uses getEnergyProducedLastTick for mB/t of hot fluid generated
 	if not reactor.isActivelyCooled() then
@@ -1323,10 +1333,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 			return -- Disconnected turbine
 		end -- if turbine.getConnected() then
 	end -- if not turbine then
-	
+
 	--local variable to match the view on the monitor
 	turbineBaseSpeed = turbineBaseSpeedA[turbineIndex]
-	
+
 	-- Draw border lines
 	local width, height = monitor.getSize()
 
@@ -1350,7 +1360,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 			newTurbineFlowRate = 0
 		end
 		sideClick, xClick, yClick = 0, 0, 0
-		
+
 		-- Check bounds [0,2000]
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
@@ -1385,7 +1395,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	else
 		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-	
+
 	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		rpmRateAdjustment = 909
@@ -1407,25 +1417,23 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	else
 		printLog("No change to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-	print{"  Flow",22,3,monitorIndex}
+	print{"  mB/t",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
 	print{turbineFlowRate,23,4,monitorIndex}
-	print{"  mB/t",22,5,monitorIndex}
+	print{"  RPM",22,5,monitorIndex}
 	print{"<      >",22,6,monitorIndex}
 	print{turbineBaseSpeed,23,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
-	local energyBufferString = "Producing: "
-	local rotorTargetString = "Target Turbine RPM: "
+	local energyBufferString = "Energy: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
 
 	local energyBuffer = turbine.getEnergyProducedLastTick()
 	print{energyBufferString,1,4,monitorIndex}
-	print{math.ceil(energyBuffer).."RF/t",padding+1,4,monitorIndex}
+	print{math.ceil(energyBuffer).." RF/t",padding+1,4,monitorIndex}
 
 	local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 	print{rotorSpeedString,1,5,monitorIndex}
 	print{rotorSpeed.." RPM",padding+1,5,monitorIndex}
-	print{rotorTargetString,1,6,monitorIndex}
 
 	-- PaintUtils only outputs to term., not monitor.
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
@@ -1536,7 +1544,7 @@ local function flowRateControl(turbineIndex)
 	-- Grab current turbine
 	local turbine = nil
 	turbine = turbineList[turbineIndex]
-	
+
 	--set initial base speed
 	if (turbineBaseSpeedA[turbineIndex] == nil) then
 		turbineBaseSpeedA[turbineIndex] = turbineBaseSpeed
@@ -1545,11 +1553,11 @@ local function flowRateControl(turbineIndex)
 	if (turbineLastSpeedA[turbineIndex] == nil) then
 		turbineLaseSpeedA[turbineIndex] = lastTurbineSpeed
 	end
-	
+
 	-- now that we've covered nil values, assign for the duration of this run
 	lastTurbineSpeed = turbineLastSpeedA[turbineIndex]
 	turbineBaseSpeed = turbineBaseSpeedA[turbineIndex]
-	
+
 	if not turbine then
 		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT a valid Big Turbine.")
 		return -- Invalid turbineIndex
@@ -1620,7 +1628,7 @@ local function flowRateControl(turbineIndex)
 				printLog("Stagnated: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
 			end --if (rotorSpeed < lastTurbineSpeed) then
 		end --if (rotorSpeed < turbineBaseSpeed)
-		
+
 		--check to make sure an adjustment was made
 		if (newFlowRate == 0) then
 			--do nothing, we didn't ask for anything this pass
@@ -1642,7 +1650,7 @@ local function flowRateControl(turbineIndex)
 	else
 		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT active.")
 	end -- if turbine.getActive() then
-	
+
 end -- function flowRateControl(turbineIndex)
 
 
@@ -1662,7 +1670,7 @@ function main()
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
-		if (((#reactorList + #turbineList) > 1) and (#monitorList >= 1)) then
+		if (((#reactorList + #turbineList) >= 1) and (#monitorList >= 1)) then
 			local monitor = nil
 			monitor = monitorList[monitorIndex]
 			if not monitor then
