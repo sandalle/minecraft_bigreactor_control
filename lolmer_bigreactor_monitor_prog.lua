@@ -90,6 +90,7 @@ A simpler Big Reactor control program is available from:
 ChangeLog:
 0.3.10 - Turbine algorithm pass by Mechaet.
 		Updated turbine GUI.
+		Fix single monitor (again) for Issue #22.
 0.3.9 - Reactor algorithm pass by Mechaet.
 		Additional user config options.
 		Fix multiple reactors and none or more turbines with only one status monitor.
@@ -1669,7 +1670,7 @@ function main()
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
-		if (((#reactorList + #turbineList) > 1) and (#monitorList >= 1)) then
+		if (((#reactorList + #turbineList) >= 1) and (#monitorList >= 1)) then
 			local monitor = nil
 			monitor = monitorList[monitorIndex]
 			if not monitor then

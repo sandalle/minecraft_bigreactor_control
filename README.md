@@ -112,6 +112,7 @@ ChangeLog
 - 0.3.10
 	- Turbine algorithm pass by Mechaet.
 	- Updated turbine GUI.
+	- Fix single monitor (again) for Issue #22.
 
 - 0.3.9
 	- Reactor algorithm pass by Mechaet.
