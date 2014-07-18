@@ -43,7 +43,8 @@ Features:
 GUI Usage:
 	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
-		"Flow mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+		"mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+		"RPM" will lower/raise the target Turbine RPM for that Turbine
 	Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
 		Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
 	Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
@@ -88,6 +89,7 @@ A simpler Big Reactor control program is available from:
 
 ChangeLog:
 0.3.10 - Turbine algorithm pass by Mechaet.
+		Updated turbine GUI.
 0.3.9 - Reactor algorithm pass by Mechaet.
 		Additional user config options.
 		Fix multiple reactors and none or more turbines with only one status monitor.
@@ -1408,25 +1410,23 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	else
 		printLog("No change to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-	print{"  Flow",22,3,monitorIndex}
+	print{"  mB/t",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
 	print{turbineFlowRate,23,4,monitorIndex}
-	print{"  mB/t",22,5,monitorIndex}
+	print{"  RPM",22,5,monitorIndex}
 	print{"<      >",22,6,monitorIndex}
 	print{turbineBaseSpeed,23,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Producing: "
-	local rotorTargetString = "Target Turbine RPM: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
 
 	local energyBuffer = turbine.getEnergyProducedLastTick()
 	print{energyBufferString,1,4,monitorIndex}
-	print{math.ceil(energyBuffer).."RF/t",padding+1,4,monitorIndex}
+	print{math.ceil(energyBuffer).." RF/t",padding+1,4,monitorIndex}
 
 	local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 	print{rotorSpeedString,1,5,monitorIndex}
 	print{rotorSpeed.." RPM",padding+1,5,monitorIndex}
-	print{rotorTargetString,1,6,monitorIndex}
 
 	-- PaintUtils only outputs to term., not monitor.
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
