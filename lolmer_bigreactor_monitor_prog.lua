@@ -88,74 +88,103 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.10 - Turbine algorithm pass by Mechaet.
-		Updated turbine GUI.
-		Fix single monitor (again) for Issue #22.
-0.3.9 - Reactor algorithm pass by Mechaet.
-		Additional user config options.
-		Fix multiple reactors and none or more turbines with only one status monitor.
-		Fix monitor scaling after one was used as debug (or in case of other modifications).
-		Fix energy/% displays to match Big Reactors' GUI (Issue #9).
-		Cruise mode implemented, defaults off but is saved between boots.
-		Always write out found devices on computer terminal.
-		Much improved round() function from mechaet (Issue #14).
-		Refactoring pass/algorithm change on the reactor temperature control. Should now adjust in increments to achieve the desired temperature range quicker and more accurately.
-		Optimal passive-cooled reactor temperature range changed from 850-900 to 950-1400.
-		Fix display Issue #15.
-0.3.8 - Update to ComputerCraft 1.6 API.
-0.3.7 - Fix typo when initializing TurbineNames array.
-		Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
-0.3.6 - Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
-		Fix rod auto-adjust text position.
-		Reactors store 10M RF and Turbines store 1M RF in their buffer.
-		Add more colour to displayAllStatus().
-		Sleep for only two seconds instead of five.
-		Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
-		Keep actively cooled reactors between 0-300^C (non-configurable for now).
-0.3.5 - Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
-		Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
-		Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
-0.3.4 - Fix arithmetic for checking if we have enough monitors for the number of reactors.
-		Turbines are optimal at 900, 1800, *and* 2700 RPM
-		Increase loop timer from 1 to 5 to be nicer to servers
-0.3.3 - Add Big Reactor Turbine support
-		First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
-		Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
-		Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
-		Add monitor layout requirements to simplify code
-		Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
-		Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
-		Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
-		Allow for one monitor for n number of reactors and m number of turbines
-		Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
-		Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
-		Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
-		Remove version number from monitors to free up space for monitor names.
-		Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
-0.3.2 - Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
-0.3.1 - Add fuel consumption per tick to display
-0.3.0 - Add multi-monitor support! Sends one reactor's data to all monitors.
-		print function now takes table to support optional specified monitor
-		Set "numRods" every cycle for some people (mechaet)
-		Don't redirect terminal output with multiple monitor support
-		Log troubleshooting data to reactorcontrol.log
-		FC_API no longer used (copied and modified what I needed)
-		Multi-reactor support is theoretically implemented, but it is UNTESTED!
-		Updated for Big Reactor 0.3 (no longer works with 0.2)
-		BR getFuelTemperature() now returns many significant digits, just use math.ceil()
-		BR 0.3 removed individual rod temperatures, now it's only reactor-level temperature
-0.2.4 - Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
-		Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
-0.2.3 - Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
-0.2.2 - Do not auto-start the reactor if it was manually powered off (autoStart=false)
-0.2.1 - Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
-		"<" Rod Control buttons was off by one (to the left)
-0.2.0 - Lolmer Edition :)
-		Add min/max stored energy percentage (default is 15%/85%), configurable via ReactorOptions file.
-		No reason to keep burning fuel if our power output is going nowhere. :)
-		Use variables variable for the title and version.
-		Try to keep the temperature between configured values (default is 850^C-950^C)
-		Add Waste and number of Control/Fuel Rods to displayBards()
+- 0.3.10
+	- Turbine algorithm pass by Mechaet.
+	- Updated turbine GUI.
+	- Fix single monitor (again) for Issue #22.
+
+- 0.3.9
+	- Reactor algorithm pass by Mechaet.
+	- Additional user config options by Mechaet.
+	- Fix multiple reactors and none or more turbines with only one status monitor.
+	- Fix monitor scaling after one was used as debug (or in case of other modifications).
+	- Cruise mode implemented, defaults off but is saved between boots.
+	- Fix energy/% displays to match Big Reactors' GUI (Issue #9).
+	- Always write out found devices on computer terminal.
+	- Much improved round() function from mechaet (Issue #14).
+	- Refactoring pass/algorithm change on the reactor temperature control. Should now adjust in increments to achieve the desired temperature range quicker and more accurately.
+	- Optimal passive-cooled reactor temperature range changed from 850-900 to 950-1400.
+	- Fix display Issue #15.
+
+- 0.3.8
+	- Update to ComputerCraft 1.6 API (only term.restore() -> term.native() required :)).
+
+- 0.3.7
+	- Fix typo when initializing TurbineNames array.
+	- Fix Issue #1, turbine display is using the Reactor buffer size (10M RF) instead of the Turbine buffer size (1M RF).
+
+- 0.3.6
+	- Fix multi-reactors displaying on the correct monitors (thanks HybridFusion).
+	- Fix rod auto-adjust text position.
+	- Reactors store 10M RF and Turbines store 1M RF in their buffer.
+	- Add more colour to displayAllStatus().
+	- Sleep for only two seconds instead of five.
+	- Fix getDeviceStoredEnergyBufferPercent() for Reactors storing 10M RF in buffer.
+	- Keep actively cooled reactors between 0-300^C (non-configurable for now).
+
+- 0.3.5
+	- Do not discover connected devices every loop - nicer on servers. Reset computer anytime number of connected devices change.
+	- Fix multi-reactor setups to display the additional reactors on monitors, rather than the last one found.
+	- Fix passive reactor display having auto-adjust and energy buffer overwrite each other (removes rod count).
+
+- 0.3.4
+	- Fix arithmetic for checking if we have enough monitors for the number of reactors.
+	- Turbines are optimal at 900, 1800, *and* 2700 RPM.
+	- Increase loop timer from 1 to 5 to be nicer to servers.
+
+- 0.3.3
+	- Add Big Reactors Turbine support.
+	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found).
+	- Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
+	- Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file).
+	- Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update).
+	- Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place.
+	- Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3.
+	- Allow for one monitor for n number of reactors and m number of turbines.
+	- Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
+	- Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values).
+	- Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
+	- Remove version number from monitors to free up space for monitor names.
+	- Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
+
+- 0.3.2
+	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn).
+
+- 0.3.1
+	- Add fuel consumption per tick to display.
+
+- 0.3.0
+	- Add multi-monitor support! Sends one reactor's data to all monitors.
+	- print function now takes table to support optional specified monitor.
+	- Set "numRods" every cycle for some people (mechaet).
+	- Don't redirect terminal output with multiple monitor support.
+	- Log troubleshooting data to reactorcontrol.log.
+	- FC_API no longer used (copied and modified what I needed).
+	- Multi-reactor support is theoretically implemented, but it is UNTESTED!
+	- Updated for Big Reactor 0.3 (no longer works with 0.2).
+	- BR getFuelTemperature() now returns many significant digits, just use math.ceil().
+	- BR 0.3 removed individual rod temperatures, now it's only reactor-level temperature.
+
+- 0.2.4
+	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100).
+	- Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :)).
+
+- 0.2.3
+	- Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
+
+- 0.2.2
+	- Do not auto-start the reactor if it was manually powered off (autoStart=false).
+
+- 0.2.1
+	- Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
+	- "<" Rod Control buttons was off by one (to the left).
+
+- 0.2.0 - Lolmer Edition :)
+	- Add min/max stored energy percentage (default is 15%/85%), configurable via ReactorOptions file.
+	- No reason to keep burning fuel if our power output is going nowhere. :)
+	- Use variables variable for the title and version.
+	- Try to keep the temperature between configured values (default is 850^C-950^C).
+	- Add Waste and number of Control/Fuel Rods to displayBards().
 
 TODO:
 - Save parameters per reactor instead of one global set for all reactors.
