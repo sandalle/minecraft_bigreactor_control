@@ -1046,7 +1046,7 @@ local function temperatureControl(reactorIndex)
 			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 		end -- if reactor.getActive() then
 	else
-		printLog("Bypassed temperature control due to rodOverride being ".._G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"].." EOL")
+		printLog("Bypassed temperature control due to rodOverride being "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
 	end -- if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
 end -- function temperatureControl(reactorIndex)
 
@@ -1876,7 +1876,7 @@ local function flowRateControl(turbineIndex)
 			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT active.")
 		end -- if turbine.getActive() then
 	else
-		printLog("turbine["..turbineIndex.."] has flow override set to ".._G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]..", bypassing flow control.")
+		printLog("turbine["..turbineIndex.."] has flow override set to "..tostring(_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"])..", bypassing flow control.")
 	end -- if not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] then
 end -- function flowRateControl(turbineIndex)
 
