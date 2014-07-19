@@ -1751,11 +1751,12 @@ local function turbineStatus(turbineIndex, monitorIndex)
 		if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		elseif (xClick > 20 and xClick < 27 and yClick == 10) then
+		elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
+			
 			if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
-			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
 			else
-			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
 			end
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
