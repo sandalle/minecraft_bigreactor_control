@@ -88,6 +88,9 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+0.3.12 - Mechaet's changes:
+		Cleaned up global variables list
+		Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
 0.3.11 - Mechaet's changes:
 		Bigger bypasses of control routines when the control has been overridden
 		Individual config files for turbines and reactors. Persistent between reboots, remembers your last saved settings.
@@ -175,7 +178,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.11"
+local progVer = "0.3.12"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
