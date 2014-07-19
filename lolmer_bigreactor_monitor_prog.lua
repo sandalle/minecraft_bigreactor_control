@@ -815,14 +815,6 @@ local function findTurbines()
 				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = tempTable["TurbineOptions"]["flowOverride"]
 			end
 			
-			-- If number of found turbines changed, re-initialize them all for now
-			if #newTurbineList ~= #turbineList then
-				-- Default is to allow flow rate auto-adjust
-				turbineFlowRateOverride[turbineIndex] = false
-				turbineLastSpeedA[turbineIndex] = 0
-				_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = 2726
-			end -- if #newTurbineList ~= #turbineList then
-			
 			--save once more just to make sure we got it
 			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 		end -- for turbineIndex = 1, #newTurbineList do
@@ -1759,8 +1751,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 		if ((xClick > 23 and xClick < 28 and yClick == 4)
 				or (xClick > 20 and xClick < 27 and yClick == 10))
 				and (sideClick == monitorNames[monitorIndex]) then
-			turbineFlowRateOverride[turbineIndex] = not turbineFlowRateOverride[turbineIndex] -- Toggle turbine rod override status
-			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = turbineFlowRateOverride[turbineIndex]
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
 			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
