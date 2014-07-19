@@ -1648,7 +1648,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{turbineFlowRate,23,4,monitorIndex}
 	print{"  RPM",22,5,monitorIndex}
 	print{"<      >",22,6,monitorIndex}
-	print{_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"],23,6,monitorIndex}
+	print{tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"]),23,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Energy: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
@@ -1871,6 +1871,7 @@ local function flowRateControl(turbineIndex)
 				--no sense running an adjustment if it's not necessary
 				if ((newFlowRate < flowRate) or (newFlowRate > flowRate)) then
 					printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is being commanded to "..newFlowRate.." mB/t flow")
+					newFlowRate = round(newFlowRate, 0)
 					turbine.setFluidFlowRateMax(newFlowRate)
 					_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newFlowRate
 					config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
