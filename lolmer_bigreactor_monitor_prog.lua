@@ -1273,7 +1273,7 @@ local function displayReactorBars(barParams)
 
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
-	print{rodPercentage,25,4,monitorIndex}
+	print{stringTrim(rodPercentage),25,4,monitorIndex}
 
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
@@ -1611,10 +1611,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newTurbineFlowRate
 		
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = math.ceil(newTurbineFlowRate)
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
 		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	else
 		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
@@ -1645,10 +1645,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 	print{"  mB/t",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
-	print{turbineFlowRate,23,4,monitorIndex}
+	print{stringTrim(turbineFlowRate),24,4,monitorIndex}
 	print{"  RPM",22,5,monitorIndex}
 	print{"<      >",22,6,monitorIndex}
-	print{tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"]),23,6,monitorIndex}
+	print{tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"]),24,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Energy: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
