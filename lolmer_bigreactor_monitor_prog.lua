@@ -1556,7 +1556,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end -- if not turbine then
 
 	--local variable to match the view on the monitor
-	turbineBaseSpeed = _G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"]
+	turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
 
 	-- Draw border lines
 	local width, height = monitor.getSize()
@@ -1572,7 +1572,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	-- Allow controlling Turbine Flow Rate from GUI
 	-- Decrease flow rate button: 22X, 4Y
 	-- Increase flow rate button: 28X, 4Y
-	local turbineFlowRate = math.ceil(turbine.getFluidFlowRateMax())
+	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
 	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Decrease rod level by amount
@@ -1804,7 +1804,7 @@ local function flowRateControl(turbineIndex)
 		if turbine.getActive() then
 			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is active.")
 
-			local flowRate = turbine.getFluidFlowRate()
+			local flowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
 			local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
 			local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 			local newFlowRate = 0
