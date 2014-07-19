@@ -1748,13 +1748,19 @@ local function turbineStatus(turbineIndex, monitorIndex)
 		end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
 		-- Allow disabling/enabling flow rate auto-adjust
-		if ((xClick > 23 and xClick < 28 and yClick == 4)
-				or (xClick > 20 and xClick < 27 and yClick == 10))
-				and (sideClick == monitorNames[monitorIndex]) then
+		if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
-			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+		elseif (xClick > 20 and xClick < 27 and yClick == 10) then
+			if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
+			else
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+			end
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+
 	else
 		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		turbineStatus = "DISCONNECTED"
