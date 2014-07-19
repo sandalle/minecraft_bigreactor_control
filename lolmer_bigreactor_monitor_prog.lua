@@ -946,7 +946,7 @@ local function temperatureControl(reactorIndex)
 	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
 
 	--bypass if the reactor itself is set to not be auto-controlled
-	if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
+	if ((not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]) or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] == "false")) then
 		-- No point modifying control rod levels for temperature if the reactor is offline
 		if reactor.getActive() then
 			-- Actively cooled reactors should range between 0^C-300^C
@@ -1273,7 +1273,7 @@ local function displayReactorBars(barParams)
 
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
-	print{rodPercentage,25,4,monitorIndex}
+	print{stringTrim(rodPercentage),25,4,monitorIndex}
 
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
@@ -1556,7 +1556,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end -- if not turbine then
 
 	--local variable to match the view on the monitor
-	turbineBaseSpeed = _G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"]
+	turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
 
 	-- Draw border lines
 	local width, height = monitor.getSize()
@@ -1572,7 +1572,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	-- Allow controlling Turbine Flow Rate from GUI
 	-- Decrease flow rate button: 22X, 4Y
 	-- Increase flow rate button: 28X, 4Y
-	local turbineFlowRate = math.ceil(turbine.getFluidFlowRateMax())
+	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
 	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Decrease rod level by amount
@@ -1611,10 +1611,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newTurbineFlowRate
 		
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = math.ceil(newTurbineFlowRate)
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
 		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	else
 		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
@@ -1645,10 +1645,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 	print{"  mB/t",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
-	print{turbineFlowRate,23,4,monitorIndex}
+	print{stringTrim(turbineFlowRate),24,4,monitorIndex}
 	print{"  RPM",22,5,monitorIndex}
 	print{"<      >",22,6,monitorIndex}
-	print{_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"],23,6,monitorIndex}
+	print{stringTrim(tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])),24,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Energy: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
@@ -1751,11 +1751,12 @@ local function turbineStatus(turbineIndex, monitorIndex)
 		if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		elseif (xClick > 20 and xClick < 27 and yClick == 10) then
+		elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
+			
 			if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
-			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
 			else
-			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
 			end
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
@@ -1803,7 +1804,7 @@ local function flowRateControl(turbineIndex)
 		if turbine.getActive() then
 			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is active.")
 
-			local flowRate = turbine.getFluidFlowRate()
+			local flowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
 			local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
 			local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 			local newFlowRate = 0
@@ -1870,6 +1871,7 @@ local function flowRateControl(turbineIndex)
 				--no sense running an adjustment if it's not necessary
 				if ((newFlowRate < flowRate) or (newFlowRate > flowRate)) then
 					printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is being commanded to "..newFlowRate.." mB/t flow")
+					newFlowRate = round(newFlowRate, 0)
 					turbine.setFluidFlowRateMax(newFlowRate)
 					_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newFlowRate
 					config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
