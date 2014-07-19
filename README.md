@@ -109,6 +109,10 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.12
+	- Mechaet's changes:
+	- Cleaned up global variables list
+	- Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
 - 0.3.11
 	-  Mechaet's changes:
 	- Bigger bypasses of control routines when the control has been overridden
@@ -221,8 +225,6 @@ TODO
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment.
 - Lookup using pcall for better error handling - http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/ .
 - Redo efficiency as a rate of RF per mB of fuel?
-- Individual monitor/reactor names in the config files so you can put a friendly name in their config to show on the monitor(s)
-- Clean up global variable list, whittle down device-specific variables into per-device lists, eliminate superceded variables
 - "Gauge" GUI for smaller monitors than 3x2, maybe even as small as 1x1.
 - Passive reactor tuning GUI options, control by heat without disabling automatic rod control.
 - Move helper functions into seperate file(s)
