@@ -946,7 +946,7 @@ local function temperatureControl(reactorIndex)
 	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
 
 	--bypass if the reactor itself is set to not be auto-controlled
-	if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
+	if ((not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]) or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] == "false")) then
 		-- No point modifying control rod levels for temperature if the reactor is offline
 		if reactor.getActive() then
 			-- Actively cooled reactors should range between 0^C-300^C
