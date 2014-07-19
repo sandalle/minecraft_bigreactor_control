@@ -1648,7 +1648,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{stringTrim(turbineFlowRate),24,4,monitorIndex}
 	print{"  RPM",22,5,monitorIndex}
 	print{"<      >",22,6,monitorIndex}
-	print{tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"]),24,6,monitorIndex}
+	print{strimTrim(tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])),24,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Energy: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
