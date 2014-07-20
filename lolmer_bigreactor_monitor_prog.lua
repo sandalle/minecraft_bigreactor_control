@@ -88,6 +88,15 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+0.3.12 - Mechaet's changes:
+		Cleaned up global variables list
+		Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
+0.3.11 - Mechaet's changes:
+		Bigger bypasses of control routines when the control has been overridden
+		Individual config files for turbines and reactors. Persistent between reboots, remembers your last saved settings.
+		Cruise mode override bypass
+		Changing flow rate no longer toggles flow rate override on and off. Changing the flow rate clearly indicates intent, so we put the override flag on and leave it there.
+		Changed the rate at which the regular algorithm adjusts reactor rod control rates. Instead of being 1:1 we now move at 1:5 speed because there is a wide loophole where big adjustments can cause a swinging pendulum effect continually missing the target.
 0.3.10 - Turbine algorithm pass by Mechaet.
 		Updated turbine GUI.
 		Fix single monitor (again) for Issue #22.
@@ -169,36 +178,24 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.10"
+local progVer = "0.3.12"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
 local controlRodAdjustAmount = 1 -- Default Reactor Rod Control % adjustment amount
 local flowRateAdjustAmount = 25 -- Default Turbine Flow Rate in mB adjustment amount
 local debugMode = false
--- These need to be updated for multiple reactors
-local baseControlRodLevel = nil
-local reactorRodOverride = false -- Rod override for Reactors
 -- End multi-reactor cleanup section
 local minStoredEnergyPercent = nil -- Max energy % to store before activate
 local maxStoredEnergyPercent = nil -- Max energy % to store before shutdown
-local minReactorTemp = nil -- Minimum reactor temperature (^C) to maintain
-local maxReactorTemp = nil -- Maximum reactor temperature (^C) to maintain
-local turbineBaseSpeed = nil -- Target (user-configured in ReactorOptions) turbine speed, default 2726RPM
-local reactorCruising = false -- Cruise mode for active-cooled reactors, enable/disable switch
-local lastTempPoll = 0 -- Cruise mode global temperature comparator
-local lastTurbineSpeed = 0 -- Turbine adjustment global comparator
-local autoStart = {} -- Array for automatically starting reactors
 local monitorList = {} -- Empty monitor array
 local monitorNames = {} -- Empty array of monitor names
 local reactorList = {} -- Empty reactor array
 local reactorNames = {} -- Empty array of reactor names
 local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
-local turbineFlowRateOverride = {} -- Flow rate override for each Turbine
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
-local turbineBaseSpeedA = {} -- Individual Turbine Base Speeds
-local turbineLastSpeedA = {} -- Individual turbine Last Speed
+
 
 term.clear()
 term.setCursorPos(2,1)
@@ -238,6 +235,107 @@ local function printLog(printStr)
 		end -- if logFile then
 	end -- if debugMode then
 end -- function printLog(printStr)
+
+-- Trim a string
+function stringTrim(s)
+	assert(s ~= nil, "String can't be nil")
+	return(string.gsub(s, "^%s*(.-)%s*$", "%1"))
+end
+
+config = {}
+
+-- Save a table into a config file
+-- path: path of the file to write
+-- tab: table to save
+config.save = function(path, tab)
+	printLog("Save function called for config for "..path.." EOL")
+	assert(path ~= nil, "Path can't be nil")
+	assert(type(tab) == "table", "Second parameter must be a table")
+	local f = io.open(path, "w")
+	local i = 0
+	for key, value in pairs(tab) do
+		if i ~= 0 then
+			f:write("\n")
+		end
+		f:write("["..key.."]".."\n")
+		for key2, value2 in pairs(tab[key]) do
+			key2 = stringTrim(key2)
+			--doesn't like boolean values
+			if (type(value2) ~= "boolean") then
+			value2 = stringTrim(value2)
+			else
+			value2 = tostring(value2)
+			end
+			key2 = key2:gsub(";", "\\;")
+			key2 = key2:gsub("=", "\\=")
+			value2 = value2:gsub(";", "\\;")
+			value2 = value2:gsub("=", "\\=")	
+			f:write(key2.."="..value2.."\n")
+		end
+		i = i + 1
+	end
+	f:close()
+end --config.save = function(path, tab)
+
+-- Load a config file
+-- path: path of the file to read
+config.load = function(path)
+	printLog("Load function called for config for "..path.." EOL")
+	assert(path ~= nil, "Path can't be nil")
+	local f = fs.open(path, "r")
+	if f ~= nil then
+		local tab = {}
+		local line = ""
+		local newLine
+		local i
+		local currentTag = nil
+		local found = false
+		local pos = 0
+		while line ~= nil do
+			found = false		
+			line = line:gsub("\\;", "#_!36!_#") -- to keep \;
+			line = line:gsub("\\=", "#_!71!_#") -- to keep \=
+			if line ~= "" then
+				-- Delete comments
+				newLine = line
+				line = ""
+				for i=1, string.len(newLine) do				
+					if string.sub(newLine, i, i) ~= ";" then
+						line = line..newLine:sub(i, i)						
+					else				
+						break
+					end
+				end
+				line = stringTrim(line)
+				-- Find tag			
+				if line:sub(1, 1) == "[" and line:sub(line:len(), line:len()) == "]" then
+					currentTag = stringTrim(line:sub(2, line:len()-1))
+					tab[currentTag] = {}
+					found = true							
+				end
+				-- Find key and values
+				if not found and line ~= "" then				
+					pos = line:find("=")				
+					if pos == nil then
+						error("Bad INI file structure")
+					end
+					line = line:gsub("#_!36!_#", ";")
+					line = line:gsub("#_!71!_#", "=")
+					tab[currentTag][stringTrim(line:sub(1, pos-1))] = stringTrim(line:sub(pos+1, line:len()))
+					found = true			
+				end			
+			end
+			line = f.readLine()
+		end
+		
+		f:close()
+		
+		return tab
+	else
+		return nil
+	end
+end --config.load = function(path)
+
 
 
 -- round() function from mechaet
@@ -540,7 +638,6 @@ end -- local function findMonitors()
 local function findReactors()
 	-- Empty out old list of reactors
 	newReactorList = {}
-
 	printLog("Finding reactors...")
 	newReactorList, reactorNames = getDevices("BigReactors-Reactor")
 
@@ -557,6 +654,18 @@ local function findReactors()
 				return -- Invalid reactorIndex
 			else
 				printLog("reactor["..reactorIndex.."] in findReactors() is a valid Big Reactor.")
+				--initialize the default table
+				_G[reactorNames[reactorIndex]] = {}
+				_G[reactorNames[reactorIndex]]["ReactorOptions"] = {}
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = 80
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = 0
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = true
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = true
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"] = 1400 --set for passive-cooled, the active-cooled subroutine will correct it
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = 1000
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = true
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = reactorNames[reactorIndex]
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
 				if reactor.getConnected() then
 					printLog("reactor["..reactorIndex.."] in findReactors() is connected.")
 				else
@@ -564,15 +673,91 @@ local function findReactors()
 					return -- Disconnected reactor
 				end
 			end
-
-			-- If number of found reactors changed, re-initialize them all for now
-			-- For now, initialize reactors to the same baseControlRodLevel
-			if #newReactorList ~= #reactorList then
-				reactor.setAllControlRodLevels(baseControlRodLevel)
-
-				-- Auto-start reactor when needed (e.g. program startup) by default, or use existing value
-				autoStart[reactorIndex] = true
-			end -- if #newReactorList ~= #reactorList then
+			
+			--failsafe
+			local tempTable = _G[reactorNames[reactorIndex]]
+			
+			--check to make sure we get a valid config
+			if (config.load(reactorNames[reactorIndex]..".options")) ~= nil then
+				tempTable = config.load(reactorNames[reactorIndex]..".options")
+			else
+				--if we don't have a valid config from disk, make a valid config
+				config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+			end
+			
+			--load values from tempTable, checking for nil values along the way
+			if tempTable["ReactorOptions"]["baseControlRodLevel"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = tempTable["ReactorOptions"]["baseControlRodLevel"]
+			end
+			
+			if tempTable["ReactorOptions"]["lastTempPoll"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = tempTable["ReactorOptions"]["lastTempPoll"]
+			end
+			
+			if tempTable["ReactorOptions"]["autoStart"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = tempTable["ReactorOptions"]["autoStart"]
+			end
+			
+			if tempTable["ReactorOptions"]["activeCooled"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = tempTable["ReactorOptions"]["activeCooled"]
+			end
+			
+			if tempTable["ReactorOptions"]["reactorMaxTemp"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"] = tempTable["ReactorOptions"]["reactorMaxTemp"]
+			end
+			
+			if tempTable["ReactorOptions"]["reactorMinTemp"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = tempTable["ReactorOptions"]["reactorMinTemp"]
+			end
+			
+			if tempTable["ReactorOptions"]["rodOverride"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = tempTable["ReactorOptions"]["rodOverride"]
+			end
+			
+			if tempTable["ReactorOptions"]["reactorName"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = tempTable["ReactorOptions"]["reactorName"]
+			end
+			
+			if tempTable["ReactorOptions"]["reactorCruising"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = tempTable["ReactorOptions"]["reactorCruising"]
+			end
+			
+			--stricter typing, let's set these puppies up with the right type of value.
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"])
+			
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"])
+			
+			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"])) then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = true
+			else
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
+			end
+			
+			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"])) then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = true
+			else
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = false
+			end
+			
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"])
+			
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"])
+			
+			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"])) then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = true
+			else
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
+			end
+			
+			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"])) then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
+			else
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
+			end
+						
+			--save one more time, in case we didn't have a complete config file before
+			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+			
 		end -- for reactorIndex = 1, #newReactorList do
 	end -- if #newReactorList == 0 then
 
@@ -607,6 +792,15 @@ local function findTurbines()
 				printLog("turbineList["..turbineIndex.."] in findTurbines() is NOT a valid Big Reactors Turbine.")
 				return -- Invalid turbineIndex
 			else
+			
+				_G[turbineNames[turbineIndex]] = {}
+				_G[turbineNames[turbineIndex]]["TurbineOptions"] = {}
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"] = 0
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = 2726
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = true
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = 2000 --open up with all the steam wide open
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"] = turbineNames[turbineIndex]
 				printLog("turbineList["..turbineIndex.."] in findTurbines() is a valid Big Reactors Turbine.")
 				if turbine.getConnected() then
 					printLog("turbine["..turbineIndex.."] in findTurbines() is connected.")
@@ -615,14 +809,45 @@ local function findTurbines()
 					return -- Disconnected turbine
 				end
 			end
-
-			-- If number of found turbines changed, re-initialize them all for now
-			if #newTurbineList ~= #turbineList then
-				-- Default is to allow flow rate auto-adjust
-				turbineFlowRateOverride[turbineIndex] = false
-				turbineLastSpeedA[turbineIndex] = 0
-				turbineBaseSpeedA[turbineIndex] = 2726
-			end -- if #newTurbineList ~= #turbineList then
+			
+			--failsafe
+			local tempTable = _G[turbineNames[turbineIndex]]
+			
+			--check to make sure we get a valid config
+			if (config.load(turbineNames[turbineIndex]..".options")) ~= nil then
+				tempTable = config.load(turbineNames[turbineIndex]..".options")
+			else
+				--if we don't have a valid config from disk, make a valid config
+				config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+			end
+			
+			--load values from tempTable, checking for nil values along the way
+			if tempTable["TurbineOptions"]["LastSpeed"] ~= nil then
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"] = tempTable["TurbineOptions"]["LastSpeed"]
+			end
+			
+			if tempTable["TurbineOptions"]["BaseSpeed"] ~= nil then
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = tempTable["TurbineOptions"]["BaseSpeed"]
+			end
+			
+			if tempTable["TurbineOptions"]["autoStart"] ~= nil then
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = tempTable["TurbineOptions"]["autoStart"]
+			end
+			
+			if tempTable["TurbineOptions"]["LastFlow"] ~= nil then
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = tempTable["TurbineOptions"]["LastFlow"]
+			end
+			
+			if tempTable["TurbineOptions"]["flowOverride"] ~= nil then
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = tempTable["TurbineOptions"]["flowOverride"]
+			end
+			
+			if tempTable["TurbineOptions"]["turbineName"] ~= nil then
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"] = tempTable["TurbineOptions"]["turbineName"]
+			end
+			
+			--save once more just to make sure we got it
+			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 		end -- for turbineIndex = 1, #newTurbineList do
 
 		-- Overwrite old turbine list with the now updated list
@@ -664,9 +889,14 @@ local function getTurbineStoredEnergyBufferPercent(turbine)
 	return round(energyBufferStorage/10000, 1) -- (buffer/1000000 RF)*100%
 end -- function getTurbineStoredEnergyBufferPercent(turbine)
 
-local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, reactorIndex)
-	printLog("Called as reactorCruise(cruiseMaxTemp="..cruiseMaxTemp..",cruiseMinTemp="..cruiseMinTemp..",lastPolledTemp="..lastPolledTemp..",reactorIndex="..reactorIndex..").")
-
+local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, reactorIndex)
+	printLog("Called as reactorCruise(cruiseMaxTemp="..cruiseMaxTemp..",cruiseMinTemp="..cruiseMinTemp..",lastPolledTemp=".._G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"]..",reactorIndex="..reactorIndex..").")
+	
+	--sanitization
+	local lastPolledTemp = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"])
+	cruiseMaxTemp = tonumber(cruiseMaxTemp)
+	cruiseMinTemp = tonumber(cruiseMinTemp)
+	
 	if ((lastPolledTemp < cruiseMaxTemp) and (lastPolledTemp > cruiseMinTemp)) then
 		local reactor = nil
 		reactor = reactorList[reactorIndex]
@@ -685,7 +915,8 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, react
 
 		local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 		local reactorTemp = math.ceil(reactor.getFuelTemperature())
-
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = rodPercentage
+		
 		if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
 			if (reactorTemp < lastPolledTemp) then
 				rodPercentage = (rodPercentage - 1)
@@ -706,13 +937,17 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, react
 			end -- if (reactorTemp > lastPolledTemp) then
 		else
 			--disengage cruise, we've fallen out of the ideal temperature range
-			reactorCruising = false
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
 		end -- if ((reactorTemp < cruiseMaxTemp) and (reactorTemp > cruiseMinTemp)) then
 	else
 		--I don't know how we'd get here, but let's turn the cruise mode off
-		reactorCruising = false
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
 	end -- if ((lastPolledTemp < cruiseMaxTemp) and (lastPolledTemp > cruiseMinTemp)) then
-	lastTempPoll = reactorTemp
+	_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = reactorTemp
+	_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = true
+	_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"] = cruiseMaxTemp
+	_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = cruiseMinTemp
+	config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 end -- function reactorCruise(cruiseMaxTemp, cruiseMinTemp, lastPolledTemp, reactorIndex)
 
 -- Modify reactor control rod levels to keep temperature with defined parameters, but
@@ -739,102 +974,111 @@ local function temperatureControl(reactorIndex)
 	local reactorNum = reactorIndex
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	local reactorTemp = math.ceil(reactor.getFuelTemperature())
-	local localMinReactorTemp, localMaxReactorTemp = minReactorTemp, maxReactorTemp
+	local localMinReactorTemp, localMaxReactorTemp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"], _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"]
 
-	-- No point modifying control rod levels for temperature if the reactor is offline
-	if reactor.getActive() then
-		-- Actively cooled reactors should range between 0^C-300^C
-		-- Actually, active-cooled reactors should range between 300 and 420C (Mechaet)
-		-- Accordingly I changed the below lines
-		if reactor.isActivelyCooled() then
-			-- below was 0
-			localMinReactorTemp = 300
-			-- below was 300
-			localMaxReactorTemp = 420
-		end
-
-		if reactorCruising then
-			--let's bypass all this math and hit the much-more-subtle cruise feature
-			--printLog("min: "..localMinReactorTemp..", max: "..localMaxReactorTemp..", lasttemp: "..lastTempPoll..", ri: "..reactorIndex.."  EOL")
-			reactorCruise(localMaxReactorTemp, localMinReactorTemp, lastTempPoll, reactorIndex)
-		else
-			-- Don't bring us to 100, that's effectively a shutdown
-			if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
-				--increase the rods, but by how much?
-				if (reactorTemp > lastTempPoll) then
-					--we're climbing, we need to get this to decrease
-					if ((reactorTemp - lastTempPoll) > 100) then
-						--we're climbing really fast, arrest it
-						if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
+	--bypass if the reactor itself is set to not be auto-controlled
+	if ((not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]) or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] == "false")) then
+		-- No point modifying control rod levels for temperature if the reactor is offline
+		if reactor.getActive() then
+			-- Actively cooled reactors should range between 0^C-300^C
+			-- Actually, active-cooled reactors should range between 300 and 420C (Mechaet)
+			-- Accordingly I changed the below lines
+			if reactor.isActivelyCooled() then
+				-- below was 0
+				localMinReactorTemp = 300
+				-- below was 300
+				localMaxReactorTemp = 420
+			else
+				localMinReactorTemp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"]
+				localMaxReactorTemp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"]
+			end
+			local lastTempPoll = _G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"]
+			if _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] then
+				--let's bypass all this math and hit the much-more-subtle cruise feature
+				--printLog("min: "..localMinReactorTemp..", max: "..localMaxReactorTemp..", lasttemp: "..lastTempPoll..", ri: "..reactorIndex.."  EOL")
+				reactorCruise(localMaxReactorTemp, localMinReactorTemp, reactorIndex)
+			else
+				-- Don't bring us to 100, that's effectively a shutdown
+				if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+					--increase the rods, but by how much?
+					if (reactorTemp > lastTempPoll) then
+						--we're climbing, we need to get this to decrease
+						if ((reactorTemp - lastTempPoll) > 100) then
+							--we're climbing really fast, arrest it
+							if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
+								reactor.setAllControlRodLevels(99)
+							else
+								reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
+							end
+						else
+							--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
+							local diffAmount = reactorTemp - lastTempPoll
+							diffAmount = (round(diffAmount/10, 0))/5
+							controlRodAdjustAmount = diffAmount
+							if (rodPercentage + controlRodAdjustAmount) > 99 then
+								reactor.setAllControlRodLevels(99)
+							else
+								reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
+							end
+						end --if ((reactorTemp - lastTempPoll) > 100) then
+					elseif (reactorTemp == lastTempPoll) then
+						--temperature has stagnated, kick it very lightly
+						local controlRodAdjustment = 1
+						if (rodPercentage + controlRodAdjustment) > 99 then
 							reactor.setAllControlRodLevels(99)
 						else
-							reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
+							reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustment)
 						end
-					else
-						--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
-						local diffAmount = reactorTemp - lastTempPoll
-						diffAmount = round(diffAmount/10, 0)
-						controlRodAdjustAmount = diffAmount
-						if (rodPercentage + controlRodAdjustAmount) > 99 then
-							reactor.setAllControlRodLevels(99)
-						else
-							reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
-						end
-					end --if ((reactorTemp - lastTempPoll) > 100) then
-				elseif (reactorTemp == lastTempPoll) then
-					--temperature has stangnated, kick it very lightly
-					local controlRodAdjustment = 1
-					if (rodPercentage + controlRodAdjustment) > 99 then
-						reactor.setAllControlRodLevels(99)
-					else
-						reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustment)
-					end
-				end --if (reactorTemp > lastTempPoll) then
-					--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
+					end --if (reactorTemp > lastTempPoll) then
+						--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
 
-			elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~=0) then
-				--we're too cold. time to warm up, but by how much?
-				if (reactorTemp < lastTempPoll) then
-					--we're descending, let's stop that.
-					if ((lastTempPoll - reactorTemp) > 100) then
-						--we're headed for a new ice age, bring the heat
-						if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
+				elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~=0) then
+					--we're too cold. time to warm up, but by how much?
+					if (reactorTemp < lastTempPoll) then
+						--we're descending, let's stop that.
+						if ((lastTempPoll - reactorTemp) > 100) then
+							--we're headed for a new ice age, bring the heat
+							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
+								reactor.setAllControlRodLevels(0)
+							else
+								reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
+							end
+						else
+							--we're not descending quickly, let's bump it based on descent rate
+							local diffAmount = lastTempPoll - reactorTemp
+							diffAmount = (round(diffAmount/10, 0))/5
+							controlRodAdjustAmount = diffAmount
+							if (rodPercentage - controlRodAdjustAmount) < 0 then
+								reactor.setAllControlRodLevels(0)
+							else
+								reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
+							end
+						end --if ((lastTempPoll - reactorTemp) > 100) then
+					elseif (reactorTemp == lastTempPoll) then
+						--temperature has stagnated, kick it very lightly
+						local controlRodAdjustment = 1
+						if (rodPercentage - controlRodAdjustment) < 0 then
 							reactor.setAllControlRodLevels(0)
 						else
-							reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
-						end
-					else
-						--we're not descending quickly, let's bump it based on descent rate
-						local diffAmount = lastTempPoll - reactorTemp
-						diffAmount = round(diffAmount/10, 0)
-						controlRodAdjustAmount = diffAmount
-						if (rodPercentage - controlRodAdjustAmount) < 0 then
-							reactor.setAllControlRodLevels(0)
-						else
-							reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
-						end
-					end --if ((lastTempPoll - reactorTemp) > 100) then
-				elseif (reactorTemp == lastTempPoll) then
-					--temperature has stagnated, kick it very lightly
-					local controlRodAdjustment = 1
-					if (rodPercentage - controlRodAdjustment) < 0 then
-						reactor.setAllControlRodLevels(0)
-					else
-						reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustment)
-					end --if (rodPercentage - controlRodAdjustment) < 0 then
+							reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustment)
+						end --if (rodPercentage - controlRodAdjustment) < 0 then
 
-				end --if (reactorTemp < lastTempPoll) then
-				--if we're below temp but increasing, do nothing and let it continue to rise.
-			end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+					end --if (reactorTemp < lastTempPoll) then
+					--if we're below temp but increasing, do nothing and let it continue to rise.
+				end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
 
-			if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
-				--engage cruise mode
-				reactorCruising = true
-			end -- if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
-		end -- if reactorCruising then
-		--always set this number
-		lastTempPoll = reactorTemp
-	end -- if reactor.getActive() then
+				if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+					--engage cruise mode
+					_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
+				end -- if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+			end -- if reactorCruising then
+			--always set this number
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = reactorTemp
+			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+		end -- if reactor.getActive() then
+	else
+		printLog("Bypassed temperature control due to rodOverride being "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
+	end -- if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
 end -- function temperatureControl(reactorIndex)
 
 -- Load saved reactor parameters if ReactorOptions file exists
@@ -842,22 +1086,11 @@ local function loadReactorOptions()
 	local reactorOptions = fs.open("ReactorOptions", "r") -- See http://computercraft.info/wiki/Fs.open
 
 	if reactorOptions then
-		baseControlRodLevel = reactorOptions.readLine()
 		-- The following values were added by Lolmer
 		minStoredEnergyPercent = reactorOptions.readLine()
 		maxStoredEnergyPercent = reactorOptions.readLine()
-		minReactorTemp = reactorOptions.readLine()
-		maxReactorTemp = reactorOptions.readLine()
-		reactorRodOverride = reactorOptions.readLine() -- Should be string "true" or "false"
 		--added by Mechaet
-		turbineBaseSpeed = reactorOptions.readLine()
-		reactorCruising = reactorOptions.readLine() -- Should be string "true" or "false"
-		lastTempPoll = reactorOptions.readLine() -- number as a string
-
 		-- If we succeeded in reading a string, convert it to a number
-		if baseControlRodLevel ~= nil then
-			baseControlRodLevel = tonumber(baseControlRodLevel)
-		end
 
 		if minStoredEnergyPercent ~= nil then
 			minStoredEnergyPercent = tonumber(minStoredEnergyPercent)
@@ -867,46 +1100,10 @@ local function loadReactorOptions()
 			maxStoredEnergyPercent = tonumber(maxStoredEnergyPercent)
 		end
 
-		if minReactorTemp ~= nil then
-			minReactorTemp = tonumber(minReactorTemp)
-		end
-
-		if maxReactorTemp ~= nil then
-			maxReactorTemp = tonumber(maxReactorTemp)
-		end
-
-		if reactorRodOverride == "true" then
-			reactorRodOverride = true
-		else
-			reactorRodOverride = false
-		end
-
-		if turbineBaseSpeed ~= nil then
-		turbineBaseSpeed = tonumber(turbineBaseSpeed)
-		else
-		turbineBaseSpeed = 2726
-		end
-
-		if reactorCruising == "true" then
-			reactorCruising = true
-		else
-			reactorCruising = false
-		end
-
-		if lastTempPoll ~=nil then
-			lastTempPoll = tonumber(lastTempPoll)
-		else
-			lastTempPoll = 0
-		end
-
 		reactorOptions.close()
 	end -- if reactorOptions then
 
 	-- Set default values if we failed to read any of the above
-	if baseControlRodLevel == nil then
-		baseControlRodLevel = 90
-	end
-
 	if minStoredEnergyPercent == nil then
 		minStoredEnergyPercent = 15
 	end
@@ -915,13 +1112,6 @@ local function loadReactorOptions()
 		maxStoredEnergyPercent = 85
 	end
 
-	if minReactorTemp == nil then
-		minReactorTemp = 950
-	end
-
-	if maxReactorTemp == nil then
-		maxReactorTemp = 1400
-	end
 end -- function loadReactorOptions()
 
 
@@ -932,16 +1122,9 @@ local function saveReactorOptions()
 	-- If we can save the files, save them
 	if reactorOptions then
 		local reactorIndex = 1
-		reactorOptions.writeLine(math.ceil(reactorList[1].getControlRodLevel(0))) -- Store just the first reactor for now
 		-- The following values were added by Lolmer
 		reactorOptions.writeLine(minStoredEnergyPercent)
 		reactorOptions.writeLine(maxStoredEnergyPercent)
-		reactorOptions.writeLine(minReactorTemp)
-		reactorOptions.writeLine(maxReactorTemp)
-		reactorOptions.writeLine(reactorRodOverride)
-		reactorOptions.writeLine(turbineBaseSpeed)
-		reactorOptions.writeLine(reactorCruising)
-		reactorOptions.writeLine(lastTempPoll)
 		reactorOptions.close()
 	else
 		printLog("Failed to open file ReactorOptions for writing!")
@@ -1031,9 +1214,10 @@ local function displayReactorBars(barParams)
 
 		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		reactor.setAllControlRodLevels(newRodPercentage)
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
 
 		-- Save updated rod percentage
-		baseControlRodLevel = newRodPercentage
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 		rodPercentage = newRodPercentage
 	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
@@ -1046,9 +1230,10 @@ local function displayReactorBars(barParams)
 
 		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		reactor.setAllControlRodLevels(newRodPercentage)
-
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
+		
 		-- Save updated rod percentage
-		baseControlRodLevel = newRodPercentage
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 		rodPercentage = round(newRodPercentage,0)
 	else
 		printLog("No change to Rod Levels requested by "..progName.." GUI in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
@@ -1056,7 +1241,7 @@ local function displayReactorBars(barParams)
 
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
-	print{rodPercentage,25,4,monitorIndex}
+	print{stringTrim(rodPercentage),25,4,monitorIndex}
 
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
@@ -1099,7 +1284,7 @@ local function displayReactorBars(barParams)
 
 	print{"Rod Auto-adjust:",2,9,monitorIndex}
 
-	if not reactorRodOverride then
+	if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
 		reactorRodOverrideStatus = "Enabled"
 		monitor.setTextColor(colors.green)
 	else
@@ -1116,7 +1301,7 @@ local function displayReactorBars(barParams)
 	print{"Waste: "..reactor.getWasteAmount().." mB", width-(string.len(reactor.getWasteAmount())+10), 11, monitorIndex}
 
 	monitor.setTextColor(colors.blue)
-	printCentered(reactorNames[reactorIndex],12,monitorIndex)
+	printCentered(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
 end -- function displayReactorBars(barParams)
 
@@ -1127,7 +1312,6 @@ local function reactorStatus(statusParams)
 	local reactorIndex, monitorIndex =
 		statusParams[1] or statusParams.reactorIndex,
 		statusParams[2] or statusParams.monitorIndex
-
 	printLog("Called as reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..")")
 
 	-- Grab current monitor
@@ -1158,7 +1342,7 @@ local function reactorStatus(statusParams)
 			reactorStatus = "ONLINE"
 
 			-- Set "ONLINE" to blue if the actively cooled reactor is both in cruise mode and online
-			if reactorCruising and reactor.isActivelyCooled() then
+			if _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] and reactor.isActivelyCooled() then
 				monitor.setTextColor(colors.blue)
 			else
 				monitor.setTextColor(colors.green)
@@ -1171,11 +1355,13 @@ local function reactorStatus(statusParams)
 		if xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1) and (sideClick == monitorNames[monitorIndex]) then
 			if yClick == 1 then
 				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = reactor.getActive()
+				config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 
 				-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
 				if not reactor.getActive() then
-					autoStart[reactorIndex] = false
+					_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
 				end
 			end -- if yClick == 1 then
 		end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
@@ -1184,7 +1370,8 @@ local function reactorStatus(statusParams)
 		if ((xClick > 23 and xClick < 28 and yClick == 4)
 				or (xClick > 20 and xClick < 27 and yClick == 9))
 				and (sideClick == monitorNames[monitorIndex]) then
-			reactorRodOverride = not reactorRodOverride -- Toggle reactor rod override status
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]
+			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
@@ -1335,7 +1522,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end -- if not turbine then
 
 	--local variable to match the view on the monitor
-	turbineBaseSpeed = turbineBaseSpeedA[turbineIndex]
+	local turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
 
 	-- Draw border lines
 	local width, height = monitor.getSize()
@@ -1351,7 +1538,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	-- Allow controlling Turbine Flow Rate from GUI
 	-- Decrease flow rate button: 22X, 4Y
 	-- Increase flow rate button: 28X, 4Y
-	local turbineFlowRate = math.ceil(turbine.getFluidFlowRateMax())
+	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
 	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Decrease rod level by amount
@@ -1369,9 +1556,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newTurbineFlowRate
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = newTurbineFlowRate
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increase to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Increase rod level by amount
@@ -1389,9 +1577,11 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-
+		
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = math.ceil(newTurbineFlowRate)
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	else
 		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
@@ -1404,7 +1594,8 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 			newTurbineBaseSpeed = 908
 		end
 		sideClick, xClick, yClick = 0, 0, 0
-		turbineBaseSpeedA[turbineIndex] = newTurbineBaseSpeed
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increase to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		rpmRateAdjustment = 909
@@ -1413,16 +1604,17 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 			newTurbineBaseSpeed = 2726
 		end
 		sideClick, xClick, yClick = 0, 0, 0
-		turbineBaseSpeedA[turbineIndex] = newTurbineBaseSpeed
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	else
 		printLog("No change to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 	print{"  mB/t",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
-	print{turbineFlowRate,23,4,monitorIndex}
+	print{stringTrim(turbineFlowRate),24,4,monitorIndex}
 	print{"  RPM",22,5,monitorIndex}
 	print{"<      >",22,6,monitorIndex}
-	print{turbineBaseSpeed,23,6,monitorIndex}
+	print{stringTrim(tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])),24,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Energy: "
 	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
@@ -1457,7 +1649,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 
 	print{"Flow Auto-adjust:",2,10,monitorIndex}
 
-	if not turbineFlowRateOverride[turbineIndex] then
+	if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
 		turbineFlowRateOverrideStatus = "Enabled"
 		monitor.setTextColor(colors.green)
 	else
@@ -1469,7 +1661,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	monitor.setTextColor(colors.white)
 
 	monitor.setTextColor(colors.blue)
-	printCentered(turbineNames[turbineIndex],12,monitorIndex)
+	printCentered(_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
 
 	-- Need equation to figure out rotor efficiency and display
@@ -1515,17 +1707,27 @@ local function turbineStatus(turbineIndex, monitorIndex)
 		if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 			if yClick == 1 then
 				turbine.setActive(not turbine.getActive()) -- Toggle turbine status
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = turbine.getActive()
+				config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 			end -- if yClick == 1 then
 		end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
 		-- Allow disabling/enabling flow rate auto-adjust
-		if ((xClick > 23 and xClick < 28 and yClick == 4)
-				or (xClick > 20 and xClick < 27 and yClick == 10))
-				and (sideClick == monitorNames[monitorIndex]) then
-			turbineFlowRateOverride[turbineIndex] = not turbineFlowRateOverride[turbineIndex] -- Toggle turbine rod override status
+		if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+		elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
+			
+			if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
+			else
+				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+			end
 			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 		end
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+
 	else
 		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		turbineStatus = "DISCONNECTED"
@@ -1539,118 +1741,117 @@ end -- function function turbineStatus(turbineIndex, monitorIndex)
 
 -- Maintain Turbine flow rate at 900 or 1,800 RPM
 local function flowRateControl(turbineIndex)
-	printLog("Called as flowRateControl(turbineIndex="..turbineIndex..").")
+	if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
+		
+		printLog("Called as flowRateControl(turbineIndex="..turbineIndex..").")
 
-	-- Grab current turbine
-	local turbine = nil
-	turbine = turbineList[turbineIndex]
+		-- Grab current turbine
+		local turbine = nil
+		turbine = turbineList[turbineIndex]
 
-	--set initial base speed
-	if (turbineBaseSpeedA[turbineIndex] == nil) then
-		turbineBaseSpeedA[turbineIndex] = turbineBaseSpeed
-	end
-	--set initial last speed
-	if (turbineLastSpeedA[turbineIndex] == nil) then
-		turbineLaseSpeedA[turbineIndex] = lastTurbineSpeed
-	end
+		-- assign for the duration of this run
+		local lastTurbineSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"])
+		local turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
 
-	-- now that we've covered nil values, assign for the duration of this run
-	lastTurbineSpeed = turbineLastSpeedA[turbineIndex]
-	turbineBaseSpeed = turbineBaseSpeedA[turbineIndex]
-
-	if not turbine then
-		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT a valid Big Turbine.")
-		return -- Invalid turbineIndex
-	else
-		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is a valid Big Turbine.")
-
-		if turbine.getConnected() then
-			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is connected.")
+		if not turbine then
+			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT a valid Big Turbine.")
+			return -- Invalid turbineIndex
 		else
-			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT connected.")
-		end -- if turbine.getConnected() then
-	end -- if not turbine then
+			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is a valid Big Turbine.")
 
-	-- No point modifying control rod levels for temperature if the turbine is offline
-	if turbine.getActive() then
-		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is active.")
+			if turbine.getConnected() then
+				printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is connected.")
+			else
+				printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT connected.")
+			end -- if turbine.getConnected() then
+		end -- if not turbine then
 
-		local flowRate = turbine.getFluidFlowRate()
-		local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
-		local rotorSpeed = math.ceil(turbine.getRotorSpeed())
-		local newFlowRate = 0
+		-- No point modifying control rod levels for temperature if the turbine is offline
+		if turbine.getActive() then
+			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is active.")
 
-		-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
-		if (rotorSpeed < turbineBaseSpeed) then
-			printLog("BELOW COMMANDED SPEED")
-			if (rotorSpeed > lastTurbineSpeed) then
-				--we're still increasing, let's let it level off
-				--also lets the first control pass go by on startup
-			elseif (rotorSpeed < lastTurbineSpeed) then
-				--we're decreasing where we should be increasing, do something
-				if ((lastTurbineSpeed - rotorSpeed) > 100) then
-					--kick it harder
-					newFlowRate = 2000
-					printLog("HARD KICK")
+			local flowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
+			local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
+			local rotorSpeed = math.ceil(turbine.getRotorSpeed())
+			local newFlowRate = 0
+
+			-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
+			if (rotorSpeed < turbineBaseSpeed) then
+				printLog("BELOW COMMANDED SPEED")
+				if (rotorSpeed > lastTurbineSpeed) then
+					--we're still increasing, let's let it level off
+					--also lets the first control pass go by on startup
+				elseif (rotorSpeed < lastTurbineSpeed) then
+					--we're decreasing where we should be increasing, do something
+					if ((lastTurbineSpeed - rotorSpeed) > 100) then
+						--kick it harder
+						newFlowRate = 2000
+						printLog("HARD KICK")
+					else
+						--let's adjust based on proximity
+						flowAdjustment = (turbineBaseSpeed - rotorSpeed)/5
+						newFlowRate = flowRate + flowAdjustment
+						printLog("Light Kick: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+					end
 				else
-					--let's adjust based on proximity
-					flowAdjustment = (turbineBaseSpeed - rotorSpeed)/5
+					--we've stagnated, kick it.
+					flowAdjustment = (turbineBaseSpeed - lastTurbineSpeed)
 					newFlowRate = flowRate + flowAdjustment
-					printLog("Light Kick: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
-				end
+					printLog("Stagnated: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+				end --if (rotorSpeed > lastTurbineSpeed) then
 			else
-				--we've stagnated, kick it.
-				flowAdjustment = (turbineBaseSpeed - lastTurbineSpeed)
-				newFlowRate = flowRate + flowAdjustment
-				printLog("Stagnated: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
-			end --if (rotorSpeed > lastTurbineSpeed) then
-		else
-			--we're above commanded turbine speed
-			printLog("ABOVE COMMANDED SPEED")
-			if (rotorSpeed < lastTurbineSpeed) then
-			--we're decreasing, let it level off
-			--also bypasses first control pass on startup
-			elseif (rotorSpeed > lastTurbineSpeed) then
-				--we're above and ascending.
-				if ((rotorSpeed - lastTurbineSpeed) > 100) then
-					--halt
-					newFlowRate = 25
+				--we're above commanded turbine speed
+				printLog("ABOVE COMMANDED SPEED")
+				if (rotorSpeed < lastTurbineSpeed) then
+				--we're decreasing, let it level off
+				--also bypasses first control pass on startup
+				elseif (rotorSpeed > lastTurbineSpeed) then
+					--we're above and ascending.
+					if ((rotorSpeed - lastTurbineSpeed) > 100) then
+						--halt
+						newFlowRate = 25
+					else
+						--let's adjust based on proximity
+						flowAdjustment = (rotorSpeed - turbineBaseSpeed)/5
+						newFlowRate = flowRate - flowAdjustment
+						printLog("Light Kick: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+					end
 				else
-					--let's adjust based on proximity
-					flowAdjustment = (rotorSpeed - turbineBaseSpeed)/5
+					--we've stagnated, kick it.
+					flowAdjustment = (lastTurbineSpeed - turbineBaseSpeed)
 					newFlowRate = flowRate - flowAdjustment
-					printLog("Light Kick: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
-				end
+					printLog("Stagnated: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
+				end --if (rotorSpeed < lastTurbineSpeed) then
+			end --if (rotorSpeed < turbineBaseSpeed)
+
+			--check to make sure an adjustment was made
+			if (newFlowRate == 0) then
+				--do nothing, we didn't ask for anything this pass
 			else
-				--we've stagnated, kick it.
-				flowAdjustment = (lastTurbineSpeed - turbineBaseSpeed)
-				newFlowRate = flowRate - flowAdjustment
-				printLog("Stagnated: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
-			end --if (rotorSpeed < lastTurbineSpeed) then
-		end --if (rotorSpeed < turbineBaseSpeed)
-
-		--check to make sure an adjustment was made
-		if (newFlowRate == 0) then
-			--do nothing, we didn't ask for anything this pass
-		else
-			--boundary check
-			if newFlowRate > 2000 then
-				newFlowRate = 2000
-			elseif newFlowRate < 25 then
-				newFlowRate = 25 -- Don't go to zero, might as well power off
-			end -- if newFlowRate > 2000 then
-			--no sense running an adjustment if it's not necessary
-			if ((newFlowRate < flowRate) or (newFlowRate > flowRate)) then
-				printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is being commanded to "..newFlowRate.." mB/t flow")
-				turbine.setFluidFlowRateMax(newFlowRate)
+				--boundary check
+				if newFlowRate > 2000 then
+					newFlowRate = 2000
+				elseif newFlowRate < 25 then
+					newFlowRate = 25 -- Don't go to zero, might as well power off
+				end -- if newFlowRate > 2000 then
+				--no sense running an adjustment if it's not necessary
+				if ((newFlowRate < flowRate) or (newFlowRate > flowRate)) then
+					printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is being commanded to "..newFlowRate.." mB/t flow")
+					newFlowRate = round(newFlowRate, 0)
+					turbine.setFluidFlowRateMax(newFlowRate)
+					_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newFlowRate
+					config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+				end
 			end
-		end
-		--always set this
-		turbineLastSpeedA[turbineIndex] = rotorSpeed
+			--always set this
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"] = rotorSpeed
+			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+		else
+			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT active.")
+		end -- if turbine.getActive() then
 	else
-		printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT active.")
-	end -- if turbine.getActive() then
-
+		printLog("turbine["..turbineIndex.."] has flow override set to "..tostring(_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"])..", bypassing flow control.")
+	end -- if not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] then
 end -- function flowRateControl(turbineIndex)
 
 
@@ -1729,12 +1930,12 @@ function main()
 				if curStoredEnergyPercent >= maxStoredEnergyPercent then
 					reactor.setActive(false)
 				-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
-				elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and (autoStart[reactorIndex] == true) then
+				elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and (_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] == true) then
 					reactor.setActive(true)
 				end -- if curStoredEnergyPercent >= maxStoredEnergyPercent then
 
 				-- Don't try to auto-adjust control rods if manual control is requested
-				if not reactorRodOverride then
+				if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
 					temperatureControl(reactorIndex)
 				end -- if not reactorRodOverride then
 			else
@@ -1780,7 +1981,7 @@ function main()
 			if turbine.getConnected() then
 				printLog("turbine["..turbineIndex.."] is connected.")
 
-				if not turbineFlowRateOverride[turbineIndex] then
+				if not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] then
 					flowRateControl(turbineIndex)
 				end -- if not turbineFlowRateOverride[turbineIndex] then
 			else

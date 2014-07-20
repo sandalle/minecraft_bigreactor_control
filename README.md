@@ -109,6 +109,17 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.12
+	- Mechaet's changes:
+	- Cleaned up global variables list
+	- Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
+- 0.3.11
+	-  Mechaet's changes:
+	- Bigger bypasses of control routines when the control has been overridden
+	- Individual config files for turbines and reactors. Persistent between reboots, remembers your last saved settings.
+	- Cruise mode override bypass
+	- Changing flow rate no longer toggles flow rate override on and off. Changing the flow rate clearly indicates intent, so we put the override flag on and leave it there.
+	- Changed the rate at which the regular algorithm adjusts reactor rod control rates. Instead of being 1:1 we now move at 1:5 speed because there is a wide loophole where big adjustments can cause a swinging pendulum effect continually missing the target.
 - 0.3.10
 	- Turbine algorithm pass by Mechaet.
 	- Updated turbine GUI.
@@ -209,9 +220,13 @@ ChangeLog
 
 TODO
 ============================
-- Save parameters per reactor instead of one global set for all reactors.
 - Add min/max RF/t output and have it override temperature concerns (maybe?).
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment.
 - Lookup using pcall for better error handling - http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/ .
-- Update cruise mode to work independently for each actively-cooled reactor.
+- Redo efficiency as a rate of RF per mB of fuel?
+- "Gauge" GUI for smaller monitors than 3x2, maybe even as small as 1x1.
+- Passive reactor tuning GUI options, control by heat without disabling automatic rod control.
+- Move helper functions into seperate file(s)
+- Clutch controls for 0.3.4A2
+- Using clutch mode to achieve optimal turbine speed faster (toggle option, on-screen)
