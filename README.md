@@ -150,62 +150,62 @@ ChangeLog
 
 - 0.3.4
 	- Fix arithmetic for checking if we have enough monitors for the number of reactors.
-	- Turbines are optimal at 900, 1800, *and* 2700 RPM.
-	- Increase loop timer from 1 to 5 to be nicer to servers.
+	- Turbines are optimal at 900, 1800, *and* 2700 RPM
+	- Increase loop timer from 1 to 5 to be nicer to servers
 
 - 0.3.3
 	- Add Big Reactors Turbine support.
-	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found).
+	- First found monitor (appears to be last connected monitor) is used to display status of all found devices (if more than one valid monitor is found)
 	- Display monitor number on top left of each monitor as "M#" to help find which monitor is which.
-	- Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file).
-	- Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update).
-	- Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place.
-	- Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3.
-	- Allow for one monitor for n number of reactors and m number of turbines.
+	- Enabling debug will use the last monitor found, if more than one, to print out debug info (also written to file)
+	- Only clear monitors when we're about to use them (e.g. turbine monitors no longer clear, then wait for all reactors to update)
+	- Fix getDeviceStoredEnergyBufferPercent(), was off by a decimal place
+	- Just use first Control Rod level for entire reactor, they are no longer treated individually in BR 0.3
+	- Allow for one monitor for n number of reactors and m number of turbines
 	- Auto-adjust turbine flow rate by 25 mB to keep rotor speed at 900 or 1,800 RPM.
-	- Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values).
+	- Clicks on monitors relate to what the monitor is showing (e.g. clicking on reactor 1's display won't modify turbine 1's nor reactor 2's values)
 	- Print monitor name and device (reactor|turbine) name in blue to monitor associated for easier design by users.
 	- Remove version number from monitors to free up space for monitor names.
 	- Add option of right-clicking on "Enabled"/"Disabled" of auto-adjust to toggle it.
 
 - 0.3.2
-	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn).
+	- Allow for rod control to override (disable) auto-adjust via UI (Rhonyn)
 
 - 0.3.1
-	- Add fuel consumption per tick to display.
+	- Add fuel consumption per tick to display
 
 - 0.3.0
 	- Add multi-monitor support! Sends one reactor's data to all monitors.
-	- print function now takes table to support optional specified monitor.
-	- Set "numRods" every cycle for some people (mechaet).
-	- Don't redirect terminal output with multiple monitor support.
-	- Log troubleshooting data to reactorcontrol.log.
-	- FC_API no longer used (copied and modified what I needed).
+	- print function now takes table to support optional specified monitor
+	- Set "numRods" every cycle for some people (mechaet)
+	- Don't redirect terminal output with multiple monitor support
+	- Log troubleshooting data to reactorcontrol.log
+	- FC_API no longer used (copied and modified what I needed)
 	- Multi-reactor support is theoretically implemented, but it is UNTESTED!
-	- Updated for Big Reactor 0.3 (no longer works with 0.2).
-	- BR getFuelTemperature() now returns many significant digits, just use math.ceil().
-	- BR 0.3 removed individual rod temperatures, now it's only reactor-level temperature.
+	- Updated for Big Reactor 0.3 (no longer works with 0.2)
+	- BR getFuelTemperature() now returns many significant digits, just use math.ceil()
+	- BR 0.3 removed individual rod temperatures, now it's only reactor-level temperature
 
 - 0.2.4
-	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100).
-	- Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :)).
+	- Simplify math, don't divide by a simple large number and then multiply by 100 (#/10000000*100)
+	- Fix direct-connected (no modem) devices. getDeviceSide -> FC_API.getDeviceSide (simple as that :))
 
 - 0.2.3
 	- Check bounds on reactor.setRodControlLevel(#,#), Big Reactor doesn't check for us.
 
 - 0.2.2
-	- Do not auto-start the reactor if it was manually powered off (autoStart=false).
+	- Do not auto-start the reactor if it was manually powered off (autoStart=false)
 
 - 0.2.1
 	- Lower/raise only the hottest/coldest Control Rod while trying to control the reactor temperature.
-	- "<" Rod Control buttons was off by one (to the left).
+	- "<" Rod Control buttons was off by one (to the left)
 
 - 0.2.0 - Lolmer Edition :)
 	- Add min/max stored energy percentage (default is 15%/85%), configurable via ReactorOptions file.
 	- No reason to keep burning fuel if our power output is going nowhere. :)
 	- Use variables variable for the title and version.
-	- Try to keep the temperature between configured values (default is 850^C-950^C).
-	- Add Waste and number of Control/Fuel Rods to displayBards().
+	- Try to keep the temperature between configured values (default is 850^C-950^C)
+	- Add Waste and number of Control/Fuel Rods to displayBards()
 
 TODO
 ============================
