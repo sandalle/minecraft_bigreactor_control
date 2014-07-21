@@ -109,17 +109,16 @@ Resources
 
 ChangeLog
 ============================
-- 0.3.12
+- 0.3.11
 	- Mechaet's changes:
 	- Cleaned up global variables list
 	- Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
-- 0.3.11
-	-  Mechaet's changes:
 	- Bigger bypasses of control routines when the control has been overridden
 	- Individual config files for turbines and reactors. Persistent between reboots, remembers your last saved settings.
 	- Cruise mode override bypass
 	- Changing flow rate no longer toggles flow rate override on and off. Changing the flow rate clearly indicates intent, so we put the override flag on and leave it there.
 	- Changed the rate at which the regular algorithm adjusts reactor rod control rates. Instead of being 1:1 we now move at 1:5 speed because there is a wide loophole where big adjustments can cause a swinging pendulum effect continually missing the target.
+
 - 0.3.10
 	- Turbine algorithm pass by Mechaet.
 	- Updated turbine GUI.

@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.10
+Version: v0.3.11
 Programmer: Lolmer
 Minor assistance by Mechaet
-Last update: 2014-07-17
+Last update: 2014-07-21
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -88,10 +88,9 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.12 - Mechaet's changes:
+0.3.11 - Mechaet's changes:
 		Cleaned up global variables list
 		Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
-0.3.11 - Mechaet's changes:
 		Bigger bypasses of control routines when the control has been overridden
 		Individual config files for turbines and reactors. Persistent between reboots, remembers your last saved settings.
 		Cruise mode override bypass
@@ -178,7 +177,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.12"
+local progVer = "0.3.11"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
