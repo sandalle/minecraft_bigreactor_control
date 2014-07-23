@@ -11,7 +11,7 @@ This program controls a Big Reactors nuclear reactor in Minecraft with a Compute
 
 This program was designed to work with the mods and versions installed on Never Stop Toasting (NST) Diet http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882 Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
-To simplify the code and guesswork, I assume the following monitor layout:
+To simplify the code and guesswork, I assume the following monitor layout, where each "monitor" listed below is a collection of 3 wide by two high Advanced Monitors:
 1) One Advanced Monitor for overall status display plus
 	one or more Reactors plus
 	none or more Turbines.
