@@ -15,7 +15,7 @@ To simplify the code and guesswork, I assume the following monitor layout:
 1) One Advanced Monitor for overall status display plus
 	one or more Reactors plus
 	none or more Turbines.
-2) One Advanced Monitor for overall status display plus (first found monitor)
+2) One Advanced Monitor for overall status display plus (furthest monitor from computer by cable length)
 	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
 	one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
