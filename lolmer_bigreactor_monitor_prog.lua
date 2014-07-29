@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.10
+Version: v0.3.11
 Programmer: Lolmer
 Minor assistance by Mechaet
-Last update: 2014-07-17
+Last update: 2014-07-21
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -11,11 +11,11 @@ This program controls a Big Reactors nuclear reactor in Minecraft with a Compute
 
 This program was designed to work with the mods and versions installed on Never Stop Toasting (NST) Diet http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882 Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
-To simplify the code and guesswork, I assume the following monitor layout:
+To simplify the code and guesswork, I assume the following monitor layout, where each "monitor" listed below is a collection of 3 wide by two high Advanced Monitors:
 1) One Advanced Monitor for overall status display plus
 	one or more Reactors plus
 	none or more Turbines.
-2) One Advanced Monitor for overall status display plus (first found monitor)
+2) One Advanced Monitor for overall status display plus (furthest monitor from computer by cable length)
 	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
 	one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
@@ -88,10 +88,9 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
-0.3.12 - Mechaet's changes:
+0.3.11 - Mechaet's changes:
 		Cleaned up global variables list
 		Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
-0.3.11 - Mechaet's changes:
 		Bigger bypasses of control routines when the control has been overridden
 		Individual config files for turbines and reactors. Persistent between reboots, remembers your last saved settings.
 		Cruise mode override bypass
@@ -178,7 +177,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.12"
+local progVer = "0.3.11"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2

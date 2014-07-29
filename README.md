@@ -9,14 +9,14 @@ This program was designed to work with the mods and versions installed on Never 
 - http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
 - Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
 
-To simplify the code and guesswork, I assume the following monitor layout:
+To simplify the code and guesswork, I assume the following monitor layout, where each "monitor" listed below is a collection of 3 wide by two high Advanced Monitors:
 - One Advanced Monitor for overall status display plus
 
 	one or more Reactors plus
 
 	none or more Turbines.
 OR
-- One Advanced Monitor for overall status display plus (first found monitor)
+- One Advanced Monitor for overall status display plus (furthest monitor from computer by cable length)
 
 	one Advanced Monitor for each connected Reactor plus (subsequent found monitors)
 
@@ -109,17 +109,16 @@ Resources
 
 ChangeLog
 ============================
-- 0.3.12
+- 0.3.11
 	- Mechaet's changes:
 	- Cleaned up global variables list
 	- Added in per-device naming (displays a friendly name on the bottom of the monitor if configured in the device options file)
-- 0.3.11
-	-  Mechaet's changes:
 	- Bigger bypasses of control routines when the control has been overridden
 	- Individual config files for turbines and reactors. Persistent between reboots, remembers your last saved settings.
 	- Cruise mode override bypass
 	- Changing flow rate no longer toggles flow rate override on and off. Changing the flow rate clearly indicates intent, so we put the override flag on and leave it there.
 	- Changed the rate at which the regular algorithm adjusts reactor rod control rates. Instead of being 1:1 we now move at 1:5 speed because there is a wide loophole where big adjustments can cause a swinging pendulum effect continually missing the target.
+
 - 0.3.10
 	- Turbine algorithm pass by Mechaet.
 	- Updated turbine GUI.
