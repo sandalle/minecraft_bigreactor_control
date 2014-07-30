@@ -109,6 +109,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.12 
+	- Mechaet's changes:
+	- Redid some typing to correct a bug where the reactors always started with rod control disabled.
 - 0.3.11
 	- Mechaet's changes:
 	- Cleaned up global variables list
