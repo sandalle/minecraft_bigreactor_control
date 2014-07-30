@@ -662,7 +662,7 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = true
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"] = 1400 --set for passive-cooled, the active-cooled subroutine will correct it
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = 1000
-				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = true
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = reactorNames[reactorIndex]
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
 				if reactor.getConnected() then
@@ -710,6 +710,7 @@ local function findReactors()
 			end
 			
 			if tempTable["ReactorOptions"]["rodOverride"] ~= nil then
+				printLog("Got value from config file for Rod Override, the value is: "..tempTable["ReactorOptions"]["rodOverride"].." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = tempTable["ReactorOptions"]["rodOverride"]
 			end
 			
@@ -726,13 +727,13 @@ local function findReactors()
 			
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"])
 			
-			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"])) then
+			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"]) == "true") then
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = true
 			else
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
 			end
 			
-			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"])) then
+			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"]) == "true") then
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = true
 			else
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = false
@@ -742,13 +743,15 @@ local function findReactors()
 			
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"])
 			
-			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"])) then
+			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]) == "true") then
+				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to true because value was ".._G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"].." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = true
 			else
+				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to false because value was ".._G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"].." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
 			end
 			
-			if ((_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] == "true") or (_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"])) then
+			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"]) == "true") then
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
 			else
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
@@ -756,7 +759,6 @@ local function findReactors()
 						
 			--save one more time, in case we didn't have a complete config file before
 			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-			
 		end -- for reactorIndex = 1, #newReactorList do
 	end -- if #newReactorList == 0 then
 
@@ -1284,9 +1286,11 @@ local function displayReactorBars(barParams)
 	print{"Rod Auto-adjust:",2,9,monitorIndex}
 
 	if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
+		printLog("Reactor Rod Override status is: "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
 		reactorRodOverrideStatus = "Enabled"
 		monitor.setTextColor(colors.green)
 	else
+		printLog("Reactor Rod Override status is: "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
 		reactorRodOverrideStatus = "Disabled"
 		monitor.setTextColor(colors.red)
 	end -- if not reactorRodOverride then
