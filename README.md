@@ -113,7 +113,7 @@ ChangeLog
 	- Fix one reactor and one monitor incorrectly using status display instead of control display (Issue #35)
 	- Fix concatenating a string and boolean, see http://stackoverflow.com/questions/6615572/how-to-format-a-lua-string-with-a-boolean-variable
 
-- 0.3.12 
+- 0.3.12
 	- Mechaet's changes:
 	- Redid some typing to correct a bug where the reactors always started with rod control disabled.
 
