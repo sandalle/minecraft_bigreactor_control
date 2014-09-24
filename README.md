@@ -112,6 +112,7 @@ ChangeLog
 - 0.3.13
 	- Fix one reactor and one monitor incorrectly using status display instead of control display (Issue #35)
 	- Fix concatenating a string and boolean, see http://stackoverflow.com/questions/6615572/how-to-format-a-lua-string-with-a-boolean-variable
+	- Hopefully fix concatenating string and nul in printLog (Issue #3)
 
 - 0.3.12
 	- Mechaet's changes:

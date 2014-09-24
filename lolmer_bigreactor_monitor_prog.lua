@@ -91,6 +91,7 @@ ChangeLog:
 - 0.3.13
 	- Fix one reactor and one monitor incorrectly using status display instead of control display (Issue #35)
 	- Fix concatenating a string and boolean, see http://stackoverflow.com/questions/6615572/how-to-format-a-lua-string-with-a-boolean-variable
+	- Hopefully fix concatenating string and nul in printLog (Issue #3)
 
 - 0.3.12
 	- Mechaet's changes:
@@ -636,36 +637,49 @@ local function findMonitors()
 		error("Can't find any monitors!")
 	else
 		for monitorIndex = 1, #monitorList do
-			local monitor = nil
+			local monitor, monitorX, monitorY = nil, nil, nil
 			monitor = monitorList[monitorIndex]
 
 			if not monitor then
 				printLog("monitorList["..monitorIndex.."] in findMonitors() is NOT a valid monitor.")
-				break -- Invalid monitorIndex
-			end
-
-			local monitorX, monitorY = monitor.getSize()
-			printLog("Verifying monitor["..monitorIndex.."] is of size x:"..monitorX.." by y:"..monitorY..".")
-
-			-- Check for minimum size to allow for monitor.setTextScale(0.5) to work for 3x2 debugging monitor, changes getSize()
-			if monitorX < 29 or monitorY < 12 then
-				term.redirect(monitor)
-				monitor.clear()
-				printLog("Removing monitor "..monitorIndex.." for being too small.")
-				monitor.setCursorPos(1,2)
-				write("Monitor is the wrong size!\n")
-				write("Needs to be at least 3x2.")
-				term.native()
 
 				table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
-				if monitorIndex == #monitorList then    -- If we're at the end already, break from loop
-					break
-				else
+				if monitorIndex ~= #monitorList then    -- If we're not at the end, clean up
 					monitorIndex = monitorIndex - 1 -- We just removed an element
 				end -- if monitorIndex == #monitorList then
+				break -- Invalid monitorIndex
+			else -- valid monitor
+				monitorX, monitorY = monitor.getSize()
+				if (monitorX == nil) or (monitorY == nil) then -- somehow a valid monitor, but non-existent sizes? Maybe fixes Issue #3
+					printLog("monitorList["..monitorIndex.."] in findMonitors() is NOT a valid sized monitor.")
 
-			end -- if monitorX ~= 29 or monitorY ~= 12 then
-			printLog("Monitor["..monitorIndex.."] named \""..monitorNames[monitorIndex].."\" is a valid monitor.")
+					table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
+					if monitorIndex ~= #monitorList then    -- If we're not at the end, clean up
+						monitorIndex = monitorIndex - 1 -- We just removed an element
+					end -- if monitorIndex == #monitorList then
+					break -- Invalid monitorIndex
+
+				-- Check for minimum size to allow for monitor.setTextScale(0.5) to work for 3x2 debugging monitor, changes getSize()
+				elseif monitorX < 29 or monitorY < 12 then
+					term.redirect(monitor)
+					monitor.clear()
+					printLog("Removing monitor "..monitorIndex.." for being too small.")
+					monitor.setCursorPos(1,2)
+					write("Monitor is the wrong size!\n")
+					write("Needs to be at least 3x2.")
+					term.native()
+
+					table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
+					if monitorIndex == #monitorList then    -- If we're at the end already, break from loop
+						break
+					else
+						monitorIndex = monitorIndex - 1 -- We just removed an element
+					end -- if monitorIndex == #monitorList then
+
+				end -- if monitorX < 29 or monitorY < 12 then
+			end -- if not monitor then
+
+			printLog("Monitor["..monitorIndex.."] named \""..monitorNames[monitorIndex].."\" is a valid monitor of size x:"..monitorX.." by y:"..monitorY..".")
 		end -- for monitorIndex = 1, #monitorList do
 	end -- if #monitorList == 0 then
 
@@ -690,6 +704,11 @@ local function findReactors()
 
 			if not reactor then
 				printLog("reactorList["..reactorIndex.."] in findReactors() is NOT a valid Big Reactor.")
+
+				table.remove(newReactorList, reactorIndex) -- Remove invalid reactor from list
+				if reactorIndex ~= #newReactorList then    -- If we're not at the end, clean up
+					reactorIndex = reactorIndex - 1 -- We just removed an element
+				end -- reactorIndex ~= #newReactorList then
 				return -- Invalid reactorIndex
 			else
 				printLog("reactor["..reactorIndex.."] in findReactors() is a valid Big Reactor.")
@@ -831,6 +850,12 @@ local function findTurbines()
 
 			if not turbine then
 				printLog("turbineList["..turbineIndex.."] in findTurbines() is NOT a valid Big Reactors Turbine.")
+
+				table.remove(newTurbineList, turbineIndex) -- Remove invalid turbine from list
+				if turbineIndex ~= #newTurbineList then    -- If we're not at the end, clean up
+					turbineIndex = turbineIndex - 1 -- We just removed an element
+				end -- turbineIndex ~= #newTurbineList then
+
 				return -- Invalid turbineIndex
 			else
 			
