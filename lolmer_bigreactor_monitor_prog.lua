@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.12
+Version: v0.3.13
 Programmer: Lolmer
 Minor assistance by Mechaet
-Last update: 2014-07-29
+Last update: 2014-09-24
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -88,6 +88,10 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+- 0.3.13
+	- Fix one reactor and one monitor incorrectly using status display instead of control display (Issue #35)
+	- Fix concatenating a string and boolean, see http://stackoverflow.com/questions/6615572/how-to-format-a-lua-string-with-a-boolean-variable
+
 0.3.12 - Mechaet's changes:
 		Redid some typing to correct a bug where the reactors always started with rod control disabled.
 0.3.11 - Mechaet's changes:
@@ -179,7 +183,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.12"
+local progVer = "0.3.13"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -628,6 +632,7 @@ local function findMonitors()
 				end -- if monitorIndex == #monitorList then
 
 			end -- if monitorX ~= 29 or monitorY ~= 12 then
+			printLog("Monitor["..monitorIndex.."] named \""..monitorNames[monitorIndex].."\" is a valid monitor.")
 		end -- for monitorIndex = 1, #monitorList do
 	end -- if #monitorList == 0 then
 
@@ -712,7 +717,7 @@ local function findReactors()
 			end
 			
 			if tempTable["ReactorOptions"]["rodOverride"] ~= nil then
-				printLog("Got value from config file for Rod Override, the value is: "..tempTable["ReactorOptions"]["rodOverride"].." EOL")
+				printLog("Got value from config file for Rod Override, the value is: "..tostring(tempTable["ReactorOptions"]["rodOverride"]).." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = tempTable["ReactorOptions"]["rodOverride"]
 			end
 			
@@ -746,10 +751,10 @@ local function findReactors()
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"])
 			
 			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]) == "true") then
-				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to true because value was ".._G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"].." EOL")
+				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to true because value was "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = true
 			else
-				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to false because value was ".._G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"].." EOL")
+				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to false because value was "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
 			end
 			
@@ -1876,7 +1881,8 @@ function main()
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
-		if (((#reactorList + #turbineList) >= 1) and (#monitorList >= 1)) then
+		if ( ( ((#reactorList + #turbineList) > 1) and (#monitorList >= 1) )   or
+		     ( ((#reactorList + #turbineList) >=1) and (#monitorList >  1) ) ) then
 			local monitor = nil
 			monitor = monitorList[monitorIndex]
 			if not monitor then
@@ -1906,7 +1912,7 @@ function main()
 			end --  if not reactor then
 
 			-- Only attempt to assign a monitor if we have a monitor for this reactor
-			if (#monitorList > 1) and (reactorMonitorIndex <= #monitorList) then
+			if (reactorMonitorIndex <= #monitorList) then
 				printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
 				monitor = monitorList[reactorMonitorIndex]
 
@@ -1956,7 +1962,7 @@ function main()
 			printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...")
 
 			-- Only attempt to assign a monitor if we found a monitor for this turbine
-			if (#monitorList > 1) and (turbineMonitorIndex <= #monitorList) then
+			if (turbineMonitorIndex <= #monitorList) then
 				printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
 				monitor = monitorList[turbineMonitorIndex]
 				if not monitor then
