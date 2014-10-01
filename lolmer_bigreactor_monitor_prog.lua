@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.13
+Version: v0.3.14
 Programmer: Lolmer
 Great assistance by Mechaet
-Last update: 2014-09-24
+Last update: 2014-09-30
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -88,6 +88,9 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+- 0.3.14
+	- Fix Issue #5. EZ-Nuke should now work with ComputerCraft 1.58 or 1.63.
+
 - 0.3.13
 	- Fix one reactor and one monitor incorrectly using status display instead of control display (Issue #35)
 	- Fix concatenating a string and boolean, see http://stackoverflow.com/questions/6615572/how-to-format-a-lua-string-with-a-boolean-variable
@@ -217,7 +220,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.13"
+local progVer = "0.3.14"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -254,6 +257,19 @@ end
 
 -- Helper functions
 
+local function termRestore()
+  local ccVersion = nil
+  ccVersion = os.version()
+
+	if ccVersion == "CraftOS 1.6" then
+		term.native()
+	elseif ccVersion == "CraftOS 1.5" then
+		term.restore()
+	else -- Default to older term.restore
+		printLog("Unsupported CraftOS found. Reported version is \""..ccVersion.."\".")
+		term.restore()
+	end -- if ccVersion
+end -- function termRestore()
 
 local function printLog(printStr)
 	if debugMode then
@@ -262,7 +278,7 @@ local function printLog(printStr)
 			term.redirect(monitorList[#monitorList]) -- Redirect to last monitor for debugging
 			monitorList[#monitorList].setTextScale(0.5) -- Fit more logs on screen
 			write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
-			term.native()
+			termRestore()
 		end -- if #monitorList > 1 then
 
 		local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
@@ -598,7 +614,7 @@ local function drawBar(startXPos, startYPos, endXPos, endYPos, color, monitorInd
 	term.redirect(monitor)
 	paintutils.drawLine(startXPos, startYPos, endXPos, endYPos, color)
 	monitor.setBackgroundColor(colors.black) -- PaintUtils doesn't restore the color
-	term.native()
+	termRestore()
 end -- function drawBar(startXPos, startYPos,endXPos,endYPos,color,monitorIndex)
 
 
@@ -617,7 +633,7 @@ local function drawPixel(xPos, yPos, color, monitorIndex)
 	term.redirect(monitor)
 	paintutils.drawPixel(xPos, yPos, color)
 	monitor.setBackgroundColor(colors.black) -- PaintUtils doesn't restore the color
-	term.native()
+	termRestore()
 end -- function drawPixel(xPos, yPos, color, monitorIndex)
 
 
@@ -667,7 +683,7 @@ local function findMonitors()
 					monitor.setCursorPos(1,2)
 					write("Monitor is the wrong size!\n")
 					write("Needs to be at least 3x2.")
-					term.native()
+					termRestore()
 
 					table.remove(monitorList, monitorIndex) -- Remove invalid monitor from list
 					if monitorIndex == #monitorList then    -- If we're at the end already, break from loop

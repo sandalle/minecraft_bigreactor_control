@@ -109,6 +109,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.14
+	- Fix Issue #5. EZ-Nuke should now work with ComputerCraft 1.58 or 1.63.
+
 - 0.3.13
 	- Fix one reactor and one monitor incorrectly using status display instead of control display (Issue #35)
 	- Fix concatenating a string and boolean, see http://stackoverflow.com/questions/6615572/how-to-format-a-lua-string-with-a-boolean-variable
