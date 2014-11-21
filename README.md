@@ -72,7 +72,7 @@ Requirements
 - Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 - Computer or Advanced Computer
 - Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-- Big Reactors (http://www.big-reactors.com/) 0.3.2A+ (does not work with 0.4.x)
+- Big Reactors (http://www.big-reactors.com/) 0.3.2A+
 - Computercraft (http://computercraft.info/) 1.63+
 - Reset the computer any time number of connected devices change.
 
@@ -241,4 +241,3 @@ TODO
 - Move helper functions into seperate file(s)
 - Clutch controls for 0.3.4A2
 - Using clutch mode to achieve optimal turbine speed faster (toggle option, on-screen)
-- Update for Big Reactors 0.4.x (Issue #40)

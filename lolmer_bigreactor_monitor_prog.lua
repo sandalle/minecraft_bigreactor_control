@@ -64,7 +64,7 @@ Requirements:
 	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 	Computer or Advanced Computer
 	Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-	Big Reactors (http://www.big-reactors.com/) 0.3.2A+ (does not work with 0.4.x)
+	Big Reactors (http://www.big-reactors.com/) 0.3.2A+
 	Computercraft (http://computercraft.info/) 1.63+
 	Reset the computer any time number of connected devices change.
 
@@ -215,7 +215,6 @@ TODO:
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment.
 - Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/ .
 - Update cruise mode to work independently for each actively-cooled reactor.
-- Update for Big Reactors 0.4.x (Issue #40)
 
 ]]--
 
