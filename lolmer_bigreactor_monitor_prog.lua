@@ -5,6 +5,7 @@ Programmer: Lolmer
 Great assistance by Mechaet
 Last update: 2014-12-15
 Pastebin: http://pastebin.com/fguScPBQ
+GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
 Description:
 This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port.

@@ -2,6 +2,7 @@
 	Programmer: Lolmer
 	Last update: 2014-02-28
 	Pastebin: http://pastebin.com/ZTMzRLez
+	GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
 	Description:
 	This program controls a Big Reactors nuclear reactor
