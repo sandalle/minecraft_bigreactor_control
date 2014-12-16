@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.14
+Version: v0.3.15
 Programmer: Lolmer
 Great assistance by Mechaet
-Last update: 2014-09-30
+Last update: 2014-12-15
 Pastebin: http://pastebin.com/fguScPBQ
 
 Description:
@@ -88,6 +88,9 @@ A simpler Big Reactor control program is available from:
 	Big Reactors API: http://big-reactors.com/cc_api.html
 
 ChangeLog:
+- 0.3.15
+	- Add ability to override safe values for Issue #39.
+
 - 0.3.14
 	- Fix Issue #5. EZ-Nuke should now work with ComputerCraft 1.58 or 1.63.
 
@@ -220,7 +223,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.14"
+local progVer = "0.3.15"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -237,7 +240,7 @@ local reactorNames = {} -- Empty array of reactor names
 local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
-
+local knowlinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
 
 term.clear()
 term.setCursorPos(2,1)
@@ -1065,7 +1068,7 @@ local function temperatureControl(reactorIndex)
 			-- Actively cooled reactors should range between 0^C-300^C
 			-- Actually, active-cooled reactors should range between 300 and 420C (Mechaet)
 			-- Accordingly I changed the below lines
-			if reactor.isActivelyCooled() then
+			if reactor.isActivelyCooled() and not knowlinglyOverride then
 				-- below was 0
 				localMinReactorTemp = 300
 				-- below was 300

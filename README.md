@@ -109,6 +109,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.15
+	- Add ability to override safe values for Issue #39.
+
 - 0.3.14
 	- Fix Issue #5. EZ-Nuke should now work with ComputerCraft 1.58 or 1.63.
 
