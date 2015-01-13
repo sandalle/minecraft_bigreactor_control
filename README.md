@@ -73,7 +73,7 @@ Requirements
 - Computer or Advanced Computer
 - Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
 - Big Reactors (http://www.big-reactors.com/) 0.3.2A+
-- Computercraft (http://computercraft.info/) 1.63+
+- Computercraft (http://computercraft.info/) 1.58 or 1.63+
 - Reset the computer any time number of connected devices change.
 
 Resources
