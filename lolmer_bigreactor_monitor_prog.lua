@@ -87,6 +87,7 @@ A simpler Big Reactor control program is available from:
 	Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
 	Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
 	Big Reactors API: http://big-reactors.com/cc_api.html
+	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
 ChangeLog:
 - 0.3.15

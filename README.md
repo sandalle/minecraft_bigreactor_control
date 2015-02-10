@@ -107,6 +107,8 @@ Resources
 - Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
 - Big Reactors API: http://big-reactors.com/cc_api.html
 
+- Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
+
 ChangeLog
 ============================
 - 0.3.15
