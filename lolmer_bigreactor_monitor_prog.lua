@@ -268,14 +268,14 @@ end
 
 local function termRestore()
 	local ccVersion = nil
-	ccVersion = os.version() 
+	ccVersion = os.version()
 
 	if ccVersion == "CraftOS 1.6" or "CraftOS 1.7" then
 		term.native()
 	elseif ccVersion == "CraftOS 1.5" then
 		term.restore()
 	else -- Default to older term.restore
-		printLog("Unsupported CraftOS found. Reported version is "\"..ccVersion.."\".")
+		printLog("Unsupported CraftOS found. Reported version is \""..ccVersion.."\".")
 		term.restore()
 	end -- if ccVersion
 end -- function termRestore()
