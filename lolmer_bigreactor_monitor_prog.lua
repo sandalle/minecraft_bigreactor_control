@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.15
+Version: v0.3.16
 Programmer: Lolmer
 Great assistance by Mechaet
-Last update: 2014-12-15
+Last update: 2015-03-25
 Pastebin: http://pastebin.com/fguScPBQ
 GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
@@ -90,6 +90,10 @@ A simpler Big Reactor control program is available from:
 	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
 ChangeLog:
+- 0.3.16
+	- Add support for ComputerCraft 1.7 (thanks dkowis and jnyl42).
+	- Fix typo for unsupported OS (found from above)
+
 - 0.3.15
 	- Add ability to override safe values for Issue #39.
 
@@ -225,7 +229,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.15"
+local progVer = "0.3.16"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -263,17 +267,17 @@ end
 -- Helper functions
 
 local function termRestore()
-  local ccVersion = nil
-  ccVersion = os.version() 
-        
-        if ccVersion == "CraftOS 1.6" or "CraftOS 1.7" then
-                term.native()
-        elseif ccVersion == "CraftOS 1.5" then
-                term.restore()
-        else -- Default to older term.restore
-                printLog("Unsupported CraftOS found. Reported version is "\"..ccVersion.."\".")
-                term.restore()
-        end -- if ccVersion
+	local ccVersion = nil
+	ccVersion = os.version() 
+
+	if ccVersion == "CraftOS 1.6" or "CraftOS 1.7" then
+		term.native()
+	elseif ccVersion == "CraftOS 1.5" then
+		term.restore()
+	else -- Default to older term.restore
+		printLog("Unsupported CraftOS found. Reported version is "\"..ccVersion.."\".")
+		term.restore()
+	end -- if ccVersion
 end -- function termRestore()
 
 local function printLog(printStr)
