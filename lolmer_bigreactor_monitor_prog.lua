@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.16
+Version: v0.3.16-t
 Programmer: Lolmer
 Great assistance by Mechaet
 Last update: 2015-03-25
@@ -33,6 +33,7 @@ When using actively cooled reactors with turbines, keep the following in mind:
 
 Features:
 	Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
+	Disengages coils and minimizes flow for turbines over max energy buffer.
 	ReactorOptions is read on start and then current values are saved every program cycle.
 	Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
 	Auto-adjusts control rods per reactor to maintain temperature.
@@ -90,6 +91,9 @@ A simpler Big Reactor control program is available from:
 	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
 ChangeLog:
+- 0.3.16-t
+	- Added turbine coil auto dis-/engage
+
 - 0.3.16
 	- Add support for ComputerCraft 1.7 (thanks dkowis and jnyl42).
 	- Fix typo for unsupported OS (found from above)
@@ -229,7 +233,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.16"
+local progVer = "0.3.16-t"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -1645,7 +1649,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
 		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 25 -- Don't go to zero, might as well power off
+			newTurbineFlowRate = 0
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
@@ -1666,7 +1670,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
 		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 25 -- Don't go to zero, might as well power off
+			newTurbineFlowRate = 0
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
@@ -1832,7 +1836,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 end -- function function turbineStatus(turbineIndex, monitorIndex)
 
 
--- Maintain Turbine flow rate at 900 or 1,800 RPM
+-- Adjust Turbine flow rate to maintain 900 or 1,800 RPM, and disengage coils when buffer full
 local function flowRateControl(turbineIndex)
 	if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
 		
@@ -1866,7 +1870,17 @@ local function flowRateControl(turbineIndex)
 			local flowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
 			local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
 			local rotorSpeed = math.ceil(turbine.getRotorSpeed())
-			local newFlowRate = 0
+			local newFlowRate = -1
+
+			local currentStoredEnergyPercent = getTurbineStoredEnergyBufferPercent(turbine)
+			if (currentStoredEnergyPercent >= maxStoredEnergyPercent) then
+				printLog("turbine["..turbineIndex.."] coils disengaged, energy buffer full.")
+				newFlowRate = 0
+				turbine.setInductorEngaged(false)
+			elseif(currentStoredEnergyPercent <= minStoredEnergyPercent) then
+				printLog("turbine["..turbineIndex.."] coils engaged, energy buffer empty.")
+				turbine.setInductorEngaged(true)
+			end
 
 			-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
 			if (rotorSpeed < turbineBaseSpeed) then
@@ -1902,7 +1916,7 @@ local function flowRateControl(turbineIndex)
 					--we're above and ascending.
 					if ((rotorSpeed - lastTurbineSpeed) > 100) then
 						--halt
-						newFlowRate = 25
+						newFlowRate = 0
 					else
 						--let's adjust based on proximity
 						flowAdjustment = (rotorSpeed - turbineBaseSpeed)/5
@@ -1918,14 +1932,14 @@ local function flowRateControl(turbineIndex)
 			end --if (rotorSpeed < turbineBaseSpeed)
 
 			--check to make sure an adjustment was made
-			if (newFlowRate == 0) then
+			if (newFlowRate == -1) then
 				--do nothing, we didn't ask for anything this pass
 			else
 				--boundary check
 				if newFlowRate > 2000 then
 					newFlowRate = 2000
-				elseif newFlowRate < 25 then
-					newFlowRate = 25 -- Don't go to zero, might as well power off
+				elseif newFlowRate < 0 then
+					newFlowRate = 0
 				end -- if newFlowRate > 2000 then
 				--no sense running an adjustment if it's not necessary
 				if ((newFlowRate < flowRate) or (newFlowRate > flowRate)) then
