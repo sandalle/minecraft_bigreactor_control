@@ -2089,7 +2089,7 @@ function main()
 			if turbine.getConnected() then
 				printLog("turbine["..turbineIndex.."] is connected.")
 
-				if not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] then
+				if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
 					flowRateControl(turbineIndex)
 				end -- if not turbineFlowRateOverride[turbineIndex] then
 			else
