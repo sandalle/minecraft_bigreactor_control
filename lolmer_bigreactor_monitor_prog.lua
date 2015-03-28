@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.16-t
+Version: v0.3.16-ts
 Programmer: Lolmer
 Great assistance by Mechaet
 Last update: 2015-03-25
@@ -91,6 +91,9 @@ A simpler Big Reactor control program is available from:
 	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
 ChangeLog:
+- 0.3.16-ts
+	- Incorporate steam supply and demand in reactor control
+
 - 0.3.16-t
 	- Added turbine coil auto dis-/engage
 
@@ -233,7 +236,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.16-t"
+local progVer = "0.3.16-ts"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -251,6 +254,8 @@ local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 local knowlinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
+local steamRequested = 0 -- Sum of Turbine Flow Rate in % of (number of turbines) * 2000mB
+local steamDelivered = 0 -- Sum of Active Reactor steam output in % (number of reactors) * 2000mB
 
 term.clear()
 term.setCursorPos(2,1)
@@ -1127,11 +1132,11 @@ local function temperatureControl(reactorIndex)
 					end --if (reactorTemp > lastTempPoll) then
 						--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
 
-				elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~=0) then
+				elseif ((reactorTemp < localMinReactorTemp) and (rodPercentage ~=0)) or (steamRequested - steamDelivered > 0) then
 					--we're too cold. time to warm up, but by how much?
 					if (reactorTemp < lastTempPoll) then
 						--we're descending, let's stop that.
-						if ((lastTempPoll - reactorTemp) > 100) then
+						if ((lastTempPoll - reactorTemp) > 100) or (steamRequested - steamDelivered > 50) then
 							--we're headed for a new ice age, bring the heat
 							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
 								reactor.setAllControlRodLevels(0)
@@ -1162,10 +1167,10 @@ local function temperatureControl(reactorIndex)
 					--if we're below temp but increasing, do nothing and let it continue to rise.
 				end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
 
-				if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+				if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) and not (steamRequested - steamDelivered > 0) then
 					--engage cruise mode
 					_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
-				end -- if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+				end
 			end -- if reactorCruising then
 			--always set this number
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = reactorTemp
@@ -1975,6 +1980,7 @@ function main()
 	while not finished do
 		local reactor = nil
 		local monitorIndex = 1
+		local sd = 0
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
@@ -2046,10 +2052,21 @@ function main()
 				if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
 					temperatureControl(reactorIndex)
 				end -- if not reactorRodOverride then
+
+				-- Collect steam production data
+				if reactor.isActivelyCooled() then
+					sd = sd + reactor.getEnergyProducedLastTick()
+				end
 			else
 				printLog("reactor["..reactorIndex.."] is NOT connected.")
 			end -- if reactor.getConnected() then
 		end -- for reactorIndex = 1, #reactorList do
+
+		-- Now that temperatureControl() had a chance to use it, reset/calculate steam data for next iteration
+		printLog("Steam requested: "..steamRequested.."% capacity")
+		printLog("Steam delivered: "..steamDelivered.."% capacity")
+		steamDelivered = math.ceil(100*sd/(2000*#reactorList))
+		steamRequested = 0
 
 		-- Monitors for turbines start after turbineMonitorOffset
 		for turbineIndex = 1, #turbineList do
@@ -2092,6 +2109,12 @@ function main()
 				if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
 					flowRateControl(turbineIndex)
 				end -- if not turbineFlowRateOverride[turbineIndex] then
+
+				-- Collect steam consumption data
+				if turbine.getActive() then
+					local sr = math.ceil(100*(turbine.getFluidFlowRateMax()/2000)/#turbineList)
+					steamRequested = steamRequested + sr
+				end
 			else
 				printLog("turbine["..turbineIndex.."] is NOT connected.")
 			end -- if turbine.getConnected() then
@@ -2116,6 +2139,9 @@ local function eventHandler()
 			local ch = string.lower(arg1)
 			if ch == "q" then
 				finished = true
+			elseif ch == "d" then
+				debugMode = not debugMode
+				--print("debugMode ",debugMode)
 			elseif ch == "r" then
 				finished = true
 				os.reboot()
