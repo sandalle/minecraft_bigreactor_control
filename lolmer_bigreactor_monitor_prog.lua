@@ -1121,7 +1121,7 @@ local function temperatureControl(reactorIndex)
 								reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
 							end
 						end --if ((reactorTemp - lastTempPoll) > 100) then
-					elseif (reactorTemp == lastTempPoll) then
+					elseif ((lastTempPoll - reactorTemp) < (reactorTemp * 0.005)) then
 						--temperature has stagnated, kick it very lightly
 						local controlRodAdjustment = 1
 						if (rodPercentage + controlRodAdjustment) > 99 then
@@ -1134,9 +1134,12 @@ local function temperatureControl(reactorIndex)
 
 				elseif ((reactorTemp < localMinReactorTemp) and (rodPercentage ~=0)) or (steamRequested - steamDelivered > 0) then
 					--we're too cold. time to warm up, but by how much?
-					if (reactorTemp < lastTempPoll) then
+					if (steamRequested > (steamDelivered*2)) then
+						-- Bridge to machine room: Full steam ahead!
+						reactor.setAllControlRodLevels(0)
+					elseif (reactorTemp < lastTempPoll) then
 						--we're descending, let's stop that.
-						if ((lastTempPoll - reactorTemp) > 100) or (steamRequested - steamDelivered > 50) then
+						if ((lastTempPoll - reactorTemp) > 100) then
 							--we're headed for a new ice age, bring the heat
 							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
 								reactor.setAllControlRodLevels(0)
@@ -1890,9 +1893,13 @@ local function flowRateControl(turbineIndex)
 			-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
 			if (rotorSpeed < turbineBaseSpeed) then
 				printLog("BELOW COMMANDED SPEED")
-				if (rotorSpeed > lastTurbineSpeed) then
+
+				local diffSpeed = rotorSpeed - lastTurbineSpeed
+				local diffBaseSpeed = turbineBaseSpeed - rotorSpeed
+				if ((diffSpeed > 0) and (diffSpeed > diffBaseSpeed * 0.05)) then
 					--we're still increasing, let's let it level off
 					--also lets the first control pass go by on startup
+					printLog("Leveling off...")
 				elseif (rotorSpeed < lastTurbineSpeed) then
 					--we're decreasing where we should be increasing, do something
 					if ((lastTurbineSpeed - rotorSpeed) > 100) then
