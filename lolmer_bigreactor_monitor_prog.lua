@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.16-ts
+Version: v0.3.16-tt
 Programmer: Lolmer
 Great assistance by Mechaet
-Last update: 2015-03-25
+Last update: 2015-03-29
 Pastebin: http://pastebin.com/fguScPBQ
 GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
@@ -236,7 +236,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.16-ts"
+local progVer = "0.3.16-tt"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -1765,6 +1765,22 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{turbineFlowRateOverrideStatus, width - string.len(turbineFlowRateOverrideStatus) - 1, 10, monitorIndex}
 	monitor.setTextColor(colors.white)
 
+	-- Print coil status
+	local turbineCoilStatus = ""
+
+	print{"Turbine coils:",2,11,monitorIndex}
+
+	if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] == "true")) then
+		turbineCoilStatus = "Engaged"
+		monitor.setTextColor(colors.green)
+	else
+		turbineCoilStatus = "Disengaged"
+		monitor.setTextColor(colors.red)
+	end
+
+	print{turbineCoilStatus, width - string.len(turbineCoilStatus) - 1, 11, monitorIndex}
+	monitor.setTextColor(colors.white)
+
 	monitor.setTextColor(colors.blue)
 	printCentered(_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
@@ -1857,6 +1873,7 @@ local function flowRateControl(turbineIndex)
 		-- assign for the duration of this run
 		local lastTurbineSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"])
 		local turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
+		local coilsEngaged = _G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] or _G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] == "true"
 
 		if not turbine then
 			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT a valid Big Turbine.")
@@ -1882,12 +1899,9 @@ local function flowRateControl(turbineIndex)
 
 			local currentStoredEnergyPercent = getTurbineStoredEnergyBufferPercent(turbine)
 			if (currentStoredEnergyPercent >= maxStoredEnergyPercent) then
-				printLog("turbine["..turbineIndex.."] coils disengaged, energy buffer full.")
+				printLog("turbine["..turbineIndex.."]: Disengaging coils, energy buffer full.")
 				newFlowRate = 0
-				turbine.setInductorEngaged(false)
-			elseif(currentStoredEnergyPercent <= minStoredEnergyPercent) then
-				printLog("turbine["..turbineIndex.."] coils engaged, energy buffer empty.")
-				turbine.setInductorEngaged(true)
+				coilsEngaged = false
 			end
 
 			-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
@@ -1896,10 +1910,16 @@ local function flowRateControl(turbineIndex)
 
 				local diffSpeed = rotorSpeed - lastTurbineSpeed
 				local diffBaseSpeed = turbineBaseSpeed - rotorSpeed
-				if ((diffSpeed > 0) and (diffSpeed > diffBaseSpeed * 0.05)) then
-					--we're still increasing, let's let it level off
-					--also lets the first control pass go by on startup
-					printLog("Leveling off...")
+				if (diffSpeed > 0) then 
+					if (diffBaseSpeed > turbineBaseSpeed * 0.10) then
+						-- let's speed this up. DOUBLE TIME!
+						coilsEngaged = false
+						printLog("COILS DISENGAGED")
+					elseif (diffSpeed > diffBaseSpeed * 0.05) then
+						--we're still increasing, let's let it level off
+						--also lets the first control pass go by on startup
+						printLog("Leveling off...")
+					end
 				elseif (rotorSpeed < lastTurbineSpeed) then
 					--we're decreasing where we should be increasing, do something
 					if ((lastTurbineSpeed - rotorSpeed) > 100) then
@@ -1921,6 +1941,8 @@ local function flowRateControl(turbineIndex)
 			else
 				--we're above commanded turbine speed
 				printLog("ABOVE COMMANDED SPEED")
+				-- With coils engaged, we have no chance of slowing. More importantly, this stops DOUBLE TIME.
+				coilsEngaged = true
 				if (rotorSpeed < lastTurbineSpeed) then
 				--we're decreasing, let it level off
 				--also bypasses first control pass on startup
@@ -1962,7 +1984,11 @@ local function flowRateControl(turbineIndex)
 					config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 				end
 			end
+
+			turbine.setInductorEngaged(coilsEngaged)
+
 			--always set this
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] = coilsEngaged
 			_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"] = rotorSpeed
 			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 		else
