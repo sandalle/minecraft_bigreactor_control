@@ -93,8 +93,8 @@ A simpler Big Reactor control program is available from:
 ChangeLog:
 - 0.3.17
 	- Set monitor scale before checking size fixing Issue #50.
-	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz)
-	- Added turbine coil auto dis-/engage thanks to @thetaphi (Nicolas Kratz)
+	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz).
+	- Added turbine coil auto dis-/engage thanks to @thetaphi (Nicolas Kratz).
 
 - 0.3.16
 	- Add support for ComputerCraft 1.7 (thanks dkowis and jnyl42).
