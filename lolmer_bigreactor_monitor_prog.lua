@@ -91,9 +91,10 @@ A simpler Big Reactor control program is available from:
 	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
 ChangeLog:
-- 0.3.17 thanks to @thetaphi (Nicolas Kratz)
-	- Incorporate steam supply and demand in reactor control
-	- Added turbine coil auto dis-/engage
+- 0.3.17
+	- Set monitor scale before checking size fixing Issue #50.
+	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz)
+	- Added turbine coil auto dis-/engage thanks to @thetaphi (Nicolas Kratz)
 
 - 0.3.16
 	- Add support for ComputerCraft 1.7 (thanks dkowis and jnyl42).
@@ -553,7 +554,6 @@ local function clearMonitor(printString, monitorIndex)
 	local gap = 2
 	monitor.clear()
 	local width, height = monitor.getSize()
-	monitor.setTextScale(1.0) -- Make sure scale is correct
 
 	printCentered(printString, 1, monitorIndex)
 	monitor.setTextColor(colors.blue)
@@ -681,7 +681,9 @@ local function findMonitors()
 				end -- if monitorIndex == #monitorList then
 				break -- Invalid monitorIndex
 			else -- valid monitor
+				monitor.setTextScale(1.0) -- Make sure scale is correct
 				monitorX, monitorY = monitor.getSize()
+
 				if (monitorX == nil) or (monitorY == nil) then -- somehow a valid monitor, but non-existent sizes? Maybe fixes Issue #3
 					printLog("monitorList["..monitorIndex.."] in findMonitors() is NOT a valid sized monitor.")
 
