@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.16-tt
+Version: v0.3.17
 Programmer: Lolmer
 Great assistance by Mechaet
 Last update: 2015-03-29
@@ -91,10 +91,8 @@ A simpler Big Reactor control program is available from:
 	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
 ChangeLog:
-- 0.3.16-ts
+- 0.3.17 thanks to @thetaphi (Nicolas Kratz)
 	- Incorporate steam supply and demand in reactor control
-
-- 0.3.16-t
 	- Added turbine coil auto dis-/engage
 
 - 0.3.16
@@ -236,7 +234,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.16-tt"
+local progVer = "0.3.17"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
