@@ -92,6 +92,7 @@ A simpler Big Reactor control program is available from:
 
 ChangeLog:
 - 0.3.17
+	- Display how much steam (in mB/t) a Turbine is receiving on that Turbine's monitor.
 	- Set monitor scale before checking size fixing Issue #50.
 	- Having a monitor is now optional, closing Issue #46.
 	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz).
@@ -1722,7 +1723,8 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{stringTrim(tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])),24,6,monitorIndex}
 	local rotorSpeedString = "Speed: "
 	local energyBufferString = "Energy: "
-	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString))
+	local steamBufferString = "Steam: "
+	local padding = math.max(string.len(rotorSpeedString), string.len(energyBufferString), string.len(steamBufferString))
 
 	local energyBuffer = turbine.getEnergyProducedLastTick()
 	print{energyBufferString,1,4,monitorIndex}
@@ -1731,6 +1733,10 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	local rotorSpeed = math.ceil(turbine.getRotorSpeed())
 	print{rotorSpeedString,1,5,monitorIndex}
 	print{rotorSpeed.." RPM",padding+1,5,monitorIndex}
+
+	local steamBuffer = turbine.getFluidFlowRate()
+	print{steamBufferString,1,6,monitorIndex}
+	print{steamBuffer.." mB/t",padding+1,6,monitorIndex}
 
 	-- PaintUtils only outputs to term., not monitor.
 	-- See http://www.computercraft.info/forums2/index.php?/topic/15540-paintutils-on-a-monitor/
