@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.16
+Version: v0.3.16-tt
 Programmer: Lolmer
 Great assistance by Mechaet
-Last update: 2015-03-25
+Last update: 2015-03-29
 Pastebin: http://pastebin.com/fguScPBQ
 GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
@@ -33,6 +33,7 @@ When using actively cooled reactors with turbines, keep the following in mind:
 
 Features:
 	Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
+	Disengages coils and minimizes flow for turbines over max energy buffer.
 	ReactorOptions is read on start and then current values are saved every program cycle.
 	Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
 	Auto-adjusts control rods per reactor to maintain temperature.
@@ -90,6 +91,12 @@ A simpler Big Reactor control program is available from:
 	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
 ChangeLog:
+- 0.3.16-ts
+	- Incorporate steam supply and demand in reactor control
+
+- 0.3.16-t
+	- Added turbine coil auto dis-/engage
+
 - 0.3.16
 	- Add support for ComputerCraft 1.7 (thanks dkowis and jnyl42).
 	- Fix typo for unsupported OS (found from above)
@@ -229,7 +236,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.16"
+local progVer = "0.3.16-tt"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -247,6 +254,8 @@ local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 local knowlinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
+local steamRequested = 0 -- Sum of Turbine Flow Rate in % of (number of turbines) * 2000mB
+local steamDelivered = 0 -- Sum of Active Reactor steam output in % (number of reactors) * 2000mB
 
 term.clear()
 term.setCursorPos(2,1)
@@ -1112,7 +1121,7 @@ local function temperatureControl(reactorIndex)
 								reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
 							end
 						end --if ((reactorTemp - lastTempPoll) > 100) then
-					elseif (reactorTemp == lastTempPoll) then
+					elseif ((lastTempPoll - reactorTemp) < (reactorTemp * 0.005)) then
 						--temperature has stagnated, kick it very lightly
 						local controlRodAdjustment = 1
 						if (rodPercentage + controlRodAdjustment) > 99 then
@@ -1123,9 +1132,12 @@ local function temperatureControl(reactorIndex)
 					end --if (reactorTemp > lastTempPoll) then
 						--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
 
-				elseif (reactorTemp < localMinReactorTemp) and (rodPercentage ~=0) then
+				elseif ((reactorTemp < localMinReactorTemp) and (rodPercentage ~=0)) or (steamRequested - steamDelivered > 0) then
 					--we're too cold. time to warm up, but by how much?
-					if (reactorTemp < lastTempPoll) then
+					if (steamRequested > (steamDelivered*2)) then
+						-- Bridge to machine room: Full steam ahead!
+						reactor.setAllControlRodLevels(0)
+					elseif (reactorTemp < lastTempPoll) then
 						--we're descending, let's stop that.
 						if ((lastTempPoll - reactorTemp) > 100) then
 							--we're headed for a new ice age, bring the heat
@@ -1158,10 +1170,10 @@ local function temperatureControl(reactorIndex)
 					--if we're below temp but increasing, do nothing and let it continue to rise.
 				end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
 
-				if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+				if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) and not (steamRequested - steamDelivered > 0) then
 					--engage cruise mode
 					_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
-				end -- if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) then
+				end
 			end -- if reactorCruising then
 			--always set this number
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = reactorTemp
@@ -1645,7 +1657,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
 		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 25 -- Don't go to zero, might as well power off
+			newTurbineFlowRate = 0
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
@@ -1666,7 +1678,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
 		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 25 -- Don't go to zero, might as well power off
+			newTurbineFlowRate = 0
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
@@ -1753,6 +1765,22 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	print{turbineFlowRateOverrideStatus, width - string.len(turbineFlowRateOverrideStatus) - 1, 10, monitorIndex}
 	monitor.setTextColor(colors.white)
 
+	-- Print coil status
+	local turbineCoilStatus = ""
+
+	print{"Turbine coils:",2,11,monitorIndex}
+
+	if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] == "true")) then
+		turbineCoilStatus = "Engaged"
+		monitor.setTextColor(colors.green)
+	else
+		turbineCoilStatus = "Disengaged"
+		monitor.setTextColor(colors.red)
+	end
+
+	print{turbineCoilStatus, width - string.len(turbineCoilStatus) - 1, 11, monitorIndex}
+	monitor.setTextColor(colors.white)
+
 	monitor.setTextColor(colors.blue)
 	printCentered(_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
@@ -1832,7 +1860,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 end -- function function turbineStatus(turbineIndex, monitorIndex)
 
 
--- Maintain Turbine flow rate at 900 or 1,800 RPM
+-- Adjust Turbine flow rate to maintain 900 or 1,800 RPM, and disengage coils when buffer full
 local function flowRateControl(turbineIndex)
 	if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
 		
@@ -1845,6 +1873,7 @@ local function flowRateControl(turbineIndex)
 		-- assign for the duration of this run
 		local lastTurbineSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"])
 		local turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
+		local coilsEngaged = _G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] or _G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] == "true"
 
 		if not turbine then
 			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT a valid Big Turbine.")
@@ -1866,14 +1895,31 @@ local function flowRateControl(turbineIndex)
 			local flowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
 			local flowRateUserMax = math.ceil(turbine.getFluidFlowRateMax())
 			local rotorSpeed = math.ceil(turbine.getRotorSpeed())
-			local newFlowRate = 0
+			local newFlowRate = -1
+
+			local currentStoredEnergyPercent = getTurbineStoredEnergyBufferPercent(turbine)
+			if (currentStoredEnergyPercent >= maxStoredEnergyPercent) then
+				printLog("turbine["..turbineIndex.."]: Disengaging coils, energy buffer full.")
+				newFlowRate = 0
+				coilsEngaged = false
+			end
 
 			-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
 			if (rotorSpeed < turbineBaseSpeed) then
 				printLog("BELOW COMMANDED SPEED")
-				if (rotorSpeed > lastTurbineSpeed) then
-					--we're still increasing, let's let it level off
-					--also lets the first control pass go by on startup
+
+				local diffSpeed = rotorSpeed - lastTurbineSpeed
+				local diffBaseSpeed = turbineBaseSpeed - rotorSpeed
+				if (diffSpeed > 0) then 
+					if (diffBaseSpeed > turbineBaseSpeed * 0.10) then
+						-- let's speed this up. DOUBLE TIME!
+						coilsEngaged = false
+						printLog("COILS DISENGAGED")
+					elseif (diffSpeed > diffBaseSpeed * 0.05) then
+						--we're still increasing, let's let it level off
+						--also lets the first control pass go by on startup
+						printLog("Leveling off...")
+					end
 				elseif (rotorSpeed < lastTurbineSpeed) then
 					--we're decreasing where we should be increasing, do something
 					if ((lastTurbineSpeed - rotorSpeed) > 100) then
@@ -1895,6 +1941,8 @@ local function flowRateControl(turbineIndex)
 			else
 				--we're above commanded turbine speed
 				printLog("ABOVE COMMANDED SPEED")
+				-- With coils engaged, we have no chance of slowing. More importantly, this stops DOUBLE TIME.
+				coilsEngaged = true
 				if (rotorSpeed < lastTurbineSpeed) then
 				--we're decreasing, let it level off
 				--also bypasses first control pass on startup
@@ -1902,7 +1950,7 @@ local function flowRateControl(turbineIndex)
 					--we're above and ascending.
 					if ((rotorSpeed - lastTurbineSpeed) > 100) then
 						--halt
-						newFlowRate = 25
+						newFlowRate = 0
 					else
 						--let's adjust based on proximity
 						flowAdjustment = (rotorSpeed - turbineBaseSpeed)/5
@@ -1918,14 +1966,14 @@ local function flowRateControl(turbineIndex)
 			end --if (rotorSpeed < turbineBaseSpeed)
 
 			--check to make sure an adjustment was made
-			if (newFlowRate == 0) then
+			if (newFlowRate == -1) then
 				--do nothing, we didn't ask for anything this pass
 			else
 				--boundary check
 				if newFlowRate > 2000 then
 					newFlowRate = 2000
-				elseif newFlowRate < 25 then
-					newFlowRate = 25 -- Don't go to zero, might as well power off
+				elseif newFlowRate < 0 then
+					newFlowRate = 0
 				end -- if newFlowRate > 2000 then
 				--no sense running an adjustment if it's not necessary
 				if ((newFlowRate < flowRate) or (newFlowRate > flowRate)) then
@@ -1936,7 +1984,11 @@ local function flowRateControl(turbineIndex)
 					config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 				end
 			end
+
+			turbine.setInductorEngaged(coilsEngaged)
+
 			--always set this
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["CoilsEngaged"] = coilsEngaged
 			_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"] = rotorSpeed
 			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 		else
@@ -1961,6 +2013,7 @@ function main()
 	while not finished do
 		local reactor = nil
 		local monitorIndex = 1
+		local sd = 0
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
@@ -2032,10 +2085,21 @@ function main()
 				if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
 					temperatureControl(reactorIndex)
 				end -- if not reactorRodOverride then
+
+				-- Collect steam production data
+				if reactor.isActivelyCooled() then
+					sd = sd + reactor.getEnergyProducedLastTick()
+				end
 			else
 				printLog("reactor["..reactorIndex.."] is NOT connected.")
 			end -- if reactor.getConnected() then
 		end -- for reactorIndex = 1, #reactorList do
+
+		-- Now that temperatureControl() had a chance to use it, reset/calculate steam data for next iteration
+		printLog("Steam requested: "..steamRequested.."% capacity")
+		printLog("Steam delivered: "..steamDelivered.."% capacity")
+		steamDelivered = math.ceil(100*sd/(2000*#reactorList))
+		steamRequested = 0
 
 		-- Monitors for turbines start after turbineMonitorOffset
 		for turbineIndex = 1, #turbineList do
@@ -2075,9 +2139,15 @@ function main()
 			if turbine.getConnected() then
 				printLog("turbine["..turbineIndex.."] is connected.")
 
-				if not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] then
+				if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
 					flowRateControl(turbineIndex)
 				end -- if not turbineFlowRateOverride[turbineIndex] then
+
+				-- Collect steam consumption data
+				if turbine.getActive() then
+					local sr = math.ceil(100*(turbine.getFluidFlowRateMax()/2000)/#turbineList)
+					steamRequested = steamRequested + sr
+				end
 			else
 				printLog("turbine["..turbineIndex.."] is NOT connected.")
 			end -- if turbine.getConnected() then
@@ -2102,6 +2172,9 @@ local function eventHandler()
 			local ch = string.lower(arg1)
 			if ch == "q" then
 				finished = true
+			elseif ch == "d" then
+				debugMode = not debugMode
+				--print("debugMode ",debugMode)
 			elseif ch == "r" then
 				finished = true
 				os.reboot()
