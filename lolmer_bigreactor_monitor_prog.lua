@@ -233,6 +233,7 @@ config.load = function(path)
 	assert(path ~= nil, "Path can't be nil")
 	local f = fs.open(path, "r")
 	if f ~= nil then
+		printLog("Successfully opened "..path.." for reading EOL")
 		local tab = {}
 		local line = ""
 		local newLine
@@ -281,6 +282,7 @@ config.load = function(path)
 		
 		return tab
 	else
+		printLog("Could NOT opened "..path.." for reading! EOL")
 		return nil
 	end
 end --config.load = function(path)
