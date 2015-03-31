@@ -93,6 +93,7 @@ A simpler Big Reactor control program is available from:
 ChangeLog:
 - 0.3.17
 	- Set monitor scale before checking size fixing Issue #50.
+	- Having a monitor is now optional, closing Issue #46.
 	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz).
 	- Added turbine coil auto dis-/engage thanks to @thetaphi (Nicolas Kratz).
 
@@ -665,8 +666,7 @@ local function findMonitors()
 	monitorList, monitorNames = getDevices("monitor")
 
 	if #monitorList == 0 then
-		printLog("No monitors found!")
-		error("Can't find any monitors!")
+		printLog("No monitors found, continuing headless")
 	else
 		for monitorIndex = 1, #monitorList do
 			local monitor, monitorX, monitorY = nil, nil, nil
