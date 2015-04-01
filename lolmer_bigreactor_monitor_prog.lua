@@ -96,7 +96,7 @@ ChangeLog:
 	- Set monitor scale before checking size fixing Issue #50.
 	- Having a monitor is now optional, closing Issue #46.
 	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz).
-	- Added turbine coil auto dis-/engage thanks to @thetaphi (Nicolas Kratz).
+	- Added turbine coil auto dis-/engage (Issue #51 and #55) thanks to @thetaphi (Nicolas Kratz).
 
 Prior ChangeLogs are posted at https://github.com/sandalle/minecraft_bigreactor_control/releases
 
