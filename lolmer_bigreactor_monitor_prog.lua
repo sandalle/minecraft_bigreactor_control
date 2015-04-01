@@ -1906,7 +1906,6 @@ function main()
 		local reactor = nil
 		local monitorIndex = 1
 		local sd = 0
-		local activeReactorCount = 0
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
