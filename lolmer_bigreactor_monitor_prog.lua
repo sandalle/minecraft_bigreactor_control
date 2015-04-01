@@ -130,8 +130,8 @@ local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
 local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
 local knowlinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
-local steamRequested = 0 -- Sum of Turbine Flow Rate in % of (number of turbines) * 2000mB
-local steamDelivered = 0 -- Sum of Active Reactor steam output in % (number of reactors) * 2000mB
+local steamRequested = 0 -- Sum of Turbine Flow Rate in mB
+local steamDelivered = 0 -- Sum of Active Reactor steam output in mB
 
 term.clear()
 term.setCursorPos(2,1)
@@ -1782,9 +1782,18 @@ local function flowRateControl(turbineIndex)
 
 			local currentStoredEnergyPercent = getTurbineStoredEnergyBufferPercent(turbine)
 			if (currentStoredEnergyPercent >= maxStoredEnergyPercent) then
-				printLog("turbine["..turbineIndex.."]: Disengaging coils, energy buffer full.")
-				newFlowRate = 0
-				coilsEngaged = false
+				if (coilsEngaged) then
+					printLog("turbine["..turbineIndex.."]: Disengaging coils, energy buffer at "..currentStoredEnergyPercent.." (>="..maxStoredEnergyPercent..").")
+					newFlowRate = 0
+					coilsEngaged = false
+				end
+			elseif (currentStoredEnergyPercent < minStoredEnergyPercent) then
+				if (not coilsEngaged) then
+					printLog("turbine["..turbineIndex.."]: Engaging coils, energy buffer at "..currentStoredEnergyPercent.." (<"..minStoredEnergyPercent..").")
+					-- set flow rate to what's probably the max load flow for the desired RPM
+					newFlowRate = 2000 / (1817 / turbineBaseSpeed)
+					coilsEngaged = true
+				end
 			end
 
 			-- Going to control the turbine based on target RPM since changing the target flow rate bypasses this function
@@ -1794,7 +1803,7 @@ local function flowRateControl(turbineIndex)
 				local diffSpeed = rotorSpeed - lastTurbineSpeed
 				local diffBaseSpeed = turbineBaseSpeed - rotorSpeed
 				if (diffSpeed > 0) then 
-					if (diffBaseSpeed > turbineBaseSpeed * 0.10) then
+					if (diffBaseSpeed > turbineBaseSpeed * 0.05) then
 						-- let's speed this up. DOUBLE TIME!
 						coilsEngaged = false
 						printLog("COILS DISENGAGED")
@@ -1824,8 +1833,6 @@ local function flowRateControl(turbineIndex)
 			else
 				--we're above commanded turbine speed
 				printLog("ABOVE COMMANDED SPEED")
-				-- With coils engaged, we have no chance of slowing. More importantly, this stops DOUBLE TIME.
-				coilsEngaged = true
 				if (rotorSpeed < lastTurbineSpeed) then
 				--we're decreasing, let it level off
 				--also bypasses first control pass on startup
@@ -1840,6 +1847,8 @@ local function flowRateControl(turbineIndex)
 						newFlowRate = flowRate - flowAdjustment
 						printLog("Light Kick: new flow rate is "..newFlowRate.." mB/t and flowAdjustment was "..flowAdjustment.." EOL")
 					end
+					-- With coils disengaged, we have no chance of slowing. More importantly, this stops DOUBLE TIME.
+					coilsEngaged = true
 				else
 					--we've stagnated, kick it.
 					flowAdjustment = (lastTurbineSpeed - turbineBaseSpeed)
@@ -1971,7 +1980,7 @@ function main()
 
 				-- Collect steam production data
 				if reactor.isActivelyCooled() then
-					sd = sd + reactor.getEnergyProducedLastTick()
+					sd = sd + reactor.getHotFluidProducedLastTick()
 				end
 			else
 				printLog("reactor["..reactorIndex.."] is NOT connected.")
@@ -1979,9 +1988,9 @@ function main()
 		end -- for reactorIndex = 1, #reactorList do
 
 		-- Now that temperatureControl() had a chance to use it, reset/calculate steam data for next iteration
-		printLog("Steam requested: "..steamRequested.."% capacity")
-		printLog("Steam delivered: "..steamDelivered.."% capacity")
-		steamDelivered = math.ceil(100*sd/(2000*#reactorList))
+		printLog("Steam requested: "..steamRequested.." mB")
+		printLog("Steam delivered: "..steamDelivered.." mB")
+		steamDelivered = sd
 		steamRequested = 0
 
 		-- Monitors for turbines start after turbineMonitorOffset
@@ -2028,8 +2037,7 @@ function main()
 
 				-- Collect steam consumption data
 				if turbine.getActive() then
-					local sr = math.ceil(100*(turbine.getFluidFlowRateMax()/2000)/#turbineList)
-					steamRequested = steamRequested + sr
+					steamRequested = steamRequested + turbine.getFluidFlowRateMax()
 				end
 			else
 				printLog("turbine["..turbineIndex.."] is NOT connected.")
