@@ -1897,7 +1897,6 @@ function main()
 		local reactor = nil
 		local monitorIndex = 1
 		local sd = 0
-		local activeReactorCount = 0
 
 		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
 		-- or for multiple reactors/turbines and only one monitor
@@ -1973,7 +1972,6 @@ function main()
 				-- Collect steam production data
 				if reactor.isActivelyCooled() then
 					sd = sd + reactor.getEnergyProducedLastTick()
-					activeReactorCount = activeReactorCount + 1
 				end
 			else
 				printLog("reactor["..reactorIndex.."] is NOT connected.")
@@ -1983,7 +1981,7 @@ function main()
 		-- Now that temperatureControl() had a chance to use it, reset/calculate steam data for next iteration
 		printLog("Steam requested: "..steamRequested.."% capacity")
 		printLog("Steam delivered: "..steamDelivered.."% capacity")
-		steamDelivered = math.ceil(100*sd/(2000*activeReactorCount))
+		steamDelivered = math.ceil(100*sd/(2000*#reactorList))
 		steamRequested = 0
 
 		-- Monitors for turbines start after turbineMonitorOffset
