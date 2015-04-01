@@ -156,7 +156,7 @@ local function termRestore()
 	ccVersion = os.version()
 
 	if ccVersion == "CraftOS 1.6" or "CraftOS 1.7" then
-		term.native()
+		term.redirect(term.native())
 	elseif ccVersion == "CraftOS 1.5" then
 		term.restore()
 	else -- Default to older term.restore
