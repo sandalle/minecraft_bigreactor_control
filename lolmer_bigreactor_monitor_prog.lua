@@ -3,7 +3,7 @@ Program name: Lolmer's EZ-NUKE reactor control system
 Version: v0.3.17
 Programmer: Lolmer
 Great assistance by Mechaet
-Last update: 2015-03-29
+Last update: 2015-04-01
 Pastebin: http://pastebin.com/fguScPBQ
 GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
