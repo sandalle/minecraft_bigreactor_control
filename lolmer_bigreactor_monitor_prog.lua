@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.17
+Version: v0.3.17-ta
 Programmer: Lolmer
 Great assistance by Mechaet
 Last update: 2015-04-01
@@ -43,7 +43,9 @@ Features:
 	A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
 GUI Usage:
-	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
+	The second line of a monitor "< ---------------- >" lets you control what the monitor displays. Clicking "<" and ">" switches between machines of the same type,
+	while clicking between them switches between Reactors, Turbines and Status.
+	The other "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
 		"mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
 		"RPM" will lower/raise the target Turbine RPM for that Turbine
@@ -112,7 +114,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.17"
+local progVer = "0.3.17-ta"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
