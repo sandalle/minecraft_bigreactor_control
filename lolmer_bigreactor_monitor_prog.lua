@@ -128,7 +128,8 @@ local reactorList = {} -- Empty reactor array
 local reactorNames = {} -- Empty array of reactor names
 local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
-local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
+local monitorAssignments = {} -- Empty array of monitor - "what to display" assignments
+local monitorOptionFileName = "monitors.options" -- File for saving the monitor assignments
 local knowlinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
 local steamRequested = 0 -- Sum of Turbine Flow Rate in mB
 local steamDelivered = 0 -- Sum of Active Reactor steam output in mB
@@ -167,13 +168,16 @@ end -- function termRestore()
 
 local function printLog(printStr)
 	if debugMode then
-		-- If multiple monitors, use the last monitor for debugging if debug is enabled
-		if #monitorList > 1 then
-			term.redirect(monitorList[#monitorList]) -- Redirect to last monitor for debugging
-			monitorList[#monitorList].setTextScale(0.5) -- Fit more logs on screen
-			write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
-			termRestore()
-		end -- if #monitorList > 1 then
+		-- If multiple monitors, print to all of them
+		for monitorName, deviceData in pairs(monitorAssignments) do
+			if deviceData.type == "Debug" then
+				debugMonitor = monitorList[deviceData.index]
+				term.redirect(debugMonitor) -- Redirect to selected monitor
+				debugMonitor.setTextScale(0.5) -- Fit more logs on screen
+				write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
+				termRestore()
+			end
+		end -- for 
 
 		local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
 		if logFile then
@@ -347,7 +351,7 @@ local function printCentered(printString, yPos, monitorIndex)
 		monitorNameLength = monitorNames[monitorIndex]:len()
 
 		-- Leave room for "offline" and "online" on the right except for overall status display
-		if (#monitorList ~= 1) and (monitorIndex ~= 1) then
+		if monitorAssignments[monitorNames[monitorIndex]].type ~= "Status" then
 			width = width - 7
 		end
 	end
@@ -531,6 +535,85 @@ local function drawPixel(xPos, yPos, color, monitorIndex)
 	termRestore()
 end -- function drawPixel(xPos, yPos, color, monitorIndex)
 
+local function saveMonitorAssignments()
+	local assignments = {}
+	for monitor, data in pairs(monitorAssignments) do
+		local name = nil
+		if (data.type == "Reactor") then
+			name = data.reactorName
+		elseif (data.type == "Turbine") then
+			name = data.turbineName
+		else
+			name = data.type
+		end
+		assignments[monitor] = name
+	end
+	config.save(monitorOptionFileName, {Monitors = assignments})
+end
+
+UI = {
+	monitorIndex = 1,
+	reactorIndex = 1,
+	turbineIndex = 1
+}
+
+UI.selectNextMonitor = function(self)
+	self.monitorIndex = self.monitorIndex + 1
+	if self.monitorIndex > #monitorList then
+		self.monitorIndex = 1
+	end
+	local messageText = "Selected monitor "..monitorNames[self.monitorIndex].."\n"
+	printLog("UI: "..messageText)
+	termRestore()
+	write(messageText)
+end -- UI.selectNextMonitor()
+
+UI.selectNextReactor = function(self)
+	self.reactorIndex = self.reactorIndex + 1
+	if self.reactorIndex > #reactorList then
+		self.reactorIndex = 1
+	end
+	
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Reactor", index=self.monitorIndex, reactorName=reactorNames[self.reactorIndex], reactorIndex=self.reactorIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected reactor "..reactorNames[self.reactorIndex].." for display on "..monitorNames[self.monitorIndex]
+	printLog("UI: "..messageText)
+	termRestore()
+	write(messageText)
+end -- UI.selectNextReactor()
+	
+UI.selectNextTurbine = function(self)
+	self.turbineIndex = self.turbineIndex + 1
+	if self.turbineIndex > #turbineList then
+		self.turbineIndex = 1
+	end
+	
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Turbine", index=self.monitorIndex, turbineName=turbineNames[self.turbineIndex], turbineIndex=self.turbineIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected turbine "..turbineNames[self.turbineIndex].." for display on "..monitorNames[self.monitorIndex]
+	printLog("UI: "..messageText)
+	termRestore()
+	write(messageText)
+end -- UI.selectNextTurbine()
+	
+UI.selectStatus = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Status", index=self.monitorIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected status summary for display on "..monitorNames[self.monitorIndex]
+	printLog("UI: "..messageText)
+	termRestore()
+	write(messageText)
+end -- UI.selectStatus()
+	
+UI.selectDebug = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Debug", index=self.monitorIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected status summary for display on "..monitorNames[self.monitorIndex]
+	printLog("UI: "..messageText)
+	termRestore()
+	write(messageText)
+end -- UI.selectStatus()
+	
 
 -- End helper functions
 
@@ -736,12 +819,7 @@ local function findReactors()
 	-- Overwrite old reactor list with the now updated list
 	reactorList = newReactorList
 
-	-- Start turbine monitor offset after reactors get monitors
-	-- This assumes that there is a monitor for each turbine and reactor, plus the overall monitor display
-	turbineMonitorOffset = #reactorList + 1 -- #turbineList will start at "1" if turbines found and move us just beyond #reactorList and status monitor range
-
 	printLog("Found "..#reactorList.." reactor(s) in findReactors().")
-	printLog("Set turbineMonitorOffset to "..turbineMonitorOffset.." in findReactors().")
 end -- function findReactors()
 
 
@@ -834,6 +912,99 @@ local function findTurbines()
 
 	printLog("Found "..#turbineList.." turbine(s) in findTurbines().")
 end -- function findTurbines()
+
+
+local function tprint (tbl, indent)
+  if not indent then indent = 0 end
+  for k, v in pairs(tbl) do
+    formatting = string.rep("  ", indent) .. k .. ": "
+    if type(v) == "table" then
+      printLog(formatting)
+      tprint(v, indent+1)
+    elseif type(v) == 'boolean' then
+      printLog(formatting .. tostring(v))      
+    else
+      printLog(formatting .. v)
+    end
+  end
+end
+
+-- Assign status, reactors, turbines and debug output to the monitors that shall display them
+-- Depends on the [monitor,reactor,turbine]Lists being populated already
+local function assignMonitors()
+
+	monitorAssignments = {}
+
+	printLog("Assigning monitors...")
+
+	local m = config.load(monitorOptionFileName) 
+	if (m ~= nil) then
+		for monitorName, assignedName in pairs(m.Monitors) do
+			printLog("Looking for monitor and device named "..monitorName.." and "..assignedName)
+			for monitorIndex = 1, #monitorNames do
+				-- printLog("if "..monitorName.." == "..monitorNames[monitorIndex].." then")
+				
+				if monitorName == monitorNames[monitorIndex] then
+					-- printLog("Found "..monitorName.." at index "..monitorIndex)
+					if assignedName == "Status" then
+						monitorAssignments[monitorName] = {type="Status", index=monitorIndex}
+					elseif assignedName == "Debug" then
+						monitorAssignments[monitorName] = {type="Debug", index=monitorIndex}
+					else
+						local maxListLen = math.max(#reactorNames, #turbineNames)
+						for i = 1, maxListLen do
+							if assignedName == reactorNames[i] then
+								monitorAssignments[monitorName] = {type="Reactor", index=monitorIndex, reactorName=reactorNames[i], reactorIndex=i}
+								break
+							elseif assignedName == turbineNames[i] then
+								monitorAssignments[monitorName] = {type="Turbine", index=monitorIndex, turbineName=turbineNames[i], turbineIndex=i}
+								break
+							elseif i == maxListLen then
+								printLog("assignMonitors(): Monitor "..monitorName.." is configured to display nonexistant device "..assignedName)
+							end
+						end
+					end
+					break
+				elseif monitorIndex == #monitorNames then
+					printLog("assignMonitors(): Monitor "..monitorName.." not found. It is configured to display device "..assignedName)
+				end
+			end
+		end
+	else
+		printLog("No valid monitor configuration found, generating...")
+
+		-- create assignments that reflect the setup before 0.3.17
+		local monitorIndex = 1
+		monitorAssignments[monitorNames[1]] = {type="Status", index=1}
+		monitorIndex = monitorIndex + 1
+		for reactorIndex = 1, #reactorList do
+			if monitorIndex > #monitorList then
+				break
+			end
+			monitorAssignments[monitorNames[monitorIndex]] = {type="Reactor", index=monitorIndex, reactorName=reactorNames[reactorIndex], reactorIndex=reactorIndex}
+			printLog(monitorNames[monitorIndex].." -> "..reactorNames[reactorIndex])
+
+			monitorIndex = monitorIndex + 1
+		end
+		for turbineIndex = 1, #turbineList do
+			if monitorIndex > #monitorList then
+				break
+			end
+			monitorAssignments[monitorNames[monitorIndex]] = {type="Turbine", index=monitorIndex, turbineName=turbineNames[turbineIndex], turbineIndex=turbineIndex}
+			printLog(monitorNames[monitorIndex].." -> "..turbineNames[turbineIndex])
+
+			monitorIndex = monitorIndex + 1
+		end
+		if monitorIndex <= #monitorList then
+			monitorAssignments[monitorNames[#monitorList]] = {type="Debug", index=#monitorList}
+		end
+	end
+
+	tprint(monitorAssignments)
+
+	saveMonitorAssignments()
+
+end -- function assignMonitors()
 
 
 -- Return current energy buffer in a specific reactor by %
@@ -1369,9 +1540,9 @@ local function reactorStatus(statusParams)
 end -- function reactorStatus(statusParams)
 
 
--- Display all found reactors' status to monitor 1
+-- Display all found reactors' status to selected monitor
 -- This is only called if multiple reactors and/or a reactor plus at least one turbine are found
-local function displayAllStatus()
+local function displayAllStatus(monitorIndex)
 	local reactor, turbine = nil, nil
 	local onlineReactor, onlineTurbine = 0, 0
 	local totalReactorRF, totalReactorSteam, totalTurbineRF = 0, 0, 0
@@ -1380,8 +1551,7 @@ local function displayAllStatus()
 	local maxSteamStored = (2000*#turbineList)+(5000*#reactorList)
 	local maxCoolantStored = (2000*#turbineList)+(5000*#reactorList)
 
-	local monitor, monitorIndex = nil, 1
-	monitor = monitorList[monitorIndex]
+	local monitor = monitorList[monitorIndex]
 	if not monitor then
 		printLog("monitor["..monitorIndex.."] in displayAllStatus() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
@@ -1892,6 +2062,26 @@ local function flowRateControl(turbineIndex)
 end -- function flowRateControl(turbineIndex)
 
 
+local function helpText()
+
+	-- these keys are actually defined in eventHandler(), check there
+	return [[Keyboard commands:
+			m	Select next monitor
+			c	Make selected monitor display next reactor
+			t	Make selected monitor display next turbine
+			s	Make selected monitor display global status
+			x	Make selected monitor display debug information
+
+			d	Toggle debug mode
+
+			q	Quit
+			r	Quit and reboot
+			h	Print this help
+]]
+
+end -- function helpText()
+
+
 function main()
 	-- Load reactor parameters and initialize systems
 	loadReactorOptions()
@@ -1901,35 +2091,94 @@ function main()
 	findMonitors()
 	findReactors()
 	findTurbines()
+	assignMonitors()
+
+	write(helpText())
 
 	while not finished do
 		local reactor = nil
-		local monitorIndex = 1
 		local sd = 0
 
-		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
-		-- or for multiple reactors/turbines and only one monitor
-		if ( ( ((#reactorList + #turbineList) > 1) and (#monitorList >= 1) )   or
-		     ( ((#reactorList + #turbineList) >=1) and (#monitorList >  1) ) ) then
+		-- Display overall status on selected monitors
+		for monitorName, deviceData in pairs(monitorAssignments) do
 			local monitor = nil
+			local monitorIndex = deviceData.index
+			local monitorType =  deviceData.type
 			monitor = monitorList[monitorIndex]
-			if not monitor then
-				printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor.")
-				return -- Invalid monitorIndex
+
+			printLog("main(): Trying to display "..monitorType.." on "..monitorNames[monitorIndex].."["..monitorIndex.."]")
+
+			if #monitorList < (#reactorList + #turbineList + 1) then
+				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
 			end
 
-			clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
-			printCentered(progName.." "..progVer, 1, monitorIndex)
-			displayAllStatus()
-			monitorIndex = 2 -- Next monitor, #1 is reserved for overall status
+			if not monitor then
+
+				printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor.")
+
+			elseif monitorType == "Status" then
+
+				-- General status display
+				clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
+				printCentered(progName.." "..progVer, 1, monitorIndex)
+				displayAllStatus(monitorIndex)
+
+			elseif monitorType == "Reactor" then
+
+				-- Reactor display
+				local reactorMonitorIndex = monitorIndex
+				for reactorIndex = 1, #reactorList do
+
+					if deviceData.reactorName == reactorNames[reactorIndex] then
+
+						-- printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..monitorIndex.."]...")
+						-- Only attempt to assign a monitor if we have a monitor for this reactor
+						if (reactorMonitorIndex <= #monitorList) then
+							printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
+
+							clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
+							printCentered(progName, 1, reactorMonitorIndex)
+
+							-- Display reactor status, includes "Disconnected" but found reactors
+							reactorStatus{reactorIndex, reactorMonitorIndex}
+
+							-- Draw the borders and bars for the current reactor on the current monitor
+							displayReactorBars{reactorIndex, reactorMonitorIndex}
+						end
+
+					end -- if deviceData.reactorName == reactorNames[reactorIndex] then
+
+				end -- for reactorIndex = 1, #reactorList do
+
+			elseif monitorType == "Turbine" then
+
+				-- Turbine display
+				local turbineMonitorIndex = monitorIndex
+				for turbineIndex = 1, #turbineList do
+
+					if deviceData.turbineName == turbineNames[turbineIndex] then
+						-- printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...")
+						-- Only attempt to assign a monitor if we have a monitor for this turbine
+						if (turbineMonitorIndex <= #monitorList) then
+							printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
+							clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
+							printCentered(progName, 1, turbineMonitorIndex)
+
+							-- Display turbine status, includes "Disconnected" but found turbines
+							turbineStatus(turbineIndex, turbineMonitorIndex)
+
+							-- Draw the borders and bars for the current turbine on the current monitor
+							displayTurbineBars(turbineIndex, turbineMonitorIndex)
+						end
+					end
+				end
+
+			end -- if monitorType == [...]
 		end
 
-		-- Iterate through reactors, continue to run even if not enough monitors are connected
+		-- Iterate through reactors
 		for reactorIndex = 1, #reactorList do
 			local monitor = nil
-			local reactorMonitorIndex = monitorIndex + reactorIndex - 1 -- reactorIndex starts at 1
-
-			printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."]...")
 
 			reactor = reactorList[reactorIndex]
 			if not reactor then
@@ -1938,27 +2187,6 @@ function main()
 			else
 				printLog("reactor["..reactorIndex.."] in main() is a valid Big Reactor.")
 			end --  if not reactor then
-
-			-- Only attempt to assign a monitor if we have a monitor for this reactor
-			if (reactorMonitorIndex <= #monitorList) then
-				printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
-				monitor = monitorList[reactorMonitorIndex]
-
-				if not monitor then
-					printLog("monitor["..reactorMonitorIndex.."] in main() is NOT a valid monitor.")
-				else
-					clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
-					printCentered(progName, 1, reactorMonitorIndex)
-
-					-- Display reactor status, includes "Disconnected" but found reactors
-					reactorStatus{reactorIndex, reactorMonitorIndex}
-
-					-- Draw the borders and bars for the current reactor on the current monitor
-					displayReactorBars{reactorIndex, reactorMonitorIndex}
-				end -- if not monitor
-			else
-				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
-			end -- if (#monitorList ~= 1) and (reactorMonitorIndex < #monitorList) then
 
 			if reactor.getConnected() then
 				printLog("reactor["..reactorIndex.."] is connected.")
@@ -1993,32 +2221,8 @@ function main()
 		steamDelivered = sd
 		steamRequested = 0
 
-		-- Monitors for turbines start after turbineMonitorOffset
+		-- Turbine control
 		for turbineIndex = 1, #turbineList do
-			local monitor = nil
-			local turbineMonitorIndex = turbineIndex + turbineMonitorOffset
-
-			printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...")
-
-			-- Only attempt to assign a monitor if we found a monitor for this turbine
-			if (turbineMonitorIndex <= #monitorList) then
-				printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
-				monitor = monitorList[turbineMonitorIndex]
-				if not monitor then
-					printLog("monitor["..turbineMonitorIndex.."] in main() is NOT a valid monitor.")
-				else
-					clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
-					printCentered(progName, 1, turbineMonitorIndex)
-
-					-- Display turbine status, includes "Disconnected" but found turbines
-					turbineStatus(turbineIndex, turbineMonitorIndex)
-
-					-- Draw the borders and bars for the current turbine on the current monitor
-					displayTurbineBars(turbineIndex, turbineMonitorIndex)
-				end -- if not monitor
-			else
-				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
-			end -- if (#monitorList ~= 1) and (turbineMonitorIndex < #monitorList) then
 
 			turbine = turbineList[turbineIndex]
 			if not turbine then
@@ -2061,14 +2265,34 @@ local function eventHandler()
 			printLog("Side: "..arg1.." Monitor touch X: "..xClick.." Y: "..yClick)
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
+			-- remember to update helpText() when you edit these
 			if ch == "q" then
 				finished = true
 			elseif ch == "d" then
 				debugMode = not debugMode
-				--print("debugMode ",debugMode)
+				local modeText
+				if debugMode then
+					modeText = "on"
+				else
+					modeText = "off"
+				end
+				termRestore()
+				write("debugMode "..modeText.."\n")
+			elseif ch == "m" then
+				UI:selectNextMonitor()
+			elseif ch == "c" then
+				UI:selectNextReactor()
+			elseif ch == "t" then
+				UI:selectNextTurbine()
+			elseif ch == "s" then
+				UI:selectStatus()
+			elseif ch == "x" then
+				UI:selectDebug()
 			elseif ch == "r" then
 				finished = true
 				os.reboot()
+			elseif ch == "h" then
+				write(helpText())
 			end -- if ch == "q" then
 		end -- if event == "monitor_touch" then
 	end -- while not finished do
