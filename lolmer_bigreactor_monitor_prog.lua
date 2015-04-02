@@ -134,6 +134,12 @@ local knowlinglyOverride = false -- Issue #39 Allow the user to override safe va
 local steamRequested = 0 -- Sum of Turbine Flow Rate in mB
 local steamDelivered = 0 -- Sum of Active Reactor steam output in mB
 
+-- Log levels
+local FATAL = 8
+local ERROR = 4
+local WARN = 2
+local INFO = 1
+
 term.clear()
 term.setCursorPos(2,1)
 write("Initializing program...\n")
@@ -166,8 +172,11 @@ local function termRestore()
 	end -- if ccVersion
 end -- function termRestore()
 
-local function printLog(printStr)
-	if debugMode then
+local function printLog(printStr, logLevel)
+	logLevel = logLevel or INFO
+	-- No, I'm not going to write full syslog style levels. But this makes it a little easier filtering and finding stuff in the logfile.
+	-- Since you're already looking at it, you can adjust your preferred log level right here.
+	if debugMode and (logLevel >= INFO) then
 		-- If multiple monitors, print to all of them
 		for monitorName, deviceData in pairs(monitorAssignments) do
 			if deviceData.type == "Debug" then
@@ -557,62 +566,121 @@ UI = {
 	turbineIndex = 1
 }
 
+UI.handlePossibleClick = function(self)
+	-- All the second line are belong to us
+	if (yClick == 2) then
+		local monitorData = monitorAssignments[sideClick]
+		if monitorData == nil then
+			printLog("UI.handlePossibleClick(): "..sideClick.." is unassigned, can't handle click", ERROR)
+			return
+		end
+
+		self.monitorIndex = monitorData.index
+		local width, height = monitorList[self.monitorIndex].getSize()
+		if (monitorData.type == "Reactor") then
+			if (xClick == 1) then
+				self:selectPrevReactor()
+			elseif (xClick == width) then
+				self:selectNextReactor()
+			elseif (2 <= xClick and xClick <= width - 2) then
+				self:selectTurbine()
+			end
+		elseif (monitorData.type == "Turbine") then
+			if (xClick == 1) then
+				self:selectPrevTurbine()
+			elseif (xClick == width) then
+				self:selectNextTurbine()
+			elseif (2 <= xClick and xClick <= width - 2) then
+				self:selectStatus()
+			end
+		elseif (monitorData.type == "Status") then
+			self:selectReactor()
+		end
+		-- Yes, that means we're skipping Debug. I figure everyone who wants that is
+		-- bound to use the console key commands anyway, and that way we don't have
+		-- it interfere with regular use.
+
+		sideClick, xClick, yClick = 0, 0, 0
+	end
+end -- UI.handlePossibleClick()
+
+UI.logChange = function(self, messageText)
+	printLog("UI: "..messageText)
+	termRestore()
+	write(messageText.."\n")
+end
+
 UI.selectNextMonitor = function(self)
 	self.monitorIndex = self.monitorIndex + 1
 	if self.monitorIndex > #monitorList then
 		self.monitorIndex = 1
 	end
-	local messageText = "Selected monitor "..monitorNames[self.monitorIndex].."\n"
-	printLog("UI: "..messageText)
-	termRestore()
-	write(messageText)
+	local messageText = "Selected monitor "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
 end -- UI.selectNextMonitor()
+
+	
+UI.selectReactor = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Reactor", index=self.monitorIndex, reactorName=reactorNames[self.reactorIndex], reactorIndex=self.reactorIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected reactor "..reactorNames[self.reactorIndex].." for display on "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectReactor()
+	
+UI.selectPrevReactor = function(self)
+	self.reactorIndex = self.reactorIndex - 1
+	if self.reactorIndex < 1 then
+		self.reactorIndex = #reactorList
+	end
+	self:selectReactor()
+end -- UI.selectPrevReactor()
 
 UI.selectNextReactor = function(self)
 	self.reactorIndex = self.reactorIndex + 1
 	if self.reactorIndex > #reactorList then
 		self.reactorIndex = 1
 	end
-	
-	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Reactor", index=self.monitorIndex, reactorName=reactorNames[self.reactorIndex], reactorIndex=self.reactorIndex}
-	saveMonitorAssignments()
-	local messageText = "Selected reactor "..reactorNames[self.reactorIndex].." for display on "..monitorNames[self.monitorIndex]
-	printLog("UI: "..messageText)
-	termRestore()
-	write(messageText)
+	self:selectReactor()
 end -- UI.selectNextReactor()
+
+
+UI.selectTurbine = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Turbine", index=self.monitorIndex, turbineName=turbineNames[self.turbineIndex], turbineIndex=self.turbineIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected turbine "..turbineNames[self.turbineIndex].." for display on "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectTurbine()
+	
+UI.selectPrevTurbine = function(self)
+	self.turbineIndex = self.turbineIndex - 1
+	if self.turbineIndex < 1 then
+		self.turbineIndex = #turbineList
+	end
+	self:selectTurbine()
+end -- UI.selectPrevTurbine()
 	
 UI.selectNextTurbine = function(self)
 	self.turbineIndex = self.turbineIndex + 1
 	if self.turbineIndex > #turbineList then
 		self.turbineIndex = 1
 	end
-	
-	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Turbine", index=self.monitorIndex, turbineName=turbineNames[self.turbineIndex], turbineIndex=self.turbineIndex}
-	saveMonitorAssignments()
-	local messageText = "Selected turbine "..turbineNames[self.turbineIndex].." for display on "..monitorNames[self.monitorIndex]
-	printLog("UI: "..messageText)
-	termRestore()
-	write(messageText)
+	self:selectTurbine()
 end -- UI.selectNextTurbine()
 	
+
 UI.selectStatus = function(self)
 	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Status", index=self.monitorIndex}
 	saveMonitorAssignments()
 	local messageText = "Selected status summary for display on "..monitorNames[self.monitorIndex]
-	printLog("UI: "..messageText)
-	termRestore()
-	write(messageText)
+	self:logChange(messageText)
 end -- UI.selectStatus()
 	
 UI.selectDebug = function(self)
 	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Debug", index=self.monitorIndex}
 	saveMonitorAssignments()
-	local messageText = "Selected status summary for display on "..monitorNames[self.monitorIndex]
-	printLog("UI: "..messageText)
-	termRestore()
-	write(messageText)
-end -- UI.selectStatus()
+	local messageText = "Selected debug output for display on "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectDebug()
 	
 
 -- End helper functions
@@ -1326,8 +1394,11 @@ local function displayReactorBars(barParams)
 		monitor.write("|")
 	end
 
-	drawLine(2, monitorIndex)
 	drawLine(6, monitorIndex)
+	monitor.setCursorPos(1, 2)
+	monitor.write("< ")
+	monitor.setCursorPos(width-1, 2)
+	monitor.write(" >")
 
 	-- Draw some text
 	local fuelString = "Fuel: "
@@ -1685,8 +1756,11 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		monitor.write("|")
 	end
 
-	drawLine(2,monitorIndex)
 	drawLine(7,monitorIndex)
+	monitor.setCursorPos(1, 2)
+	monitor.write("< ")
+	monitor.setCursorPos(width-1, 2)
+	monitor.write(" >")
 
 	-- Allow controlling Turbine Flow Rate from GUI
 	-- Decrease flow rate button: 22X, 4Y
@@ -2263,6 +2337,7 @@ local function eventHandler()
 		if event == "monitor_touch" then
 			sideClick, xClick, yClick = arg1, math.floor(arg2), math.floor(arg3)
 			printLog("Side: "..arg1.." Monitor touch X: "..xClick.." Y: "..yClick)
+			UI:handlePossibleClick()
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
 			-- remember to update helpText() when you edit these
