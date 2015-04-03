@@ -378,7 +378,7 @@ local function printCentered(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printCentered() is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printCentered() is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -413,7 +413,7 @@ local function printLeft(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printLeft() is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printLeft() is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -440,7 +440,7 @@ local function printRight(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printRight() is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printRight() is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -470,7 +470,7 @@ local function clearMonitor(printString, monitorIndex)
 	printLog("Called as clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..").")
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..") is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -602,7 +602,7 @@ UI.handlePossibleClick = function(self)
 	if (yClick == 2) then
 		local monitorData = monitorAssignments[sideClick]
 		if monitorData == nil then
-			printLog("UI.handlePossibleClick(): "..sideClick.." is unassigned, can't handle click", ERROR)
+			printLog("UI.handlePossibleClick(): "..sideClick.." is unassigned, can't handle click", WARN)
 			return
 		end
 
@@ -1022,6 +1022,7 @@ local function assignMonitors()
 	monitorAssignments = {}
 
 	printLog("Assigning monitors...")
+	tprint(getfenv())
 
 	local m = config.load(monitorOptionFileName) 
 	if (m ~= nil) then
@@ -2207,15 +2208,18 @@ function main()
 			local monitorType =  deviceData.type
 			monitor = monitorList[monitorIndex]
 
-			printLog("main(): Trying to display "..monitorType.." on "..monitorNames[monitorIndex].."["..monitorIndex.."]")
+			printLog("main(): Trying to display "..monitorType.." on "..monitorNames[monitorIndex].."["..monitorIndex.."]", DEBUG)
 
 			if #monitorList < (#reactorList + #turbineList + 1) then
 				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
 			end
 
-			if not monitor then
+			if (not monitor) or (not monitor.getSize()) then
 
-				printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor.")
+				printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor, discarding", ERROR)
+				monitorAssignments[monitorName] = nil
+				-- we need to get out of the for loop now, or it will dereference x.next (where x is the element we just killed) and crash
+				break
 
 			elseif monitorType == "Status" then
 
@@ -2232,7 +2236,7 @@ function main()
 
 					if deviceData.reactorName == reactorNames[reactorIndex] then
 
-						-- printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..monitorIndex.."]...")
+						printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..monitorIndex.."]...", DEBUG)
 						-- Only attempt to assign a monitor if we have a monitor for this reactor
 						if (reactorMonitorIndex <= #monitorList) then
 							printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
@@ -2258,7 +2262,7 @@ function main()
 				for turbineIndex = 1, #turbineList do
 
 					if deviceData.turbineName == turbineNames[turbineIndex] then
-						-- printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...")
+						printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...", DEBUG)
 						-- Only attempt to assign a monitor if we have a monitor for this turbine
 						if (turbineMonitorIndex <= #monitorList) then
 							printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
