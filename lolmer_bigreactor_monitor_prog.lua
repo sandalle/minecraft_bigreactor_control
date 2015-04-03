@@ -137,10 +137,11 @@ local steamRequested = 0 -- Sum of Turbine Flow Rate in mB
 local steamDelivered = 0 -- Sum of Active Reactor steam output in mB
 
 -- Log levels
-local FATAL = 8
-local ERROR = 4
-local WARN = 2
-local INFO = 1
+local FATAL = 16
+local ERROR = 8
+local WARN = 4
+local INFO = 2
+local DEBUG = 1
 
 term.clear()
 term.setCursorPos(2,1)
@@ -178,14 +179,25 @@ local function printLog(printStr, logLevel)
 	logLevel = logLevel or INFO
 	-- No, I'm not going to write full syslog style levels. But this makes it a little easier filtering and finding stuff in the logfile.
 	-- Since you're already looking at it, you can adjust your preferred log level right here.
-	if debugMode and (logLevel >= INFO) then
+	if debugMode and (logLevel >= WARN) then
 		-- If multiple monitors, print to all of them
 		for monitorName, deviceData in pairs(monitorAssignments) do
 			if deviceData.type == "Debug" then
 				debugMonitor = monitorList[deviceData.index]
 				term.redirect(debugMonitor) -- Redirect to selected monitor
 				debugMonitor.setTextScale(0.5) -- Fit more logs on screen
+				local color = colors.lightGray
+				if (logLevel == WARN) then
+					color = colors.white
+				elseif (logLevel == ERROR) then
+					color = colors.red
+				elseif (logLevel == FATAL) then
+					color = colors.black
+					debugMonitor.setBackgroundColor(colors.red)
+				end
+				debugMonitor.setTextColor(color)
 				write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
+				debugMonitor.setBackgroundColor(colors.black)
 				termRestore()
 			end
 		end -- for 
@@ -205,6 +217,23 @@ function stringTrim(s)
 	assert(s ~= nil, "String can't be nil")
 	return(string.gsub(s, "^%s*(.-)%s*$", "%1"))
 end
+
+-- pretty printLog() a table
+local function tprint (tbl, loglevel, indent)
+	if not loglevel then loglevel = DEBUG end
+	if not indent then indent = 0 end
+	for k, v in pairs(tbl) do
+		formatting = string.rep("  ", indent) .. k .. ": "
+		if type(v) == "table" then
+			printLog(formatting, loglevel)
+			tprint(v, loglevel, indent+1)
+		elseif type(v) == 'boolean' or type(v) == "function" then
+			printLog(formatting .. tostring(v), loglevel)      
+		else
+			printLog(formatting .. v, loglevel)
+		end
+	end
+end -- function tprint()
 
 config = {}
 
@@ -597,6 +626,8 @@ UI.handlePossibleClick = function(self)
 			end
 		elseif (monitorData.type == "Status") then
 			self:selectReactor()
+		else
+			self:selectStatus()
 		end
 		-- Yes, that means we're skipping Debug. I figure everyone who wants that is
 		-- bound to use the console key commands anyway, and that way we don't have
@@ -983,33 +1014,24 @@ local function findTurbines()
 	printLog("Found "..#turbineList.." turbine(s) in findTurbines().")
 end -- function findTurbines()
 
-
-local function tprint (tbl, indent)
-  if not indent then indent = 0 end
-  for k, v in pairs(tbl) do
-    formatting = string.rep("  ", indent) .. k .. ": "
-    if type(v) == "table" then
-      printLog(formatting)
-      tprint(v, indent+1)
-    elseif type(v) == 'boolean' then
-      printLog(formatting .. tostring(v))      
-    else
-      printLog(formatting .. v)
-    end
-  end
-end
-
 -- Assign status, reactors, turbines and debug output to the monitors that shall display them
 -- Depends on the [monitor,reactor,turbine]Lists being populated already
 local function assignMonitors()
 
+	local monitors = {}
 	monitorAssignments = {}
 
 	printLog("Assigning monitors...")
 
 	local m = config.load(monitorOptionFileName) 
 	if (m ~= nil) then
-		for monitorName, assignedName in pairs(m.Monitors) do
+		-- first, merge the detected and the configured monitor lists
+		-- this is to ensure we pick up new additions to the network
+		for monitorIndex, monitorName in ipairs(monitorNames) do
+			monitors[monitorName] = m.Monitors[monitorName] or ""
+		end
+		-- then, go through all of it again to build our runtime data structure
+		for monitorName, assignedName in pairs(monitors) do
 			printLog("Looking for monitor and device named "..monitorName.." and "..assignedName)
 			for monitorIndex = 1, #monitorNames do
 				-- printLog("if "..monitorName.." == "..monitorNames[monitorIndex].." then")
@@ -1030,13 +1052,16 @@ local function assignMonitors()
 								monitorAssignments[monitorName] = {type="Turbine", index=monitorIndex, turbineName=turbineNames[i], turbineIndex=i}
 								break
 							elseif i == maxListLen then
-								printLog("assignMonitors(): Monitor "..monitorName.." is configured to display nonexistant device "..assignedName)
+								printLog("assignMonitors(): Monitor "..monitorName.." was configured to display nonexistant device "..assignedName..". Setting inactive.", WARN)
+								monitorAssignments[monitorName] = {type="Inactive", index=monitorIndex}
+							else
+								printLog("", ERROR)
 							end
 						end
 					end
 					break
 				elseif monitorIndex == #monitorNames then
-					printLog("assignMonitors(): Monitor "..monitorName.." not found. It is configured to display device "..assignedName)
+					printLog("assignMonitors(): Monitor "..monitorName.." not found. It was configured to display device "..assignedName..". Discarding.", WARN)
 				end
 			end
 		end
@@ -2248,6 +2273,15 @@ function main()
 						end
 					end
 				end
+
+			elseif monitorType == "Debug" then
+
+				-- do nothing, printLog() outputs to here
+
+			else
+
+				clearMonitor(progName, monitorIndex)
+				print{"Monitor  inactive", 7, 7, monitorIndex}
 
 			end -- if monitorType == [...]
 		end
