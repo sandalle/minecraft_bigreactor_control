@@ -184,21 +184,25 @@ local function printLog(printStr, logLevel)
 		for monitorName, deviceData in pairs(monitorAssignments) do
 			if deviceData.type == "Debug" then
 				debugMonitor = monitorList[deviceData.index]
-				term.redirect(debugMonitor) -- Redirect to selected monitor
-				debugMonitor.setTextScale(0.5) -- Fit more logs on screen
-				local color = colors.lightGray
-				if (logLevel == WARN) then
-					color = colors.white
-				elseif (logLevel == ERROR) then
-					color = colors.red
-				elseif (logLevel == FATAL) then
-					color = colors.black
-					debugMonitor.setBackgroundColor(colors.red)
+				if(not debugMonitor) or (not debugMonitor.getSize()) then
+					term.write("printLog(): debug monitor "..monitorName.." failed")
+				else
+					term.redirect(debugMonitor) -- Redirect to selected monitor
+					debugMonitor.setTextScale(0.5) -- Fit more logs on screen
+					local color = colors.lightGray
+					if (logLevel == WARN) then
+						color = colors.white
+					elseif (logLevel == ERROR) then
+						color = colors.red
+					elseif (logLevel == FATAL) then
+						color = colors.black
+						debugMonitor.setBackgroundColor(colors.red)
+					end
+					debugMonitor.setTextColor(color)
+					write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
+					debugMonitor.setBackgroundColor(colors.black)
+					termRestore()
 				end
-				debugMonitor.setTextColor(color)
-				write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
-				debugMonitor.setBackgroundColor(colors.black)
-				termRestore()
 			end
 		end -- for 
 
@@ -1022,7 +1026,6 @@ local function assignMonitors()
 	monitorAssignments = {}
 
 	printLog("Assigning monitors...")
-	tprint(getfenv())
 
 	local m = config.load(monitorOptionFileName) 
 	if (m ~= nil) then
@@ -1101,6 +1104,23 @@ local function assignMonitors()
 	saveMonitorAssignments()
 
 end -- function assignMonitors()
+
+local eventHandler
+-- Replacement for sleep, which passes on events instead of dropping themo
+-- Straight from http://computercraft.info/wiki/Os.sleep
+local function wait(time)
+	local timer = os.startTimer(time)
+
+	while true do
+		local event = {os.pullEvent()}
+
+		if (event[1] == "timer" and event[2] == timer) then
+			break
+		else
+			eventHandler(event[1], event[2], event[3], event[4])
+		end
+	end
+end
 
 
 -- Return current energy buffer in a specific reactor by %
@@ -2183,112 +2203,121 @@ local function helpText()
 
 end -- function helpText()
 
-
-function main()
-	-- Load reactor parameters and initialize systems
-	loadReactorOptions()
-
-	-- Get our initial list of connected monitors and reactors
-	-- and initialize every cycle in case the connected devices change
+local function initializePeripherals()
+	monitorAssignments = {}
+	-- Get our list of connected monitors and reactors
 	findMonitors()
 	findReactors()
 	findTurbines()
 	assignMonitors()
+end
+
+
+local function updateMonitors()
+
+	-- Display overall status on selected monitors
+	for monitorName, deviceData in pairs(monitorAssignments) do
+		local monitor = nil
+		local monitorIndex = deviceData.index
+		local monitorType =  deviceData.type
+		monitor = monitorList[monitorIndex]
+
+		printLog("main(): Trying to display "..monitorType.." on "..monitorNames[monitorIndex].."["..monitorIndex.."]", DEBUG)
+
+		if #monitorList < (#reactorList + #turbineList + 1) then
+			printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
+		end
+
+		if (not monitor) or (not monitor.getSize()) then
+
+			printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor, discarding", ERROR)
+			monitorAssignments[monitorName] = nil
+			-- we need to get out of the for loop now, or it will dereference x.next (where x is the element we just killed) and crash
+			break
+
+		elseif monitorType == "Status" then
+
+			-- General status display
+			clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
+			printCentered(progName.." "..progVer, 1, monitorIndex)
+			displayAllStatus(monitorIndex)
+
+		elseif monitorType == "Reactor" then
+
+			-- Reactor display
+			local reactorMonitorIndex = monitorIndex
+			for reactorIndex = 1, #reactorList do
+
+				if deviceData.reactorName == reactorNames[reactorIndex] then
+
+					printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..monitorIndex.."]...", DEBUG)
+					-- Only attempt to assign a monitor if we have a monitor for this reactor
+					if (reactorMonitorIndex <= #monitorList) then
+						printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
+
+						clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
+						printCentered(progName, 1, reactorMonitorIndex)
+
+						-- Display reactor status, includes "Disconnected" but found reactors
+						reactorStatus{reactorIndex, reactorMonitorIndex}
+
+						-- Draw the borders and bars for the current reactor on the current monitor
+						displayReactorBars{reactorIndex, reactorMonitorIndex}
+					end
+
+				end -- if deviceData.reactorName == reactorNames[reactorIndex] then
+
+			end -- for reactorIndex = 1, #reactorList do
+
+		elseif monitorType == "Turbine" then
+
+			-- Turbine display
+			local turbineMonitorIndex = monitorIndex
+			for turbineIndex = 1, #turbineList do
+
+				if deviceData.turbineName == turbineNames[turbineIndex] then
+					printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...", DEBUG)
+					-- Only attempt to assign a monitor if we have a monitor for this turbine
+					if (turbineMonitorIndex <= #monitorList) then
+						printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
+						clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
+						printCentered(progName, 1, turbineMonitorIndex)
+
+						-- Display turbine status, includes "Disconnected" but found turbines
+						turbineStatus(turbineIndex, turbineMonitorIndex)
+
+						-- Draw the borders and bars for the current turbine on the current monitor
+						displayTurbineBars(turbineIndex, turbineMonitorIndex)
+					end
+				end
+			end
+
+		elseif monitorType == "Debug" then
+
+			-- do nothing, printLog() outputs to here
+
+		else
+
+			clearMonitor(progName, monitorIndex)
+			print{"Monitor  inactive", 7, 7, monitorIndex}
+
+		end -- if monitorType == [...]
+	end
+end
+
+function main()
+	-- Load reactor parameters and initialize systems
+	loadReactorOptions()
+	initializePeripherals()
 
 	write(helpText())
 
 	while not finished do
+
+		updateMonitors()
+
 		local reactor = nil
 		local sd = 0
-
-		-- Display overall status on selected monitors
-		for monitorName, deviceData in pairs(monitorAssignments) do
-			local monitor = nil
-			local monitorIndex = deviceData.index
-			local monitorType =  deviceData.type
-			monitor = monitorList[monitorIndex]
-
-			printLog("main(): Trying to display "..monitorType.." on "..monitorNames[monitorIndex].."["..monitorIndex.."]", DEBUG)
-
-			if #monitorList < (#reactorList + #turbineList + 1) then
-				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
-			end
-
-			if (not monitor) or (not monitor.getSize()) then
-
-				printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor, discarding", ERROR)
-				monitorAssignments[monitorName] = nil
-				-- we need to get out of the for loop now, or it will dereference x.next (where x is the element we just killed) and crash
-				break
-
-			elseif monitorType == "Status" then
-
-				-- General status display
-				clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
-				printCentered(progName.." "..progVer, 1, monitorIndex)
-				displayAllStatus(monitorIndex)
-
-			elseif monitorType == "Reactor" then
-
-				-- Reactor display
-				local reactorMonitorIndex = monitorIndex
-				for reactorIndex = 1, #reactorList do
-
-					if deviceData.reactorName == reactorNames[reactorIndex] then
-
-						printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..monitorIndex.."]...", DEBUG)
-						-- Only attempt to assign a monitor if we have a monitor for this reactor
-						if (reactorMonitorIndex <= #monitorList) then
-							printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
-
-							clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
-							printCentered(progName, 1, reactorMonitorIndex)
-
-							-- Display reactor status, includes "Disconnected" but found reactors
-							reactorStatus{reactorIndex, reactorMonitorIndex}
-
-							-- Draw the borders and bars for the current reactor on the current monitor
-							displayReactorBars{reactorIndex, reactorMonitorIndex}
-						end
-
-					end -- if deviceData.reactorName == reactorNames[reactorIndex] then
-
-				end -- for reactorIndex = 1, #reactorList do
-
-			elseif monitorType == "Turbine" then
-
-				-- Turbine display
-				local turbineMonitorIndex = monitorIndex
-				for turbineIndex = 1, #turbineList do
-
-					if deviceData.turbineName == turbineNames[turbineIndex] then
-						printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...", DEBUG)
-						-- Only attempt to assign a monitor if we have a monitor for this turbine
-						if (turbineMonitorIndex <= #monitorList) then
-							printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
-							clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
-							printCentered(progName, 1, turbineMonitorIndex)
-
-							-- Display turbine status, includes "Disconnected" but found turbines
-							turbineStatus(turbineIndex, turbineMonitorIndex)
-
-							-- Draw the borders and bars for the current turbine on the current monitor
-							displayTurbineBars(turbineIndex, turbineMonitorIndex)
-						end
-					end
-				end
-
-			elseif monitorType == "Debug" then
-
-				-- do nothing, printLog() outputs to here
-
-			else
-
-				clearMonitor(progName, monitorIndex)
-				print{"Monitor  inactive", 7, 7, monitorIndex}
-
-			end -- if monitorType == [...]
-		end
 
 		-- Iterate through reactors
 		for reactorIndex = 1, #reactorList do
@@ -2362,22 +2391,22 @@ function main()
 			end -- if turbine.getConnected() then
 		end -- for reactorIndex = 1, #reactorList do
 
-		sleep(loopTime) -- Sleep
+		wait(loopTime) -- Sleep. No, wait...
 		saveReactorOptions()
 	end -- while not finished do
 end -- main()
 
+-- handle all the user interaction events
+eventHandler = function(event, arg1, arg2, arg3)
 
-local function eventHandler()
-	while not finished do
-		-- http://computercraft.info/wiki/Os.pullEvent
-		-- http://www.computercraft.info/forums2/index.php?/topic/1516-ospullevent-what-is-it-and-how-is-it-useful/
-		event, arg1, arg2, arg3 = os.pullEvent()
+		printLog(string.format("handleEvent(%s, %s, %s, %s)", tostring(event), tostring(arg1), tostring(arg2), tostring(arg3)), DEBUG)
 
 		if event == "monitor_touch" then
 			sideClick, xClick, yClick = arg1, math.floor(arg2), math.floor(arg3)
-			printLog("Side: "..arg1.." Monitor touch X: "..xClick.." Y: "..yClick)
 			UI:handlePossibleClick()
+		elseif (event == "peripheral") or (event == "peripheral_detach") then
+			printLog("Change in network detected. Reinitializing peripherals. We will be back shortly.", WARN)
+			initializePeripherals()
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
 			-- remember to update helpText() when you edit these
@@ -2410,15 +2439,12 @@ local function eventHandler()
 				write(helpText())
 			end -- if ch == "q" then
 		end -- if event == "monitor_touch" then
-	end -- while not finished do
+
+		updateMonitors()
+
 end -- function eventHandler()
 
-
-while not finished do
-	parallel.waitForAny(eventHandler, main)
-	sleep(loopTime)
-end -- while not finished do
-
+main()
 
 -- Clear up after an exit
 term.clear()
