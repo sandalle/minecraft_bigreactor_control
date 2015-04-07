@@ -992,11 +992,10 @@ local function temperatureControl(reactorIndex)
 							--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
 							local diffAmount = reactorTemp - lastTempPoll
 							diffAmount = (round(diffAmount/10, 0))/5
-							controlRodAdjustAmount = diffAmount
-							if (rodPercentage + controlRodAdjustAmount) > 99 then
+							if (rodPercentage + diffAmount) > 99 then
 								reactor.setAllControlRodLevels(99)
 							else
-								reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustAmount)
+								reactor.setAllControlRodLevels(rodPercentage + diffAmount)
 							end
 						end --if ((reactorTemp - lastTempPoll) > 100) then
 					elseif ((lastTempPoll - reactorTemp) < (reactorTemp * 0.005)) then
@@ -1028,11 +1027,10 @@ local function temperatureControl(reactorIndex)
 							--we're not descending quickly, let's bump it based on descent rate
 							local diffAmount = lastTempPoll - reactorTemp
 							diffAmount = (round(diffAmount/10, 0))/5
-							controlRodAdjustAmount = diffAmount
-							if (rodPercentage - controlRodAdjustAmount) < 0 then
+							if (rodPercentage - diffAmount) < 0 then
 								reactor.setAllControlRodLevels(0)
 							else
-								reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustAmount)
+								reactor.setAllControlRodLevels(rodPercentage - diffAmount)
 							end
 						end --if ((lastTempPoll - reactorTemp) > 100) then
 					elseif (reactorTemp == lastTempPoll) then
