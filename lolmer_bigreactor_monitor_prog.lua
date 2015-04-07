@@ -602,14 +602,14 @@ UI = {
 }
 
 UI.handlePossibleClick = function(self)
+	local monitorData = monitorAssignments[sideClick]
+	if monitorData == nil then
+		printLog("UI.handlePossibleClick(): "..sideClick.." is unassigned, can't handle click", WARN)
+		return
+	end
+
 	-- All the second line are belong to us
 	if (yClick == 2) then
-		local monitorData = monitorAssignments[sideClick]
-		if monitorData == nil then
-			printLog("UI.handlePossibleClick(): "..sideClick.." is unassigned, can't handle click", WARN)
-			return
-		end
-
 		self.monitorIndex = monitorData.index
 		local width, height = monitorList[self.monitorIndex].getSize()
 		if (monitorData.type == "Reactor") then
@@ -638,6 +638,12 @@ UI.handlePossibleClick = function(self)
 		-- it interfere with regular use.
 
 		sideClick, xClick, yClick = 0, 0, 0
+	else
+		if (monitorData.type == "Turbine") then
+			self:handleTurbineMonitorClick(monitorData.turbineIndex, monitorData.index)
+		elseif (monitorData.type == "Reactor") then
+			self:handleReactorMonitorClick(monitorData.reactorIndex, monitorData.index)
+		end
 	end
 end -- UI.handlePossibleClick()
 
@@ -719,6 +725,233 @@ UI.selectDebug = function(self)
 	self:logChange(messageText)
 end -- UI.selectDebug()
 	
+-- Allow controlling Reactor Control Rod Level from GUI
+UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
+
+	-- Decrease rod button: 23X, 4Y
+	-- Increase rod button: 28X, 4Y
+
+	-- Grab current monitor
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitor["..monitorIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current reactor
+	local reactor = nil
+	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Reactor.")
+		return -- Invalid reactorIndex
+	else
+		printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is a valid Big Reactor.")
+		if reactor.getConnected() then
+			printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is connected.")
+		else
+			printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
+			return -- Disconnected reactor
+		end -- if reactor.getConnected() then
+	end -- if not reactor then
+
+	local reactorStatus = _G[reactorNames[reactorIndex]]["ReactorOptions"]["Status"]
+
+	local width, height = monitor.getSize()
+	if xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1) and (sideClick == monitorNames[monitorIndex]) then
+		if yClick == 1 then
+			reactor.setActive(not reactor.getActive()) -- Toggle reactor status
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = reactor.getActive()
+			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+
+			-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
+			if not reactor.getActive() then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
+			end
+		end -- if yClick == 1 then
+	end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
+
+	-- Allow disabling rod level auto-adjust and only manual rod level control
+	if ((xClick > 23 and xClick < 28 and yClick == 4)
+			or (xClick > 20 and xClick < 27 and yClick == 9))
+			and (sideClick == monitorNames[monitorIndex]) then
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+	end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+
+	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
+	local newRodPercentage = rodPercentage
+	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decreasing Rod Levels in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		--Decrease rod level by amount
+		newRodPercentage = rodPercentage - (5 * controlRodAdjustAmount)
+		if newRodPercentage < 0 then
+			newRodPercentage = 0
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		reactor.setAllControlRodLevels(newRodPercentage)
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
+
+		-- Save updated rod percentage
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+		rodPercentage = newRodPercentage
+	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increasing Rod Levels in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		--Increase rod level by amount
+		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
+		if newRodPercentage > 100 then
+			newRodPercentage = 100
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		reactor.setAllControlRodLevels(newRodPercentage)
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
+		
+		-- Save updated rod percentage
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+		rodPercentage = round(newRodPercentage,0)
+	else
+		printLog("No change to Rod Levels requested by "..progName.." GUI in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+end -- UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
+
+-- Allow controlling Turbine Flow Rate from GUI
+UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
+
+	-- Decrease flow rate button: 22X, 4Y
+	-- Increase flow rate button: 28X, 4Y
+
+	-- Grab current monitor
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitor["..monitorIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current turbine
+	local turbine = nil
+	turbine = turbineList[turbineIndex]
+	if not turbine then
+		printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Turbine.")
+		return -- Invalid turbineIndex
+	else
+		printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is a valid Big Turbine.")
+		if turbine.getConnected() then
+			printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is connected.")
+		else
+			printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
+			return -- Disconnected turbine
+		end -- if turbine.getConnected() then
+	end
+
+	local turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
+	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
+	local turbineStatus = _G[turbineNames[turbineIndex]]["TurbineOptions"]["Status"]
+	local width, height = monitor.getSize()
+
+	if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
+		if yClick == 1 then
+			turbine.setActive(not turbine.getActive()) -- Toggle turbine status
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = turbine.getActive()
+			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+		end -- if yClick == 1 then
+	end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
+
+	-- Allow disabling/enabling flow rate auto-adjust
+	if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+	elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
+		
+		if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
+		else
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+		end
+		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	end
+
+	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decrease to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		--Decrease rod level by amount
+		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
+		if newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 0
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		-- Check bounds [0,2000]
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		elseif newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 0
+		end
+
+		turbine.setFluidFlowRateMax(newTurbineFlowRate)
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newTurbineFlowRate
+		-- Save updated Turbine Flow Rate
+		turbineFlowRate = newTurbineFlowRate
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increase to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		--Increase rod level by amount
+		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		-- Check bounds [0,2000]
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		elseif newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 0
+		end
+
+		turbine.setFluidFlowRateMax(newTurbineFlowRate)
+		
+		-- Save updated Turbine Flow Rate
+		turbineFlowRate = math.ceil(newTurbineFlowRate)
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	else
+		printLog("No change to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+
+	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		rpmRateAdjustment = 909
+		newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
+		if newTurbineBaseSpeed < 908 then
+			newTurbineBaseSpeed = 908
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increase to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		rpmRateAdjustment = 909
+		newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
+		if newTurbineBaseSpeed > 2726 then
+			newTurbineBaseSpeed = 2726
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	else
+		printLog("No change to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+end -- function handleTurbineMonitorClick(turbineIndex, monitorIndex)
+
 
 -- End helper functions
 
@@ -1038,10 +1271,10 @@ local function assignMonitors()
 		for monitorName, assignedName in pairs(monitors) do
 			printLog("Looking for monitor and device named "..monitorName.." and "..assignedName)
 			for monitorIndex = 1, #monitorNames do
-				-- printLog("if "..monitorName.." == "..monitorNames[monitorIndex].." then")
+				printLog("if "..monitorName.." == "..monitorNames[monitorIndex].." then", DEBUG)
 				
 				if monitorName == monitorNames[monitorIndex] then
-					-- printLog("Found "..monitorName.." at index "..monitorIndex)
+					printLog("Found "..monitorName.." at index "..monitorIndex, DEBUG)
 					if assignedName == "Status" then
 						monitorAssignments[monitorName] = {type="Status", index=monitorIndex}
 					elseif assignedName == "Debug" then
@@ -1058,8 +1291,6 @@ local function assignMonitors()
 							elseif i == maxListLen then
 								printLog("assignMonitors(): Monitor "..monitorName.." was configured to display nonexistant device "..assignedName..". Setting inactive.", WARN)
 								monitorAssignments[monitorName] = {type="Inactive", index=monitorIndex}
-							else
-								printLog("", ERROR)
 							end
 						end
 					end
@@ -1471,45 +1702,6 @@ local function displayReactorBars(barParams)
 
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	printLog("Current Rod Percentage for reactor["..reactorIndex.."] is "..rodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-	-- Allow controlling Reactor Control Rod Level from GUI
-	-- Decrease rod button: 23X, 4Y
-	-- Increase rod button: 28X, 4Y
-	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Decreasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		--Decrease rod level by amount
-		newRodPercentage = rodPercentage - (5 * controlRodAdjustAmount)
-		if newRodPercentage < 0 then
-			newRodPercentage = 0
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		reactor.setAllControlRodLevels(newRodPercentage)
-		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
-
-		-- Save updated rod percentage
-		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-		rodPercentage = newRodPercentage
-	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Increasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		--Increase rod level by amount
-		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
-		if newRodPercentage > 100 then
-			newRodPercentage = 100
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		reactor.setAllControlRodLevels(newRodPercentage)
-		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
-		
-		-- Save updated rod percentage
-		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-		rodPercentage = round(newRodPercentage,0)
-	else
-		printLog("No change to Rod Levels requested by "..progName.." GUI in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
 	print{stringTrim(rodPercentage),25,4,monitorIndex}
@@ -1625,34 +1817,12 @@ local function reactorStatus(statusParams)
 			monitor.setTextColor(colors.red)
 		end -- if reactor.getActive() then
 
-		if xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1) and (sideClick == monitorNames[monitorIndex]) then
-			if yClick == 1 then
-				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
-				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = reactor.getActive()
-				config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-
-				-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
-				if not reactor.getActive() then
-					_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
-				end
-			end -- if yClick == 1 then
-		end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
-
-		-- Allow disabling rod level auto-adjust and only manual rod level control
-		if ((xClick > 23 and xClick < 28 and yClick == 4)
-				or (xClick > 20 and xClick < 27 and yClick == 9))
-				and (sideClick == monitorNames[monitorIndex]) then
-			_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]
-			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
 	else
 		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		reactorStatus = "DISCONNECTED"
 		monitor.setTextColor(colors.red)
 	end -- if reactor.getConnected() then
+	_G[reactorNames[reactorIndex]]["ReactorOptions"]["Status"] = reactorStatus
 
 	print{reactorStatus, width - string.len(reactorStatus) - 1, 1, monitorIndex}
 	monitor.setTextColor(colors.white)
@@ -1810,80 +1980,7 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	monitor.setCursorPos(width-1, 2)
 	monitor.write(" >")
 
-	-- Allow controlling Turbine Flow Rate from GUI
-	-- Decrease flow rate button: 22X, 4Y
-	-- Increase flow rate button: 28X, 4Y
 	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
-	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Decrease to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		--Decrease rod level by amount
-		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
-		if newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 0
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		-- Check bounds [0,2000]
-		if newTurbineFlowRate > 2000 then
-			newTurbineFlowRate = 2000
-		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 0
-		end
-
-		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newTurbineFlowRate
-		-- Save updated Turbine Flow Rate
-		turbineFlowRate = newTurbineFlowRate
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Increase to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		--Increase rod level by amount
-		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
-		if newTurbineFlowRate > 2000 then
-			newTurbineFlowRate = 2000
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		-- Check bounds [0,2000]
-		if newTurbineFlowRate > 2000 then
-			newTurbineFlowRate = 2000
-		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 0
-		end
-
-		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-		
-		-- Save updated Turbine Flow Rate
-		turbineFlowRate = math.ceil(newTurbineFlowRate)
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	else
-		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
-	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
-		if newTurbineBaseSpeed < 908 then
-			newTurbineBaseSpeed = 908
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Increase to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
-		if newTurbineBaseSpeed > 2726 then
-			newTurbineBaseSpeed = 2726
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	else
-		printLog("No change to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 	print{"  mB/t",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
 	print{stringTrim(turbineFlowRate),24,4,monitorIndex}
@@ -1966,11 +2063,10 @@ end -- function displayTurbineBars(statusParams)
 
 -- Display turbine status
 local function turbineStatus(turbineIndex, monitorIndex)
-	-- Grab current monitor
-	local monitor = nil
-
 	printLog("Called as turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 
+	-- Grab current monitor
+	local monitor = nil
 	monitor = monitorList[monitorIndex]
 	if not monitor then
 		printLog("monitor["..monitorIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
@@ -1999,31 +2095,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 			turbineStatus = "OFFLINE"
 			monitor.setTextColor(colors.red)
 		end -- if turbine.getActive() then
-
-		if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
-			if yClick == 1 then
-				turbine.setActive(not turbine.getActive()) -- Toggle turbine status
-				_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = turbine.getActive()
-				config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-			end -- if yClick == 1 then
-		end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
-
-		-- Allow disabling/enabling flow rate auto-adjust
-		if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
-			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
-			
-			if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
-				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
-			else
-				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
-			end
-			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		end
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["Status"] = turbineStatus
 	else
 		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		turbineStatus = "DISCONNECTED"
