@@ -114,7 +114,7 @@ TODO:
 
 
 -- Some global variables
-local progVer = "0.3.17-ta"
+local progVer = "0.3.17"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -221,6 +221,22 @@ function stringTrim(s)
 	assert(s ~= nil, "String can't be nil")
 	return(string.gsub(s, "^%s*(.-)%s*$", "%1"))
 end
+
+-- Format number with [k,M,G,T,P,E] postfix or exponent, depending on how large it is
+local function formatReadableSIUnit(num)
+	printLog("formatReadableSIUnit("..num..")", DEBUG)
+	num = tonumber(num)
+	if(num < 1000) then return tostring(num) end
+	local sizes = {"", "k", "M", "G", "T", "P", "E"}
+	local exponent = math.floor(math.log10(num))
+	local group = math.floor(exponent / 3)
+	if group > #sizes then
+		return string.format("%e", num)
+	else
+		local divisor = math.pow(10, (group - 1) * 3)
+		return string.format("%i%s", num / divisor, sizes[group])
+	end
+end -- local function formatReadableSIUnit(num)
 
 -- pretty printLog() a table
 local function tprint (tbl, loglevel, indent)
@@ -393,6 +409,7 @@ local function printCentered(printString, yPos, monitorIndex)
 	if yPos == 1 then
 		-- Add monitor name to first line
 		monitorNameLength = monitorNames[monitorIndex]:len()
+		width = width - monitorNameLength -- add a space
 
 		-- Leave room for "offline" and "online" on the right except for overall status display
 		if monitorAssignments[monitorNames[monitorIndex]].type ~= "Status" then
@@ -400,13 +417,8 @@ local function printCentered(printString, yPos, monitorIndex)
 		end
 	end
 
-	monitor.setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) +  monitorNameLength/2, yPos)
-	monitor.clearLine()
+	monitor.setCursorPos(monitorNameLength + math.ceil((1 + width - printString:len())/2), yPos)
 	monitor.write(printString)
-
-	monitor.setTextColor(colors.blue)
-	print{monitorNames[monitorIndex], 1, 1, monitorIndex}
-	monitor.setTextColor(colors.white)
 end -- function printCentered(printString, yPos, monitorIndex)
 
 
@@ -608,16 +620,16 @@ UI.handlePossibleClick = function(self)
 		return
 	end
 
-	-- All the second line are belong to us
-	if (yClick == 2) then
-		self.monitorIndex = monitorData.index
-		local width, height = monitorList[self.monitorIndex].getSize()
+	self.monitorIndex = monitorData.index
+	local width, height = monitorList[self.monitorIndex].getSize()
+	-- All the last line are belong to us
+	if (yClick == height) then
 		if (monitorData.type == "Reactor") then
 			if (xClick == 1) then
 				self:selectPrevReactor()
 			elseif (xClick == width) then
 				self:selectNextReactor()
-			elseif (2 <= xClick and xClick <= width - 2) then
+			elseif (3 <= xClick and xClick <= width - 2) then
 				self:selectTurbine()
 			end
 		elseif (monitorData.type == "Turbine") then
@@ -625,11 +637,19 @@ UI.handlePossibleClick = function(self)
 				self:selectPrevTurbine()
 			elseif (xClick == width) then
 				self:selectNextTurbine()
-			elseif (2 <= xClick and xClick <= width - 2) then
+			elseif (3 <= xClick and xClick <= width - 2) then
 				self:selectStatus()
 			end
 		elseif (monitorData.type == "Status") then
-			self:selectReactor()
+			if (xClick == 1) then
+				self.turbineIndex = #turbineList
+				self:selectTurbine()
+			elseif (xClick == width) then
+				self.reactorIndex = 1
+				self:selectReactor()
+			elseif (3 <= xClick and xClick <= width - 2) then
+				self:selectReactor()
+			end
 		else
 			self:selectStatus()
 		end
@@ -671,19 +691,24 @@ UI.selectReactor = function(self)
 end -- UI.selectReactor()
 	
 UI.selectPrevReactor = function(self)
-	self.reactorIndex = self.reactorIndex - 1
-	if self.reactorIndex < 1 then
+	if self.reactorIndex <= 1 then
 		self.reactorIndex = #reactorList
+		self:selectStatus()
+	else
+		self.reactorIndex = self.reactorIndex - 1
+		self:selectReactor()
 	end
-	self:selectReactor()
 end -- UI.selectPrevReactor()
 
 UI.selectNextReactor = function(self)
-	self.reactorIndex = self.reactorIndex + 1
-	if self.reactorIndex > #reactorList then
+	if self.reactorIndex >= #reactorList then
 		self.reactorIndex = 1
+		self.turbineIndex = 1
+		self:selectTurbine()
+	else
+		self.reactorIndex = self.reactorIndex + 1
+		self:selectReactor()
 	end
-	self:selectReactor()
 end -- UI.selectNextReactor()
 
 
@@ -695,19 +720,24 @@ UI.selectTurbine = function(self)
 end -- UI.selectTurbine()
 	
 UI.selectPrevTurbine = function(self)
-	self.turbineIndex = self.turbineIndex - 1
-	if self.turbineIndex < 1 then
+	if self.turbineIndex <= 1 then
 		self.turbineIndex = #turbineList
+		self.reactorIndex = #reactorList
+		self:selectReactor()
+	else
+		self.turbineIndex = self.turbineIndex - 1
+		self:selectTurbine()
 	end
-	self:selectTurbine()
 end -- UI.selectPrevTurbine()
 	
 UI.selectNextTurbine = function(self)
-	self.turbineIndex = self.turbineIndex + 1
-	if self.turbineIndex > #turbineList then
+	if self.turbineIndex >= #turbineList then
 		self.turbineIndex = 1
+		self:selectStatus()
+	else
+		self.turbineIndex = self.turbineIndex + 1
+		self:selectTurbine()
 	end
-	self:selectTurbine()
 end -- UI.selectNextTurbine()
 	
 
@@ -721,6 +751,7 @@ end -- UI.selectStatus()
 UI.selectDebug = function(self)
 	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Debug", index=self.monitorIndex}
 	saveMonitorAssignments()
+	monitorList[self.monitorIndex].clear()
 	local messageText = "Selected debug output for display on "..monitorNames[self.monitorIndex]
 	self:logChange(messageText)
 end -- UI.selectDebug()
@@ -1674,9 +1705,9 @@ local function displayReactorBars(barParams)
 	end
 
 	drawLine(6, monitorIndex)
-	monitor.setCursorPos(1, 2)
+	monitor.setCursorPos(1, height)
 	monitor.write("< ")
-	monitor.setCursorPos(width-1, 2)
+	monitor.setCursorPos(width-1, height)
 	monitor.write(" >")
 
 	-- Draw some text
@@ -1768,6 +1799,13 @@ local function displayReactorBars(barParams)
 	monitor.setTextColor(colors.blue)
 	printCentered(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
+
+	-- monitor switch controls
+	monitor.setCursorPos(1, height)
+	monitor.write("<")
+	monitor.setCursorPos(width, height)
+	monitor.write(">")
+
 end -- function displayReactorBars(barParams)
 
 
@@ -1931,7 +1969,15 @@ local function displayAllStatus(monitorIndex)
 	end -- if #turbineList then
 
 	printCentered("Fuel: "..round(totalReactorFuelConsumed,3).." mB/t", 11, monitorIndex)
-	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..totalMaxEnergyStored.." RF", 2, 12, monitorIndex}
+	printCentered("Buffer: "..formatReadableSIUnit(math.ceil(totalEnergy)).."/"..formatReadableSIUnit(totalMaxEnergyStored).." RF", 12, monitorIndex)
+
+	-- monitor switch controls
+	local width, height = monitor.getSize()
+	monitor.setCursorPos(1, height)
+	monitor.write("<")
+	monitor.setCursorPos(width, height)
+	monitor.write(">")
+
 end -- function displayAllStatus()
 
 
@@ -1975,9 +2021,9 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	end
 
 	drawLine(7,monitorIndex)
-	monitor.setCursorPos(1, 2)
+	monitor.setCursorPos(1, height)
 	monitor.write("< ")
-	monitor.setCursorPos(width-1, 2)
+	monitor.setCursorPos(width-1, height)
 	monitor.write(" >")
 
 	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
@@ -2056,6 +2102,12 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	monitor.setTextColor(colors.blue)
 	printCentered(_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
+
+	-- monitor switch controls
+	monitor.setCursorPos(1, height)
+	monitor.write("<")
+	monitor.setCursorPos(width, height)
+	monitor.write(">")
 
 	-- Need equation to figure out rotor efficiency and display
 end -- function displayTurbineBars(statusParams)
@@ -2261,8 +2313,6 @@ local function helpText()
 	-- these keys are actually defined in eventHandler(), check there
 	return [[Keyboard commands:
 			m	Select next monitor
-			c	Make selected monitor display next reactor
-			t	Make selected monitor display next turbine
 			s	Make selected monitor display global status
 			x	Make selected monitor display debug information
 
@@ -2496,10 +2546,6 @@ eventHandler = function(event, arg1, arg2, arg3)
 				write("debugMode "..modeText.."\n")
 			elseif ch == "m" then
 				UI:selectNextMonitor()
-			elseif ch == "c" then
-				UI:selectNextReactor()
-			elseif ch == "t" then
-				UI:selectNextTurbine()
 			elseif ch == "s" then
 				UI:selectStatus()
 			elseif ch == "x" then
