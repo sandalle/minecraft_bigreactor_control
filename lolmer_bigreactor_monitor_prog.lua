@@ -634,6 +634,7 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"] = 1400 --set for passive-cooled, the active-cooled subroutine will correct it
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"] = 1000
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = controlRodAdjustAmount
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = reactorNames[reactorIndex]
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
 				if reactor.getConnected() then
@@ -685,6 +686,10 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = tempTable["ReactorOptions"]["rodOverride"]
 			end
 			
+			if tempTable["ReactorOptions"]["controlRodAdjustAmount"] ~= nil then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = tempTable["ReactorOptions"]["controlRodAdjustAmount"]
+			end
+			
 			if tempTable["ReactorOptions"]["reactorName"] ~= nil then
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = tempTable["ReactorOptions"]["reactorName"]
 			end
@@ -722,6 +727,8 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
 			end
 			
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"])
+
 			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"]) == "true") then
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
 			else
@@ -976,6 +983,7 @@ local function temperatureControl(reactorIndex)
 				--printLog("min: "..localMinReactorTemp..", max: "..localMaxReactorTemp..", lasttemp: "..lastTempPoll..", ri: "..reactorIndex.."  EOL")
 				reactorCruise(localMaxReactorTemp, localMinReactorTemp, reactorIndex)
 			else
+				local localControlRodAdjustAmount = _G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"]
 				-- Don't bring us to 100, that's effectively a shutdown
 				if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
 					--increase the rods, but by how much?
@@ -983,15 +991,16 @@ local function temperatureControl(reactorIndex)
 						--we're climbing, we need to get this to decrease
 						if ((reactorTemp - lastTempPoll) > 100) then
 							--we're climbing really fast, arrest it
-							if (rodPercentage + (10 * controlRodAdjustAmount)) > 99 then
+							if (rodPercentage + (10 * localControlRodAdjustAmount)) > 99 then
 								reactor.setAllControlRodLevels(99)
 							else
-								reactor.setAllControlRodLevels(rodPercentage + (10 * controlRodAdjustAmount))
+								reactor.setAllControlRodLevels(rodPercentage + (10 * localControlRodAdjustAmount))
 							end
 						else
 							--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
 							local diffAmount = reactorTemp - lastTempPoll
 							diffAmount = (round(diffAmount/10, 0))/5
+							_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = diffAmount
 							if (rodPercentage + diffAmount) > 99 then
 								reactor.setAllControlRodLevels(99)
 							else
@@ -1018,15 +1027,16 @@ local function temperatureControl(reactorIndex)
 						--we're descending, let's stop that.
 						if ((lastTempPoll - reactorTemp) > 100) then
 							--we're headed for a new ice age, bring the heat
-							if (rodPercentage - (10 * controlRodAdjustAmount)) < 0 then
+							if (rodPercentage - (10 * localControlRodAdjustAmount)) < 0 then
 								reactor.setAllControlRodLevels(0)
 							else
-								reactor.setAllControlRodLevels(rodPercentage - (10 * controlRodAdjustAmount))
+								reactor.setAllControlRodLevels(rodPercentage - (10 * localControlRodAdjustAmount))
 							end
 						else
 							--we're not descending quickly, let's bump it based on descent rate
 							local diffAmount = lastTempPoll - reactorTemp
 							diffAmount = (round(diffAmount/10, 0))/5
+							_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = diffAmount
 							if (rodPercentage - diffAmount) < 0 then
 								reactor.setAllControlRodLevels(0)
 							else
