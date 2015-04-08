@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.17
+Version: v0.3.17-ta
 Programmer: Lolmer
 Great assistance by Mechaet
 Last update: 2015-04-01
@@ -43,7 +43,9 @@ Features:
 	A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
 GUI Usage:
-	The "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
+	The second line of a monitor "< ---------------- >" lets you control what the monitor displays. Clicking "<" and ">" switches between machines of the same type,
+	while clicking between them switches between Reactors, Turbines and Status.
+	The other "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
 		"mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
 		"RPM" will lower/raise the target Turbine RPM for that Turbine
@@ -129,10 +131,18 @@ local reactorList = {} -- Empty reactor array
 local reactorNames = {} -- Empty array of reactor names
 local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
-local turbineMonitorOffset = 0 -- Turbines are assigned monitors after reactors
+local monitorAssignments = {} -- Empty array of monitor - "what to display" assignments
+local monitorOptionFileName = "monitors.options" -- File for saving the monitor assignments
 local knowlinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
 local steamRequested = 0 -- Sum of Turbine Flow Rate in mB
 local steamDelivered = 0 -- Sum of Active Reactor steam output in mB
+
+-- Log levels
+local FATAL = 16
+local ERROR = 8
+local WARN = 4
+local INFO = 2
+local DEBUG = 1
 
 term.clear()
 term.setCursorPos(2,1)
@@ -157,7 +167,7 @@ local function termRestore()
 	ccVersion = os.version()
 
 	if ccVersion == "CraftOS 1.6" or "CraftOS 1.7" then
-		term.native()
+		term.redirect(term.native())
 	elseif ccVersion == "CraftOS 1.5" then
 		term.restore()
 	else -- Default to older term.restore
@@ -166,15 +176,36 @@ local function termRestore()
 	end -- if ccVersion
 end -- function termRestore()
 
-local function printLog(printStr)
-	if debugMode then
-		-- If multiple monitors, use the last monitor for debugging if debug is enabled
-		if #monitorList > 1 then
-			term.redirect(monitorList[#monitorList]) -- Redirect to last monitor for debugging
-			monitorList[#monitorList].setTextScale(0.5) -- Fit more logs on screen
-			write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
-			termRestore()
-		end -- if #monitorList > 1 then
+local function printLog(printStr, logLevel)
+	logLevel = logLevel or INFO
+	-- No, I'm not going to write full syslog style levels. But this makes it a little easier filtering and finding stuff in the logfile.
+	-- Since you're already looking at it, you can adjust your preferred log level right here.
+	if debugMode and (logLevel >= WARN) then
+		-- If multiple monitors, print to all of them
+		for monitorName, deviceData in pairs(monitorAssignments) do
+			if deviceData.type == "Debug" then
+				debugMonitor = monitorList[deviceData.index]
+				if(not debugMonitor) or (not debugMonitor.getSize()) then
+					term.write("printLog(): debug monitor "..monitorName.." failed")
+				else
+					term.redirect(debugMonitor) -- Redirect to selected monitor
+					debugMonitor.setTextScale(0.5) -- Fit more logs on screen
+					local color = colors.lightGray
+					if (logLevel == WARN) then
+						color = colors.white
+					elseif (logLevel == ERROR) then
+						color = colors.red
+					elseif (logLevel == FATAL) then
+						color = colors.black
+						debugMonitor.setBackgroundColor(colors.red)
+					end
+					debugMonitor.setTextColor(color)
+					write(printStr.."\n")   -- May need to use term.scroll(x) if we output too much, not sure
+					debugMonitor.setBackgroundColor(colors.black)
+					termRestore()
+				end
+			end
+		end -- for 
 
 		local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
 		if logFile then
@@ -191,6 +222,39 @@ function stringTrim(s)
 	assert(s ~= nil, "String can't be nil")
 	return(string.gsub(s, "^%s*(.-)%s*$", "%1"))
 end
+
+-- Format number with [k,M,G,T,P,E] postfix or exponent, depending on how large it is
+local function formatReadableSIUnit(num)
+	printLog("formatReadableSIUnit("..num..")", DEBUG)
+	num = tonumber(num)
+	if(num < 1000) then return tostring(num) end
+	local sizes = {"", "k", "M", "G", "T", "P", "E"}
+	local exponent = math.floor(math.log10(num))
+	local group = math.floor(exponent / 3)
+	if group > #sizes then
+		return string.format("%e", num)
+	else
+		local divisor = math.pow(10, (group - 1) * 3)
+		return string.format("%i%s", num / divisor, sizes[group])
+	end
+end -- local function formatReadableSIUnit(num)
+
+-- pretty printLog() a table
+local function tprint (tbl, loglevel, indent)
+	if not loglevel then loglevel = DEBUG end
+	if not indent then indent = 0 end
+	for k, v in pairs(tbl) do
+		formatting = string.rep("  ", indent) .. k .. ": "
+		if type(v) == "table" then
+			printLog(formatting, loglevel)
+			tprint(v, loglevel, indent+1)
+		elseif type(v) == 'boolean' or type(v) == "function" then
+			printLog(formatting .. tostring(v), loglevel)      
+		else
+			printLog(formatting .. v, loglevel)
+		end
+	end
+end -- function tprint()
 
 config = {}
 
@@ -335,7 +399,7 @@ local function printCentered(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printCentered() is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printCentered() is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -346,20 +410,16 @@ local function printCentered(printString, yPos, monitorIndex)
 	if yPos == 1 then
 		-- Add monitor name to first line
 		monitorNameLength = monitorNames[monitorIndex]:len()
+		width = width - monitorNameLength -- add a space
 
 		-- Leave room for "offline" and "online" on the right except for overall status display
-		if (#monitorList ~= 1) and (monitorIndex ~= 1) then
+		if monitorAssignments[monitorNames[monitorIndex]].type ~= "Status" then
 			width = width - 7
 		end
 	end
 
-	monitor.setCursorPos(math.floor(width/2) - math.ceil(printString:len()/2) +  monitorNameLength/2, yPos)
-	monitor.clearLine()
+	monitor.setCursorPos(monitorNameLength + math.ceil((1 + width - printString:len())/2), yPos)
 	monitor.write(printString)
-
-	monitor.setTextColor(colors.blue)
-	print{monitorNames[monitorIndex], 1, 1, monitorIndex}
-	monitor.setTextColor(colors.white)
 end -- function printCentered(printString, yPos, monitorIndex)
 
 
@@ -370,7 +430,7 @@ local function printLeft(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printLeft() is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printLeft() is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -397,7 +457,7 @@ local function printRight(printString, yPos, monitorIndex)
 	monitor = monitorList[monitorIndex]
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in printRight() is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in printRight() is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -427,7 +487,7 @@ local function clearMonitor(printString, monitorIndex)
 	printLog("Called as clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..").")
 
 	if not monitor then
-		printLog("monitor["..monitorIndex.."] in clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
+		printLog("monitor["..monitorIndex.."] in clearMonitor(printString="..printString..",monitorIndex="..monitorIndex..") is NOT a valid monitor.", ERROR)
 		return -- Invalid monitorIndex
 	end
 
@@ -531,6 +591,398 @@ local function drawPixel(xPos, yPos, color, monitorIndex)
 	monitor.setBackgroundColor(colors.black) -- PaintUtils doesn't restore the color
 	termRestore()
 end -- function drawPixel(xPos, yPos, color, monitorIndex)
+
+local function saveMonitorAssignments()
+	local assignments = {}
+	for monitor, data in pairs(monitorAssignments) do
+		local name = nil
+		if (data.type == "Reactor") then
+			name = data.reactorName
+		elseif (data.type == "Turbine") then
+			name = data.turbineName
+		else
+			name = data.type
+		end
+		assignments[monitor] = name
+	end
+	config.save(monitorOptionFileName, {Monitors = assignments})
+end
+
+UI = {
+	monitorIndex = 1,
+	reactorIndex = 1,
+	turbineIndex = 1
+}
+
+UI.handlePossibleClick = function(self)
+	local monitorData = monitorAssignments[sideClick]
+	if monitorData == nil then
+		printLog("UI.handlePossibleClick(): "..sideClick.." is unassigned, can't handle click", WARN)
+		return
+	end
+
+	self.monitorIndex = monitorData.index
+	local width, height = monitorList[self.monitorIndex].getSize()
+	-- All the last line are belong to us
+	if (yClick == height) then
+		if (monitorData.type == "Reactor") then
+			if (xClick == 1) then
+				self:selectPrevReactor()
+			elseif (xClick == width) then
+				self:selectNextReactor()
+			elseif (3 <= xClick and xClick <= width - 2) then
+				self:selectTurbine()
+			end
+		elseif (monitorData.type == "Turbine") then
+			if (xClick == 1) then
+				self:selectPrevTurbine()
+			elseif (xClick == width) then
+				self:selectNextTurbine()
+			elseif (3 <= xClick and xClick <= width - 2) then
+				self:selectStatus()
+			end
+		elseif (monitorData.type == "Status") then
+			if (xClick == 1) then
+				self.turbineIndex = #turbineList
+				self:selectTurbine()
+			elseif (xClick == width) then
+				self.reactorIndex = 1
+				self:selectReactor()
+			elseif (3 <= xClick and xClick <= width - 2) then
+				self:selectReactor()
+			end
+		else
+			self:selectStatus()
+		end
+		-- Yes, that means we're skipping Debug. I figure everyone who wants that is
+		-- bound to use the console key commands anyway, and that way we don't have
+		-- it interfere with regular use.
+
+		sideClick, xClick, yClick = 0, 0, 0
+	else
+		if (monitorData.type == "Turbine") then
+			self:handleTurbineMonitorClick(monitorData.turbineIndex, monitorData.index)
+		elseif (monitorData.type == "Reactor") then
+			self:handleReactorMonitorClick(monitorData.reactorIndex, monitorData.index)
+		end
+	end
+end -- UI.handlePossibleClick()
+
+UI.logChange = function(self, messageText)
+	printLog("UI: "..messageText)
+	termRestore()
+	write(messageText.."\n")
+end
+
+UI.selectNextMonitor = function(self)
+	self.monitorIndex = self.monitorIndex + 1
+	if self.monitorIndex > #monitorList then
+		self.monitorIndex = 1
+	end
+	local messageText = "Selected monitor "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectNextMonitor()
+
+	
+UI.selectReactor = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Reactor", index=self.monitorIndex, reactorName=reactorNames[self.reactorIndex], reactorIndex=self.reactorIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected reactor "..reactorNames[self.reactorIndex].." for display on "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectReactor()
+	
+UI.selectPrevReactor = function(self)
+	if self.reactorIndex <= 1 then
+		self.reactorIndex = #reactorList
+		self:selectStatus()
+	else
+		self.reactorIndex = self.reactorIndex - 1
+		self:selectReactor()
+	end
+end -- UI.selectPrevReactor()
+
+UI.selectNextReactor = function(self)
+	if self.reactorIndex >= #reactorList then
+		self.reactorIndex = 1
+		self.turbineIndex = 1
+		self:selectTurbine()
+	else
+		self.reactorIndex = self.reactorIndex + 1
+		self:selectReactor()
+	end
+end -- UI.selectNextReactor()
+
+
+UI.selectTurbine = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Turbine", index=self.monitorIndex, turbineName=turbineNames[self.turbineIndex], turbineIndex=self.turbineIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected turbine "..turbineNames[self.turbineIndex].." for display on "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectTurbine()
+	
+UI.selectPrevTurbine = function(self)
+	if self.turbineIndex <= 1 then
+		self.turbineIndex = #turbineList
+		self.reactorIndex = #reactorList
+		self:selectReactor()
+	else
+		self.turbineIndex = self.turbineIndex - 1
+		self:selectTurbine()
+	end
+end -- UI.selectPrevTurbine()
+	
+UI.selectNextTurbine = function(self)
+	if self.turbineIndex >= #turbineList then
+		self.turbineIndex = 1
+		self:selectStatus()
+	else
+		self.turbineIndex = self.turbineIndex + 1
+		self:selectTurbine()
+	end
+end -- UI.selectNextTurbine()
+	
+
+UI.selectStatus = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Status", index=self.monitorIndex}
+	saveMonitorAssignments()
+	local messageText = "Selected status summary for display on "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectStatus()
+	
+UI.selectDebug = function(self)
+	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Debug", index=self.monitorIndex}
+	saveMonitorAssignments()
+	monitorList[self.monitorIndex].clear()
+	local messageText = "Selected debug output for display on "..monitorNames[self.monitorIndex]
+	self:logChange(messageText)
+end -- UI.selectDebug()
+	
+-- Allow controlling Reactor Control Rod Level from GUI
+UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
+
+	-- Decrease rod button: 23X, 4Y
+	-- Increase rod button: 28X, 4Y
+
+	-- Grab current monitor
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitor["..monitorIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current reactor
+	local reactor = nil
+	reactor = reactorList[reactorIndex]
+	if not reactor then
+		printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Reactor.")
+		return -- Invalid reactorIndex
+	else
+		printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is a valid Big Reactor.")
+		if reactor.getConnected() then
+			printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is connected.")
+		else
+			printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
+			return -- Disconnected reactor
+		end -- if reactor.getConnected() then
+	end -- if not reactor then
+
+	local reactorStatus = _G[reactorNames[reactorIndex]]["ReactorOptions"]["Status"]
+
+	local width, height = monitor.getSize()
+	if xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1) and (sideClick == monitorNames[monitorIndex]) then
+		if yClick == 1 then
+			reactor.setActive(not reactor.getActive()) -- Toggle reactor status
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = reactor.getActive()
+			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+
+			-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
+			if not reactor.getActive() then
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
+			end
+		end -- if yClick == 1 then
+	end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
+
+	-- Allow disabling rod level auto-adjust and only manual rod level control
+	if ((xClick > 23 and xClick < 28 and yClick == 4)
+			or (xClick > 20 and xClick < 27 and yClick == 9))
+			and (sideClick == monitorNames[monitorIndex]) then
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+	end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+
+	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
+	local newRodPercentage = rodPercentage
+	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decreasing Rod Levels in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		--Decrease rod level by amount
+		newRodPercentage = rodPercentage - (5 * controlRodAdjustAmount)
+		if newRodPercentage < 0 then
+			newRodPercentage = 0
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		reactor.setAllControlRodLevels(newRodPercentage)
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
+
+		-- Save updated rod percentage
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+		rodPercentage = newRodPercentage
+	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increasing Rod Levels in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		--Increase rod level by amount
+		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
+		if newRodPercentage > 100 then
+			newRodPercentage = 100
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		reactor.setAllControlRodLevels(newRodPercentage)
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
+		
+		-- Save updated rod percentage
+		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
+		rodPercentage = round(newRodPercentage,0)
+	else
+		printLog("No change to Rod Levels requested by "..progName.." GUI in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+end -- UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
+
+-- Allow controlling Turbine Flow Rate from GUI
+UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
+
+	-- Decrease flow rate button: 22X, 4Y
+	-- Increase flow rate button: 28X, 4Y
+
+	-- Grab current monitor
+	local monitor = nil
+	monitor = monitorList[monitorIndex]
+	if not monitor then
+		printLog("monitor["..monitorIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
+		return -- Invalid monitorIndex
+	end
+
+	-- Grab current turbine
+	local turbine = nil
+	turbine = turbineList[turbineIndex]
+	if not turbine then
+		printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Turbine.")
+		return -- Invalid turbineIndex
+	else
+		printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is a valid Big Turbine.")
+		if turbine.getConnected() then
+			printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is connected.")
+		else
+			printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
+			return -- Disconnected turbine
+		end -- if turbine.getConnected() then
+	end
+
+	local turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
+	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
+	local turbineStatus = _G[turbineNames[turbineIndex]]["TurbineOptions"]["Status"]
+	local width, height = monitor.getSize()
+
+	if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
+		if yClick == 1 then
+			turbine.setActive(not turbine.getActive()) -- Toggle turbine status
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = turbine.getActive()
+			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+		end -- if yClick == 1 then
+	end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
+
+	-- Allow disabling/enabling flow rate auto-adjust
+	if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+	elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
+		
+		if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
+		else
+			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
+		end
+		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	end
+
+	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decrease to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		--Decrease rod level by amount
+		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
+		if newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 0
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		-- Check bounds [0,2000]
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		elseif newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 0
+		end
+
+		turbine.setFluidFlowRateMax(newTurbineFlowRate)
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newTurbineFlowRate
+		-- Save updated Turbine Flow Rate
+		turbineFlowRate = newTurbineFlowRate
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increase to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		--Increase rod level by amount
+		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+
+		-- Check bounds [0,2000]
+		if newTurbineFlowRate > 2000 then
+			newTurbineFlowRate = 2000
+		elseif newTurbineFlowRate < 0 then
+			newTurbineFlowRate = 0
+		end
+
+		turbine.setFluidFlowRateMax(newTurbineFlowRate)
+		
+		-- Save updated Turbine Flow Rate
+		turbineFlowRate = math.ceil(newTurbineFlowRate)
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	else
+		printLog("No change to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+
+	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		rpmRateAdjustment = 909
+		newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
+		if newTurbineBaseSpeed < 908 then
+			newTurbineBaseSpeed = 908
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Increase to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+		rpmRateAdjustment = 909
+		newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
+		if newTurbineBaseSpeed > 2726 then
+			newTurbineBaseSpeed = 2726
+		end
+		sideClick, xClick, yClick = 0, 0, 0
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
+		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
+	else
+		printLog("No change to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
+	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+end -- function handleTurbineMonitorClick(turbineIndex, monitorIndex)
 
 
 -- End helper functions
@@ -744,12 +1196,7 @@ local function findReactors()
 	-- Overwrite old reactor list with the now updated list
 	reactorList = newReactorList
 
-	-- Start turbine monitor offset after reactors get monitors
-	-- This assumes that there is a monitor for each turbine and reactor, plus the overall monitor display
-	turbineMonitorOffset = #reactorList + 1 -- #turbineList will start at "1" if turbines found and move us just beyond #reactorList and status monitor range
-
 	printLog("Found "..#reactorList.." reactor(s) in findReactors().")
-	printLog("Set turbineMonitorOffset to "..turbineMonitorOffset.." in findReactors().")
 end -- function findReactors()
 
 
@@ -842,6 +1289,108 @@ local function findTurbines()
 
 	printLog("Found "..#turbineList.." turbine(s) in findTurbines().")
 end -- function findTurbines()
+
+-- Assign status, reactors, turbines and debug output to the monitors that shall display them
+-- Depends on the [monitor,reactor,turbine]Lists being populated already
+local function assignMonitors()
+
+	local monitors = {}
+	monitorAssignments = {}
+
+	printLog("Assigning monitors...")
+
+	local m = config.load(monitorOptionFileName) 
+	if (m ~= nil) then
+		-- first, merge the detected and the configured monitor lists
+		-- this is to ensure we pick up new additions to the network
+		for monitorIndex, monitorName in ipairs(monitorNames) do
+			monitors[monitorName] = m.Monitors[monitorName] or ""
+		end
+		-- then, go through all of it again to build our runtime data structure
+		for monitorName, assignedName in pairs(monitors) do
+			printLog("Looking for monitor and device named "..monitorName.." and "..assignedName)
+			for monitorIndex = 1, #monitorNames do
+				printLog("if "..monitorName.." == "..monitorNames[monitorIndex].." then", DEBUG)
+				
+				if monitorName == monitorNames[monitorIndex] then
+					printLog("Found "..monitorName.." at index "..monitorIndex, DEBUG)
+					if assignedName == "Status" then
+						monitorAssignments[monitorName] = {type="Status", index=monitorIndex}
+					elseif assignedName == "Debug" then
+						monitorAssignments[monitorName] = {type="Debug", index=monitorIndex}
+					else
+						local maxListLen = math.max(#reactorNames, #turbineNames)
+						for i = 1, maxListLen do
+							if assignedName == reactorNames[i] then
+								monitorAssignments[monitorName] = {type="Reactor", index=monitorIndex, reactorName=reactorNames[i], reactorIndex=i}
+								break
+							elseif assignedName == turbineNames[i] then
+								monitorAssignments[monitorName] = {type="Turbine", index=monitorIndex, turbineName=turbineNames[i], turbineIndex=i}
+								break
+							elseif i == maxListLen then
+								printLog("assignMonitors(): Monitor "..monitorName.." was configured to display nonexistant device "..assignedName..". Setting inactive.", WARN)
+								monitorAssignments[monitorName] = {type="Inactive", index=monitorIndex}
+							end
+						end
+					end
+					break
+				elseif monitorIndex == #monitorNames then
+					printLog("assignMonitors(): Monitor "..monitorName.." not found. It was configured to display device "..assignedName..". Discarding.", WARN)
+				end
+			end
+		end
+	else
+		printLog("No valid monitor configuration found, generating...")
+
+		-- create assignments that reflect the setup before 0.3.17
+		local monitorIndex = 1
+		monitorAssignments[monitorNames[1]] = {type="Status", index=1}
+		monitorIndex = monitorIndex + 1
+		for reactorIndex = 1, #reactorList do
+			if monitorIndex > #monitorList then
+				break
+			end
+			monitorAssignments[monitorNames[monitorIndex]] = {type="Reactor", index=monitorIndex, reactorName=reactorNames[reactorIndex], reactorIndex=reactorIndex}
+			printLog(monitorNames[monitorIndex].." -> "..reactorNames[reactorIndex])
+
+			monitorIndex = monitorIndex + 1
+		end
+		for turbineIndex = 1, #turbineList do
+			if monitorIndex > #monitorList then
+				break
+			end
+			monitorAssignments[monitorNames[monitorIndex]] = {type="Turbine", index=monitorIndex, turbineName=turbineNames[turbineIndex], turbineIndex=turbineIndex}
+			printLog(monitorNames[monitorIndex].." -> "..turbineNames[turbineIndex])
+
+			monitorIndex = monitorIndex + 1
+		end
+		if monitorIndex <= #monitorList then
+			monitorAssignments[monitorNames[#monitorList]] = {type="Debug", index=#monitorList}
+		end
+	end
+
+	tprint(monitorAssignments)
+
+	saveMonitorAssignments()
+
+end -- function assignMonitors()
+
+local eventHandler
+-- Replacement for sleep, which passes on events instead of dropping themo
+-- Straight from http://computercraft.info/wiki/Os.sleep
+local function wait(time)
+	local timer = os.startTimer(time)
+
+	while true do
+		local event = {os.pullEvent()}
+
+		if (event[1] == "timer" and event[2] == timer) then
+			break
+		else
+			eventHandler(event[1], event[2], event[3], event[4])
+		end
+	end
+end
 
 
 -- Return current energy buffer in a specific reactor by %
@@ -1164,8 +1713,11 @@ local function displayReactorBars(barParams)
 		monitor.write("|")
 	end
 
-	drawLine(2, monitorIndex)
 	drawLine(6, monitorIndex)
+	monitor.setCursorPos(1, height)
+	monitor.write("< ")
+	monitor.setCursorPos(width-1, height)
+	monitor.write(" >")
 
 	-- Draw some text
 	local fuelString = "Fuel: "
@@ -1190,45 +1742,6 @@ local function displayReactorBars(barParams)
 
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	printLog("Current Rod Percentage for reactor["..reactorIndex.."] is "..rodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-	-- Allow controlling Reactor Control Rod Level from GUI
-	-- Decrease rod button: 23X, 4Y
-	-- Increase rod button: 28X, 4Y
-	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Decreasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		--Decrease rod level by amount
-		newRodPercentage = rodPercentage - (5 * controlRodAdjustAmount)
-		if newRodPercentage < 0 then
-			newRodPercentage = 0
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		reactor.setAllControlRodLevels(newRodPercentage)
-		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
-
-		-- Save updated rod percentage
-		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-		rodPercentage = newRodPercentage
-	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Increasing Rod Levels in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		--Increase rod level by amount
-		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
-		if newRodPercentage > 100 then
-			newRodPercentage = 100
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		reactor.setAllControlRodLevels(newRodPercentage)
-		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
-		
-		-- Save updated rod percentage
-		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-		rodPercentage = round(newRodPercentage,0)
-	else
-		printLog("No change to Rod Levels requested by "..progName.." GUI in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
 	print{"Rod (%)",23,3,monitorIndex}
 	print{"<     >",23,4,monitorIndex}
 	print{stringTrim(rodPercentage),25,4,monitorIndex}
@@ -1295,6 +1808,13 @@ local function displayReactorBars(barParams)
 	monitor.setTextColor(colors.blue)
 	printCentered(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
+
+	-- monitor switch controls
+	monitor.setCursorPos(1, height)
+	monitor.write("<")
+	monitor.setCursorPos(width, height)
+	monitor.write(">")
+
 end -- function displayReactorBars(barParams)
 
 
@@ -1344,43 +1864,21 @@ local function reactorStatus(statusParams)
 			monitor.setTextColor(colors.red)
 		end -- if reactor.getActive() then
 
-		if xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1) and (sideClick == monitorNames[monitorIndex]) then
-			if yClick == 1 then
-				reactor.setActive(not reactor.getActive()) -- Toggle reactor status
-				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = reactor.getActive()
-				config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-
-				-- If someone offlines the reactor (offline after a status click was detected), then disable autoStart
-				if not reactor.getActive() then
-					_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
-				end
-			end -- if yClick == 1 then
-		end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
-
-		-- Allow disabling rod level auto-adjust and only manual rod level control
-		if ((xClick > 23 and xClick < 28 and yClick == 4)
-				or (xClick > 20 and xClick < 27 and yClick == 9))
-				and (sideClick == monitorNames[monitorIndex]) then
-			_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]
-			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
 	else
 		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		reactorStatus = "DISCONNECTED"
 		monitor.setTextColor(colors.red)
 	end -- if reactor.getConnected() then
+	_G[reactorNames[reactorIndex]]["ReactorOptions"]["Status"] = reactorStatus
 
 	print{reactorStatus, width - string.len(reactorStatus) - 1, 1, monitorIndex}
 	monitor.setTextColor(colors.white)
 end -- function reactorStatus(statusParams)
 
 
--- Display all found reactors' status to monitor 1
+-- Display all found reactors' status to selected monitor
 -- This is only called if multiple reactors and/or a reactor plus at least one turbine are found
-local function displayAllStatus()
+local function displayAllStatus(monitorIndex)
 	local reactor, turbine = nil, nil
 	local onlineReactor, onlineTurbine = 0, 0
 	local totalReactorRF, totalReactorSteam, totalTurbineRF = 0, 0, 0
@@ -1389,8 +1887,7 @@ local function displayAllStatus()
 	local maxSteamStored = (2000*#turbineList)+(5000*#reactorList)
 	local maxCoolantStored = (2000*#turbineList)+(5000*#reactorList)
 
-	local monitor, monitorIndex = nil, 1
-	monitor = monitorList[monitorIndex]
+	local monitor = monitorList[monitorIndex]
 	if not monitor then
 		printLog("monitor["..monitorIndex.."] in displayAllStatus() is NOT a valid monitor.")
 		return -- Invalid monitorIndex
@@ -1481,7 +1978,15 @@ local function displayAllStatus()
 	end -- if #turbineList then
 
 	printCentered("Fuel: "..round(totalReactorFuelConsumed,3).." mB/t", 11, monitorIndex)
-	print{"Buffer: "..math.ceil(totalEnergy,3).."/"..totalMaxEnergyStored.." RF", 2, 12, monitorIndex}
+	printCentered("Buffer: "..formatReadableSIUnit(math.ceil(totalEnergy)).."/"..formatReadableSIUnit(totalMaxEnergyStored).." RF", 12, monitorIndex)
+
+	-- monitor switch controls
+	local width, height = monitor.getSize()
+	monitor.setCursorPos(1, height)
+	monitor.write("<")
+	monitor.setCursorPos(width, height)
+	monitor.write(">")
+
 end -- function displayAllStatus()
 
 
@@ -1524,83 +2029,13 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		monitor.write("|")
 	end
 
-	drawLine(2,monitorIndex)
 	drawLine(7,monitorIndex)
+	monitor.setCursorPos(1, height)
+	monitor.write("< ")
+	monitor.setCursorPos(width-1, height)
+	monitor.write(" >")
 
-	-- Allow controlling Turbine Flow Rate from GUI
-	-- Decrease flow rate button: 22X, 4Y
-	-- Increase flow rate button: 28X, 4Y
 	local turbineFlowRate = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"])
-	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Decrease to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		--Decrease rod level by amount
-		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
-		if newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 0
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		-- Check bounds [0,2000]
-		if newTurbineFlowRate > 2000 then
-			newTurbineFlowRate = 2000
-		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 0
-		end
-
-		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = newTurbineFlowRate
-		-- Save updated Turbine Flow Rate
-		turbineFlowRate = newTurbineFlowRate
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Increase to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		--Increase rod level by amount
-		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
-		if newTurbineFlowRate > 2000 then
-			newTurbineFlowRate = 2000
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-
-		-- Check bounds [0,2000]
-		if newTurbineFlowRate > 2000 then
-			newTurbineFlowRate = 2000
-		elseif newTurbineFlowRate < 0 then
-			newTurbineFlowRate = 0
-		end
-
-		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-		
-		-- Save updated Turbine Flow Rate
-		turbineFlowRate = math.ceil(newTurbineFlowRate)
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	else
-		printLog("No change to Flow Rate requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-
-	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
-		if newTurbineBaseSpeed < 908 then
-			newTurbineBaseSpeed = 908
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Increase to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
-		if newTurbineBaseSpeed > 2726 then
-			newTurbineBaseSpeed = 2726
-		end
-		sideClick, xClick, yClick = 0, 0, 0
-		_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = newTurbineBaseSpeed
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-	else
-		printLog("No change to Turbine RPM requested by "..progName.." GUI in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 	print{"  mB/t",22,3,monitorIndex}
 	print{"<      >",22,4,monitorIndex}
 	print{stringTrim(turbineFlowRate),24,4,monitorIndex}
@@ -1677,17 +2112,22 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 	printCentered(_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"],12,monitorIndex)
 	monitor.setTextColor(colors.white)
 
+	-- monitor switch controls
+	monitor.setCursorPos(1, height)
+	monitor.write("<")
+	monitor.setCursorPos(width, height)
+	monitor.write(">")
+
 	-- Need equation to figure out rotor efficiency and display
 end -- function displayTurbineBars(statusParams)
 
 
 -- Display turbine status
 local function turbineStatus(turbineIndex, monitorIndex)
-	-- Grab current monitor
-	local monitor = nil
-
 	printLog("Called as turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 
+	-- Grab current monitor
+	local monitor = nil
 	monitor = monitorList[monitorIndex]
 	if not monitor then
 		printLog("monitor["..monitorIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT a valid monitor.")
@@ -1716,31 +2156,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 			turbineStatus = "OFFLINE"
 			monitor.setTextColor(colors.red)
 		end -- if turbine.getActive() then
-
-		if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
-			if yClick == 1 then
-				turbine.setActive(not turbine.getActive()) -- Toggle turbine status
-				_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = turbine.getActive()
-				config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-				sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-			end -- if yClick == 1 then
-		end -- if (xClick >= (width - string.len(turbineStatus) - 1)) and (xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
-
-		-- Allow disabling/enabling flow rate auto-adjust
-		if (xClick > 23 and xClick < 28 and yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
-			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
-			
-			if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
-				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
-			else
-				_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
-			end
-			sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
-		end
-		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
-
+		_G[turbineNames[turbineIndex]]["TurbineOptions"]["Status"] = turbineStatus
 	else
 		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		turbineStatus = "DISCONNECTED"
@@ -1901,44 +2317,142 @@ local function flowRateControl(turbineIndex)
 end -- function flowRateControl(turbineIndex)
 
 
-function main()
-	-- Load reactor parameters and initialize systems
-	loadReactorOptions()
+local function helpText()
 
-	-- Get our initial list of connected monitors and reactors
-	-- and initialize every cycle in case the connected devices change
+	-- these keys are actually defined in eventHandler(), check there
+	return [[Keyboard commands:
+			m	Select next monitor
+			s	Make selected monitor display global status
+			x	Make selected monitor display debug information
+
+			d	Toggle debug mode
+
+			q	Quit
+			r	Quit and reboot
+			h	Print this help
+]]
+
+end -- function helpText()
+
+local function initializePeripherals()
+	monitorAssignments = {}
+	-- Get our list of connected monitors and reactors
 	findMonitors()
 	findReactors()
 	findTurbines()
+	assignMonitors()
+end
 
-	while not finished do
-		local reactor = nil
-		local monitorIndex = 1
-		local sd = 0
 
-		-- For multiple reactors/monitors, monitor #1 is reserved for overall status
-		-- or for multiple reactors/turbines and only one monitor
-		if ( ( ((#reactorList + #turbineList) > 1) and (#monitorList >= 1) )   or
-		     ( ((#reactorList + #turbineList) >=1) and (#monitorList >  1) ) ) then
-			local monitor = nil
-			monitor = monitorList[monitorIndex]
-			if not monitor then
-				printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor.")
-				return -- Invalid monitorIndex
-			end
+local function updateMonitors()
 
-			clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
-			printCentered(progName.." "..progVer, 1, monitorIndex)
-			displayAllStatus()
-			monitorIndex = 2 -- Next monitor, #1 is reserved for overall status
+	-- Display overall status on selected monitors
+	for monitorName, deviceData in pairs(monitorAssignments) do
+		local monitor = nil
+		local monitorIndex = deviceData.index
+		local monitorType =  deviceData.type
+		monitor = monitorList[monitorIndex]
+
+		printLog("main(): Trying to display "..monitorType.." on "..monitorNames[monitorIndex].."["..monitorIndex.."]", DEBUG)
+
+		if #monitorList < (#reactorList + #turbineList + 1) then
+			printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
 		end
 
-		-- Iterate through reactors, continue to run even if not enough monitors are connected
+		if (not monitor) or (not monitor.getSize()) then
+
+			printLog("monitor["..monitorIndex.."] in main() is NOT a valid monitor, discarding", ERROR)
+			monitorAssignments[monitorName] = nil
+			-- we need to get out of the for loop now, or it will dereference x.next (where x is the element we just killed) and crash
+			break
+
+		elseif monitorType == "Status" then
+
+			-- General status display
+			clearMonitor(progName.." "..progVer, monitorIndex) -- Clear monitor and draw borders
+			printCentered(progName.." "..progVer, 1, monitorIndex)
+			displayAllStatus(monitorIndex)
+
+		elseif monitorType == "Reactor" then
+
+			-- Reactor display
+			local reactorMonitorIndex = monitorIndex
+			for reactorIndex = 1, #reactorList do
+
+				if deviceData.reactorName == reactorNames[reactorIndex] then
+
+					printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..monitorIndex.."]...", DEBUG)
+					-- Only attempt to assign a monitor if we have a monitor for this reactor
+					if (reactorMonitorIndex <= #monitorList) then
+						printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
+
+						clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
+						printCentered(progName, 1, reactorMonitorIndex)
+
+						-- Display reactor status, includes "Disconnected" but found reactors
+						reactorStatus{reactorIndex, reactorMonitorIndex}
+
+						-- Draw the borders and bars for the current reactor on the current monitor
+						displayReactorBars{reactorIndex, reactorMonitorIndex}
+					end
+
+				end -- if deviceData.reactorName == reactorNames[reactorIndex] then
+
+			end -- for reactorIndex = 1, #reactorList do
+
+		elseif monitorType == "Turbine" then
+
+			-- Turbine display
+			local turbineMonitorIndex = monitorIndex
+			for turbineIndex = 1, #turbineList do
+
+				if deviceData.turbineName == turbineNames[turbineIndex] then
+					printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...", DEBUG)
+					-- Only attempt to assign a monitor if we have a monitor for this turbine
+					if (turbineMonitorIndex <= #monitorList) then
+						printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
+						clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
+						printCentered(progName, 1, turbineMonitorIndex)
+
+						-- Display turbine status, includes "Disconnected" but found turbines
+						turbineStatus(turbineIndex, turbineMonitorIndex)
+
+						-- Draw the borders and bars for the current turbine on the current monitor
+						displayTurbineBars(turbineIndex, turbineMonitorIndex)
+					end
+				end
+			end
+
+		elseif monitorType == "Debug" then
+
+			-- do nothing, printLog() outputs to here
+
+		else
+
+			clearMonitor(progName, monitorIndex)
+			print{"Monitor  inactive", 7, 7, monitorIndex}
+
+		end -- if monitorType == [...]
+	end
+end
+
+function main()
+	-- Load reactor parameters and initialize systems
+	loadReactorOptions()
+	initializePeripherals()
+
+	write(helpText())
+
+	while not finished do
+
+		updateMonitors()
+
+		local reactor = nil
+		local sd = 0
+
+		-- Iterate through reactors
 		for reactorIndex = 1, #reactorList do
 			local monitor = nil
-			local reactorMonitorIndex = monitorIndex + reactorIndex - 1 -- reactorIndex starts at 1
-
-			printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."]...")
 
 			reactor = reactorList[reactorIndex]
 			if not reactor then
@@ -1947,27 +2461,6 @@ function main()
 			else
 				printLog("reactor["..reactorIndex.."] in main() is a valid Big Reactor.")
 			end --  if not reactor then
-
-			-- Only attempt to assign a monitor if we have a monitor for this reactor
-			if (reactorMonitorIndex <= #monitorList) then
-				printLog("Displaying reactor["..reactorIndex.."] on monitor["..reactorMonitorIndex.."].")
-				monitor = monitorList[reactorMonitorIndex]
-
-				if not monitor then
-					printLog("monitor["..reactorMonitorIndex.."] in main() is NOT a valid monitor.")
-				else
-					clearMonitor(progName, reactorMonitorIndex) -- Clear monitor and draw borders
-					printCentered(progName, 1, reactorMonitorIndex)
-
-					-- Display reactor status, includes "Disconnected" but found reactors
-					reactorStatus{reactorIndex, reactorMonitorIndex}
-
-					-- Draw the borders and bars for the current reactor on the current monitor
-					displayReactorBars{reactorIndex, reactorMonitorIndex}
-				end -- if not monitor
-			else
-				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
-			end -- if (#monitorList ~= 1) and (reactorMonitorIndex < #monitorList) then
 
 			if reactor.getConnected() then
 				printLog("reactor["..reactorIndex.."] is connected.")
@@ -2002,32 +2495,8 @@ function main()
 		steamDelivered = sd
 		steamRequested = 0
 
-		-- Monitors for turbines start after turbineMonitorOffset
+		-- Turbine control
 		for turbineIndex = 1, #turbineList do
-			local monitor = nil
-			local turbineMonitorIndex = turbineIndex + turbineMonitorOffset
-
-			printLog("Attempting to display turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."]...")
-
-			-- Only attempt to assign a monitor if we found a monitor for this turbine
-			if (turbineMonitorIndex <= #monitorList) then
-				printLog("Displaying turbine["..turbineIndex.."] on monitor["..turbineMonitorIndex.."].")
-				monitor = monitorList[turbineMonitorIndex]
-				if not monitor then
-					printLog("monitor["..turbineMonitorIndex.."] in main() is NOT a valid monitor.")
-				else
-					clearMonitor(progName, turbineMonitorIndex) -- Clear monitor and draw borders
-					printCentered(progName, 1, turbineMonitorIndex)
-
-					-- Display turbine status, includes "Disconnected" but found turbines
-					turbineStatus(turbineIndex, turbineMonitorIndex)
-
-					-- Draw the borders and bars for the current turbine on the current monitor
-					displayTurbineBars(turbineIndex, turbineMonitorIndex)
-				end -- if not monitor
-			else
-				printLog("You may want "..(#reactorList + #turbineList + 1).." monitors for your "..#reactorList.." connected reactors and "..#turbineList.." connected turbines.")
-			end -- if (#monitorList ~= 1) and (turbineMonitorIndex < #monitorList) then
 
 			turbine = turbineList[turbineIndex]
 			if not turbine then
@@ -2053,42 +2522,56 @@ function main()
 			end -- if turbine.getConnected() then
 		end -- for reactorIndex = 1, #reactorList do
 
-		sleep(loopTime) -- Sleep
+		wait(loopTime) -- Sleep. No, wait...
 		saveReactorOptions()
 	end -- while not finished do
 end -- main()
 
+-- handle all the user interaction events
+eventHandler = function(event, arg1, arg2, arg3)
 
-local function eventHandler()
-	while not finished do
-		-- http://computercraft.info/wiki/Os.pullEvent
-		-- http://www.computercraft.info/forums2/index.php?/topic/1516-ospullevent-what-is-it-and-how-is-it-useful/
-		event, arg1, arg2, arg3 = os.pullEvent()
+		printLog(string.format("handleEvent(%s, %s, %s, %s)", tostring(event), tostring(arg1), tostring(arg2), tostring(arg3)), DEBUG)
 
 		if event == "monitor_touch" then
 			sideClick, xClick, yClick = arg1, math.floor(arg2), math.floor(arg3)
-			printLog("Side: "..arg1.." Monitor touch X: "..xClick.." Y: "..yClick)
+			UI:handlePossibleClick()
+		elseif (event == "peripheral") or (event == "peripheral_detach") then
+			printLog("Change in network detected. Reinitializing peripherals. We will be back shortly.", WARN)
+			initializePeripherals()
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
+			-- remember to update helpText() when you edit these
 			if ch == "q" then
 				finished = true
 			elseif ch == "d" then
 				debugMode = not debugMode
-				--print("debugMode ",debugMode)
+				local modeText
+				if debugMode then
+					modeText = "on"
+				else
+					modeText = "off"
+				end
+				termRestore()
+				write("debugMode "..modeText.."\n")
+			elseif ch == "m" then
+				UI:selectNextMonitor()
+			elseif ch == "s" then
+				UI:selectStatus()
+			elseif ch == "x" then
+				UI:selectDebug()
 			elseif ch == "r" then
 				finished = true
 				os.reboot()
+			elseif ch == "h" then
+				write(helpText())
 			end -- if ch == "q" then
 		end -- if event == "monitor_touch" then
-	end -- while not finished do
+
+		updateMonitors()
+
 end -- function eventHandler()
 
-
-while not finished do
-	parallel.waitForAny(eventHandler, main)
-	sleep(loopTime)
-end -- while not finished do
-
+main()
 
 -- Clear up after an exit
 term.clear()
