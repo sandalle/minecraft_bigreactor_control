@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.17-ta
+Version: v0.3.17
 Programmer: Lolmer
-Great assistance by Mechaet
-Last update: 2015-04-01
+With reat assistance from @echaet and @thetaphi
+Last update: 2015-04-08
 Pastebin: http://pastebin.com/fguScPBQ
 GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
@@ -100,6 +100,7 @@ ChangeLog:
 	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz).
 	- Added turbine coil auto dis-/engage (Issue #51 and #55) thanks to @thetaphi (Nicolas Kratz).
 	- Stop overzealous controlRodAdjustAmount adjustment amount adjustment Issue #56 thanks to @thetaphi (Nicolas Kratz).
+	- Monitors can be reconfigured via GUI fixes Issue #34 thanks to @thetaphi (Nicolas Kratz).
 
 Prior ChangeLogs are posted at https://github.com/sandalle/minecraft_bigreactor_control/releases
 
