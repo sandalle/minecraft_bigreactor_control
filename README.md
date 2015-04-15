@@ -111,6 +111,10 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.16
+	- Add support for ComputerCraft 1.7 (thanks dkowis and jnyl42, Issue #48).
+	- Fix typo for unsupported OS (found from above)
+
 - 0.3.15
 	- Add ability to override safe values for Issue #39.
 
