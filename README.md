@@ -113,6 +113,15 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.17
+	- Display how much steam (in mB/t) a Turbine is receiving on that Turbine's monitor.
+	- Set monitor scale before checking size fixing Issue #50.
+	- Having a monitor is now optional, closing Issue #46.
+	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz).
+	- Added turbine coil auto dis-/engage (Issue #51 and #55) thanks to @thetaphi (Nicolas Kratz).
+	- Stop overzealous controlRodAdjustAmount adjustment amount adjustment Issue #56 thanks to @thetaphi (Nicolas Kratz).
+	- Monitors can be reconfigured via GUI fixes Issue #34 thanks to @thetaphi (Nicolas Kratz).
+
 - 0.3.16
 	- Add support for ComputerCraft 1.7 (thanks dkowis and jnyl42, Issue #48).
 	- Fix typo for unsupported OS (found from above)
