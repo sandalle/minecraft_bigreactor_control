@@ -21,79 +21,86 @@ To simplify the code and guesswork, I assume the following monitor layout, where
 	one Advanced Monitor for each connected Turbine (last group of monitors found).
 If you enable debug mode, add one additional Advanced Monitor for #1 or #2.
 
-Notes:
-	Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
-	Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
-	Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam.
+Notes
+----------------------------
+- Only one reactor and one, two, and three turbines have been tested with the above, but IN THEORY any number is supported.
+- Devices are found in the reverse order they are plugged in, so monitor_10 will be found before monitor_9.
 
 When using actively cooled reactors with turbines, keep the following in mind:
-	- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
-	- Actively cooled reactors produce steam, not power.
-	- You will need about 10 mB of water for each 1 mB of steam that you want to create in a 7^3 reactor.
+- 1 mB steam carries up to 10RF of potential energy to extract in a turbine.
+- Actively cooled reactors produce steam, not power.
+- You will need about 10 mB of water for each 1 mB of steam that you want to create in a 7^3 reactor.
+- Two 15x15x14 Turbines can output 260K RF/t by just one 7^3 (four rods) reactor putting out 4k mB steam.
 
-Features:
-	Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
-	Disengages coils and minimizes flow for turbines over max energy buffer.
-	ReactorOptions is read on start and then current values are saved every program cycle.
-	Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
-	Auto-adjusts control rods per reactor to maintain temperature.
-	Will display reactor data to all attached monitors of correct dimensions.
-		For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
-	For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
-	A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
+Features
+----------------------------
+- Configurable min/max energy buffer and min/max temperature via ReactorOptions file.
+- Disengages coils and minimizes flow for turbines over max energy buffer.
+- ReactorOptions is read on start and then current values are saved every program cycle.
+- Rod Control value in ReactorOptions is only useful for initial start, after that the program saves the current Rod Control average over all Fuel Rods for next boot.
+- Auto-adjusts control rods per reactor to maintain temperature.
+- Will display reactor data to all attached monitors of correct dimensions.
+	- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+- For multiple monitors, the first monitor (often last plugged in) is the overall status monitor.
+- A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
-GUI Usage:
-	Right-clicking between "< * >" of the last row of a monitor alternates the device selection between Reactor, Turbine, and Status output.
-		Right-clicking "<" and ">" switches between connected devices, starting with the currently selected type, but not limited to them.
-	The other "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
-		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
-		"mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
-		"RPM" will lower/raise the target Turbine RPM for that Turbine
-	Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
-		Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
-	Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
+GUI Usage
+----------------------------
+- Right-clicking between "< * >" of the last row of a monitor alternates the device selection between Reactor, Turbine, and Status output.
+	- Right-clicking "<" and ">" switches between connected devices, starting with the currently selected type, but not limited to them.
+- The other "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
+	- "Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
+	- "mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
+	- "RPM" will lower/raise the target Turbine RPM for that Turbine
+- Right-clicking between the "<" and ">" (not on them) will disable auto-adjust of that value for attached device.
+	- Right-clicking on the "Enabled" or "Disabled" text for auto-adjust will do the same.
+- Right-clicking on "ONLINE" or "OFFLINE" at the top-right will toggle the state of attached device.
 
-Default values:
-	Rod Control: 90% (Let's start off safe and then power up as we can)
-	Minimum Energy Buffer: 15% (will power on below this value)
-	Maximum Energy Buffer: 85% (will power off above this value)
-	Minimum Passive Cooling Temperature: 950^C (will raise control rods below this value)
-	Maximum Passive Cooling Temperature: 1,400^C (will lower control rods above this value)
-	Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
-	Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
-	Optimal Turbine RPM:  900, 1,800, or 2,700 (divisible by 900)
-	New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
+Default values
+----------------------------
+- Rod Control: 90% (Let's start off safe and then power up as we can)
+- Minimum Energy Buffer: 15% (will power on below this value)
+- Maximum Energy Buffer: 85% (will power off above this value)
+- Minimum Passive Cooling Temperature: 950^C (will raise control rods below this value)
+- Maximum Passive Cooling Temperature: 1,400^C (will lower control rods above this value)
+- Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
+- Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
+- Optimal Turbine RPM:  900, 1,800, or 2,700 (divisible by 900)
+	- New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
 
-Requirements:
-	Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
-	Computer or Advanced Computer
-	Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-	Big Reactors (http://www.big-reactors.com/) 0.3.2A+
-	Computercraft (http://computercraft.info/) 1.58 or 1.63+
-	Reset the computer any time number of connected devices change.
+Requirements
+----------------------------
+- Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
+- Computer or Advanced Computer
+- Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
+- Big Reactors (http://www.big-reactors.com/) 0.3.2A+
+- Computercraft (http://computercraft.info/) 1.58, 1.63+, or 1.73+
+- Reset the computer any time number of connected devices change.
 
-Resources:
-This script is available from:
-	http://pastebin.com/fguScPBQ
-	https://github.com/sandalle/minecraft_bigreactor_control
-Start-up script is available from:
-	http://pastebin.com/ZTMzRLez
-	https://github.com/sandalle/minecraft_bigreactor_control
-Other reactor control program which I based my program on:
-	http://pastebin.com/aMAu4X5J (ScatmanJohn)
-	http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
-A simpler Big Reactor control program is available from:
-	http://pastebin.com/7S5xCvgL (IronClaymore only for passively cooled reactors)
+Resources
+----------------------------
+- This script is available from:
+	- http://pastebin.com/fguScPBQ
+	- https://github.com/sandalle/minecraft_bigreactor_control
 
-	Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
-	Computercraft API: http://computercraft.info/wiki/Category:APIs
-	Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
-	Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
-	Big Reactors API: http://big-reactors.com/cc_api.html
-	Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
-	A tutorial from FTB's rhn : http://forum.feed-the-beast.com/threads/rhns-continued-adventures-a-build-journal-guide-collection-etc.42664/page-10#post-657819
+- Start-up script is available from:
+	- http://pastebin.com/ZTMzRLez
+	- https://github.com/sandalle/minecraft_bigreactor_control
+- Other reactor control program which I based my program on:
+	- http://pastebin.com/aMAu4X5J (ScatmanJohn)
+	- http://pastebin.com/HjUVNDau (version ScatmanJohn based his on)
+- A simpler Big Reactor control program is available from:
+	- http://pastebin.com/7S5xCvgL (IronClaymore only for passively cooled reactors)
+- Reactor Computer Port API: http://wiki.technicpack.net/Reactor_Computer_Port
+- Computercraft API: http://computercraft.info/wiki/Category:APIs
+- Big Reactors Efficiency, Speculation and Questions! http://www.reddit.com/r/feedthebeast/comments/1vzds0/big_reactors_efficiency_speculation_and_questions/
+- Big Reactors API code: https://github.com/erogenousbeef/BigReactors/blob/master/erogenousbeef/bigreactors/common/multiblock/tileentity/TileEntityReactorComputerPort.java
+- Big Reactors API: http://big-reactors.com/cc_api.html
+- Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
+- A tutorial from FTB's rhn : http://forum.feed-the-beast.com/threads/rhns-continued-adventures-a-build-journal-guide-collection-etc.42664/page-10#post-657819
 
-ChangeLog:
+ChangeLog
+============================
 - 0.3.17
 	- Display how much steam (in mB/t) a Turbine is receiving on that Turbine's monitor.
 	- Set monitor scale before checking size fixing Issue #50.
@@ -105,13 +112,17 @@ ChangeLog:
 
 Prior ChangeLogs are posted at https://github.com/sandalle/minecraft_bigreactor_control/releases
 
-TODO:
-- Save parameters per reactor instead of one global set for all reactors.
+TODO
+============================
 - Add min/max RF/t output and have it override temperature concerns (maybe?).
 - Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
 - Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment.
 - Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/ .
 - Update cruise mode to work independently for each actively-cooled reactor.
+- Move helper functions into seperate file(s)
+- Redo efficiency as a rate of RF per mB of fuel?
+- "Gauge" GUI for smaller monitors than 3x2, maybe even as small as 1x1.
+- Passive reactor tuning GUI options, control by heat without disabling automatic rod control.
 
 ]]--
 
