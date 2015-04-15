@@ -109,6 +109,8 @@ Resources
 
 - Big Reactor Simulator from http://reddit.com/r/feedthebeast : http://br.sidoh.org/
 
+- A tutorial from FTB's rhn : http://forum.feed-the-beast.com/threads/rhns-continued-adventures-a-build-journal-guide-collection-etc.42664/page-10#post-657819
+
 ChangeLog
 ============================
 - 0.3.16
