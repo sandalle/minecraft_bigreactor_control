@@ -242,12 +242,4 @@ ChangeLog
 
 TODO
 ============================
-- Add min/max RF/t output and have it override temperature concerns (maybe?).
-- Add support for wireless modems, see http://computercraft.info/wiki/Modem_%28API%29, will not be secure (anyone can send/listen to your channels)!
-- Add support for any sized monitor (minimum 3x3), dynamic allocation/alignment.
-- Lookup using pcall for better error handling http://www.computercraft.info/forums2/index.php?/topic/10992-using-pcall/ .
-- Update cruise mode to work independently for each actively-cooled reactor.
-- Move helper functions into seperate file(s)
-- Redo efficiency as a rate of RF per mB of fuel?
-- "Gauge" GUI for smaller monitors than 3x2, maybe even as small as 1x1.
-- Passive reactor tuning GUI options, control by heat without disabling automatic rod control.
+See https://github.com/sandalle/minecraft_bigreactor_control/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement :)
