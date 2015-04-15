@@ -43,8 +43,8 @@ Features:
 	A new cruise mode from mechaet, ONLINE will be "blue" when active, to keep your actively cooled reactors running smoothly.
 
 GUI Usage:
-	The second line of a monitor "< ---------------- >" lets you control what the monitor displays. Clicking "<" and ">" switches between machines of the same type,
-	while clicking between them switches between Reactors, Turbines and Status.
+	Right-clicking between "< * >" of the last row of a monitor alternates the device selection between Reactor, Turbine, and Status output.
+		Right-clicking "<" and ">" switches between connected devices, starting with the currently selected type, but not limited to them.
 	The other "<" and ">" buttons, when right-clicked with the mouse, will decrease and increase, respectively, the values assigned to the monitor:
 		"Rod (%)" will lower/raise the Reactor Control Rods for that Reactor
 		"mB/t" will lower/raise the Turbine Flow Rate maximum for that Turbine
