@@ -104,6 +104,9 @@ Resources
 
 ChangeLog
 ============================
+- 0.3.18
+	- TBD
+
 - 0.3.17
 	- Display how much steam (in mB/t) a Turbine is receiving on that Turbine's monitor.
 	- Set monitor scale before checking size fixing Issue #50.

@@ -1,9 +1,9 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.17
+Version: v0.3.18
 Programmer: Lolmer
 With reat assistance from @echaet and @thetaphi
-Last update: 2015-04-08
+Last update: 2015-05-11
 Pastebin: http://pastebin.com/fguScPBQ
 GitHub: https://github.com/sandalle/minecraft_bigreactor_control
 
@@ -101,14 +101,8 @@ Resources
 
 ChangeLog
 ============================
-- 0.3.17
-	- Display how much steam (in mB/t) a Turbine is receiving on that Turbine's monitor.
-	- Set monitor scale before checking size fixing Issue #50.
-	- Having a monitor is now optional, closing Issue #46.
-	- Incorporate steam supply and demand in reactor control thanks to @thetaphi (Nicolas Kratz).
-	- Added turbine coil auto dis-/engage (Issue #51 and #55) thanks to @thetaphi (Nicolas Kratz).
-	- Stop overzealous controlRodAdjustAmount adjustment amount adjustment Issue #56 thanks to @thetaphi (Nicolas Kratz).
-	- Monitors can be reconfigured via GUI fixes Issue #34 thanks to @thetaphi (Nicolas Kratz).
+- 0.3.18
+	TBD
 
 Prior ChangeLogs are posted at https://github.com/sandalle/minecraft_bigreactor_control/releases
 
@@ -120,7 +114,7 @@ See https://github.com/sandalle/minecraft_bigreactor_control/issues?q=is%3Aopen+
 
 
 -- Some global variables
-local progVer = "0.3.17"
+local progVer = "0.3.18"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
