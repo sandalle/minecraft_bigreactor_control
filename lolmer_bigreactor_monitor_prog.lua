@@ -102,7 +102,7 @@ Resources
 ChangeLog
 ============================
 - 0.3.18
-	TBD
+	Fix Issue #61 (Reactor Online/Offline input non-responsive when reactor is converted from passive to active cooled).
 
 Prior ChangeLogs are posted at https://github.com/sandalle/minecraft_bigreactor_control/releases
 
@@ -2463,26 +2463,28 @@ function main()
 
 			if reactor.getConnected() then
 				printLog("reactor["..reactorIndex.."] is connected.")
-				local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactor)
 
-				-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
-				-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
-				if curStoredEnergyPercent >= maxStoredEnergyPercent then
-					reactor.setActive(false)
-				-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
-				elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and (_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] == true) then
-					reactor.setActive(true)
-				end -- if curStoredEnergyPercent >= maxStoredEnergyPercent then
+				-- Collect steam production data
+				if reactor.isActivelyCooled() then
+					sd = sd + reactor.getHotFluidProducedLastTick()
+				else -- Not actively cooled
+					local curStoredEnergyPercent = getReactorStoredEnergyBufferPercent(reactor)
+
+					-- Shutdown reactor if current stored energy % is >= desired level, otherwise activate
+					-- First pass will have curStoredEnergyPercent=0 until displayBars() is run once
+					if curStoredEnergyPercent >= maxStoredEnergyPercent then
+						reactor.setActive(false)
+					-- Do not auto-start the reactor if it was manually powered off (autoStart=false)
+					elseif (curStoredEnergyPercent <= minStoredEnergyPercent) and (_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] == true) then
+						reactor.setActive(true)
+					end -- if curStoredEnergyPercent >= maxStoredEnergyPercent then
+				end -- if reactor.isActivelyCooled() then
 
 				-- Don't try to auto-adjust control rods if manual control is requested
 				if not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] then
 					temperatureControl(reactorIndex)
 				end -- if not reactorRodOverride then
 
-				-- Collect steam production data
-				if reactor.isActivelyCooled() then
-					sd = sd + reactor.getHotFluidProducedLastTick()
-				end
 			else
 				printLog("reactor["..reactorIndex.."] is NOT connected.")
 			end -- if reactor.getConnected() then

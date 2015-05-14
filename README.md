@@ -105,7 +105,7 @@ Resources
 ChangeLog
 ============================
 - 0.3.18
-	- TBD
+	- Fix Issue #61 (Reactor Online/Offline input non-responsive when reactor is converted from passive to active cooled).
 
 - 0.3.17
 	- Display how much steam (in mB/t) a Turbine is receiving on that Turbine's monitor.
