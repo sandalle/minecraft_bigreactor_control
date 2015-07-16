@@ -1089,6 +1089,14 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = controlRodAdjustAmount
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = reactorNames[reactorIndex]
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["integratedError"] = 0
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["proportionalGain"] = 0.1
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["integralGain"] = 0.1
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["derivativeGain"] = 0.1
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["integralMax"] = 2000
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["integralMin"] = -2000
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"] = 200
+
 				if reactor.getConnected() then
 					printLog("reactor["..reactorIndex.."] in findReactors() is connected.")
 				else
@@ -1463,8 +1471,8 @@ local function reactorCruise(cruiseMaxTemp, cruiseMinTemp, reactorIndex)
 			else
 				rodPercentage = (rodPercentage + 1)
 				--Boundary check
-				if rodPercentage > 99 then
-					reactor.setAllControlRodLevels(99)
+				if rodPercentage > 100 then
+					reactor.setAllControlRodLevels(100)
 				else
 					reactor.setAllControlRodLevels(rodPercentage)
 				end
@@ -1517,99 +1525,56 @@ local function temperatureControl(reactorIndex)
 			-- Actively cooled reactors should range between 0^C-300^C
 			-- Actually, active-cooled reactors should range between 300 and 420C (Mechaet)
 			-- Accordingly I changed the below lines
-			if reactor.isActivelyCooled() and not knowlinglyOverride then
-				-- below was 0
-				localMinReactorTemp = 300
-				-- below was 300
-				localMaxReactorTemp = 420
-			else
-				localMinReactorTemp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMinTemp"]
-				localMaxReactorTemp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorMaxTemp"]
-			end
+--			if reactor.isActivelyCooled() and not knowlinglyOverride then
+--				-- below was 0
+--				localMinReactorTemp = 300
+--				-- below was 300
+--				localMaxReactorTemp = 420
+--			end
 			local lastTempPoll = _G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"]
-			if _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] then
-				--let's bypass all this math and hit the much-more-subtle cruise feature
-				--printLog("min: "..localMinReactorTemp..", max: "..localMaxReactorTemp..", lasttemp: "..lastTempPoll..", ri: "..reactorIndex.."  EOL")
-				reactorCruise(localMaxReactorTemp, localMinReactorTemp, reactorIndex)
-			else
-				local localControlRodAdjustAmount = _G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"]
-				-- Don't bring us to 100, that's effectively a shutdown
-				if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
-					--increase the rods, but by how much?
-					if (reactorTemp > lastTempPoll) then
-						--we're climbing, we need to get this to decrease
-						if ((reactorTemp - lastTempPoll) > 100) then
-							--we're climbing really fast, arrest it
-							if (rodPercentage + (10 * localControlRodAdjustAmount)) > 99 then
-								reactor.setAllControlRodLevels(99)
-							else
-								reactor.setAllControlRodLevels(rodPercentage + (10 * localControlRodAdjustAmount))
-							end
-						else
-							--we're not climbing by leaps and bounds, let's give it a rod adjustment based on temperature increase
-							local diffAmount = reactorTemp - lastTempPoll
-							diffAmount = (round(diffAmount/10, 0))/5
-							_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = diffAmount
-							if (rodPercentage + diffAmount) > 99 then
-								reactor.setAllControlRodLevels(99)
-							else
-								reactor.setAllControlRodLevels(rodPercentage + diffAmount)
-							end
-						end --if ((reactorTemp - lastTempPoll) > 100) then
-					elseif ((lastTempPoll - reactorTemp) < (reactorTemp * 0.005)) then
-						--temperature has stagnated, kick it very lightly
-						local controlRodAdjustment = 1
-						if (rodPercentage + controlRodAdjustment) > 99 then
-							reactor.setAllControlRodLevels(99)
-						else
-							reactor.setAllControlRodLevels(rodPercentage + controlRodAdjustment)
-						end
-					end --if (reactorTemp > lastTempPoll) then
-						--worth noting that if we're above temp but decreasing, we do nothing. let it continue decreasing.
 
-				elseif ((reactorTemp < localMinReactorTemp) and (rodPercentage ~=0)) or (steamRequested - steamDelivered > 0) then
-					--we're too cold. time to warm up, but by how much?
-					if (steamRequested > (steamDelivered*2)) then
-						-- Bridge to machine room: Full steam ahead!
-						reactor.setAllControlRodLevels(0)
-					elseif (reactorTemp < lastTempPoll) then
-						--we're descending, let's stop that.
-						if ((lastTempPoll - reactorTemp) > 100) then
-							--we're headed for a new ice age, bring the heat
-							if (rodPercentage - (10 * localControlRodAdjustAmount)) < 0 then
-								reactor.setAllControlRodLevels(0)
-							else
-								reactor.setAllControlRodLevels(rodPercentage - (10 * localControlRodAdjustAmount))
-							end
-						else
-							--we're not descending quickly, let's bump it based on descent rate
-							local diffAmount = lastTempPoll - reactorTemp
-							diffAmount = (round(diffAmount/10, 0))/5
-							_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = diffAmount
-							if (rodPercentage - diffAmount) < 0 then
-								reactor.setAllControlRodLevels(0)
-							else
-								reactor.setAllControlRodLevels(rodPercentage - diffAmount)
-							end
-						end --if ((lastTempPoll - reactorTemp) > 100) then
-					elseif (reactorTemp == lastTempPoll) then
-						--temperature has stagnated, kick it very lightly
-						local controlRodAdjustment = 1
-						if (rodPercentage - controlRodAdjustment) < 0 then
-							reactor.setAllControlRodLevels(0)
-						else
-							reactor.setAllControlRodLevels(rodPercentage - controlRodAdjustment)
-						end --if (rodPercentage - controlRodAdjustment) < 0 then
+			local target = _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"] -- target is the setpoint
+			local Error = reactorTemp - target
+			local derivedError = reactorTemp - lastTempPoll
 
-					end --if (reactorTemp < lastTempPoll) then
-					--if we're below temp but increasing, do nothing and let it continue to rise.
-				end --if (reactorTemp > localMaxReactorTemp) and (rodPercentage ~= 99) then
+			local integratedError = _G[reactorNames[reactorIndex]]["ReactorOptions"]["integratedError"] + Error
 
-				if ((reactorTemp > localMinReactorTemp) and (reactorTemp < localMaxReactorTemp)) and not (steamRequested - steamDelivered > 0) then
-					--engage cruise mode
-					_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
-				end
-			end -- if reactorCruising then
+			if integratedError > _G[reactorNames[reactorIndex]]["ReactorOptions"]["integralMax"] then
+			   integratedError = _G[reactorNames[reactorIndex]]["ReactorOptions"]["integralMax"]
+			end
+
+			if integratedError < _G[reactorNames[reactorIndex]]["ReactorOptions"]["integralMin"] then
+			   integratedError = _G[reactorNames[reactorIndex]]["ReactorOptions"]["integralMin"]
+			end
+
+			_G[reactorNames[reactorIndex]]["ReactorOptions"]["integratedError"] = integratedError
+
+			
+			-- Coefficients (gains)
+			local Kp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["proportionalGain"]
+			local Ki = _G[reactorNames[reactorIndex]]["ReactorOptions"]["integralGain"]
+			local Kd = _G[reactorNames[reactorIndex]]["ReactorOptions"]["derivativeGain"]
+			
+
+
+			local adjustAmount = round(Kp * Error + Ki * integratedError + Kd * derivedError, 0) -- for the control rods
+			coefficientsString = "Kp:" .. tostring(Kp) .. " Ki:" .. tostring(Ki) .. " Kd:" .. tostring(Kd)
+			errorsString = "Ep:" .. tostring(Error) .. " Ei:" .. tostring(integratedError) .. " Ed:" .. tostring(derivedError) .. " AA:" .. tostring(adjustAmount)
+
+			print{coefficientsString, 1, 7, monitorIndex}
+			print{errorsString, 1, 8, monitorIndex}
+
+			setLevel = rodPercentage + adjustAmount
+			if setLevel > 100 then
+			   setLevel = 100
+			end
+			if setLevel < 0 then
+			   setLevel = 0
+			end
+
+			reactor.setAllControlRodLevels(setLevel)
+
+
 			--always set this number
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = reactorTemp
 			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
@@ -1625,18 +1590,10 @@ local function loadReactorOptions()
 
 	if reactorOptions then
 		-- The following values were added by Lolmer
-		minStoredEnergyPercent = reactorOptions.readLine()
-		maxStoredEnergyPercent = reactorOptions.readLine()
+	        minStoredEnergyPercent = tonumber(reactorOptions.readLine())
+		maxStoredEnergyPercent = tonumber(reactorOptions.readLine())
 		--added by Mechaet
 		-- If we succeeded in reading a string, convert it to a number
-
-		if minStoredEnergyPercent ~= nil then
-			minStoredEnergyPercent = tonumber(minStoredEnergyPercent)
-		end
-
-		if maxStoredEnergyPercent ~= nil then
-			maxStoredEnergyPercent = tonumber(maxStoredEnergyPercent)
-		end
 
 		reactorOptions.close()
 	end -- if reactorOptions then
