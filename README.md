@@ -3,11 +3,9 @@ Lolmer's iteration of the EZ-NUKE Minecraft BigReactor Computercraft Control Pro
 
 Description
 ----------------------------
-This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port.
+This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port. It uses a PID (en.wikipedia.org/wiki/PID_controller) for each device controlled.
 
-This program was designed to work with the mods and versions installed on Never Stop Toasting (NST) Diet
-- http://www.technicpack.net/modpack/details/never-stop-toasting-diet.254882
-- Endeavour: Never Stop Toasting: Diet official Minecraft server http://forums.somethingawful.com/showthread.php?threadid=3603757
+This program was designed to work with the mods and versions installed on FTB Infinity (http://www.feed-the-beast.com/modpacks/FTBInfinity)
 
 To simplify the code and guesswork, I assume the following monitor layout, where each "monitor" listed below is a collection of three wide by two high Advanced Monitors:
 - One Advanced Monitor for overall status display plus
@@ -68,9 +66,9 @@ Default values
 - Maximum Passive Cooling Temperature: 1,400^C (will lower control rods above this value)
 - Minimum Active Cooling Temperature: 300^C (will raise the control rods below this value)
 - Maximum Active Cooling Temperature: 420^C (will lower control rods above this value)
-- Optimal Turbine RPM:  900, 1,800, or 2,700 (divisible by 900)
-	- New user-controlled option for target speed of turbines, defaults to 2726RPM, which is high-optimal.
-
+- Optimal Turbine RPM:  900, 1,800
+	- New user-controlled option for target speed of turbines, defaults to 1817 RPM, which is high-optimal.
+	
 Requirements
 ----------------------------
 - Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
