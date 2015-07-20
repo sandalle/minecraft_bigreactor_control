@@ -5,7 +5,7 @@ Description
 ----------------------------
 This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port. It uses a PID (en.wikipedia.org/wiki/PID_controller) for each device controlled.
 
-This program was designed to work with the mods and versions installed on FTB Infinity (http://www.feed-the-beast.com/modpacks/FTBInfinity)
+This program was designed to work with the mods and versions installed on FTB Infinity 1.7.0 (http://www.feed-the-beast.com/modpacks/FTBInfinity)
 
 To simplify the code and guesswork, I assume the following monitor layout, where each "monitor" listed below is a collection of three wide by two high Advanced Monitors:
 - One Advanced Monitor for overall status display plus
