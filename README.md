@@ -1,4 +1,4 @@
-Lolmer's iteration of the EZ-NUKE Minecraft BigReactor Computercraft Control Program
+Lolmer's iteration of the EZ-NUKE Minecraft BigReactor Computercraft Control Program with more stable control algorithms
 ============================
 
 Description
