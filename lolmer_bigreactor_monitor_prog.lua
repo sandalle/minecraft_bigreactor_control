@@ -179,7 +179,7 @@ local function printLog(printStr, logLevel)
 	logLevel = logLevel or INFO
 	-- No, I'm not going to write full syslog style levels. But this makes it a little easier filtering and finding stuff in the logfile.
 	-- Since you're already looking at it, you can adjust your preferred log level right here.
-	if debugMode and (logLevel >= INFO) then
+	if debugMode and (logLevel >= WARN) then
 		-- If multiple monitors, print to all of them
 		for monitorName, deviceData in pairs(monitorAssignments) do
 			if deviceData.type == "Debug" then
@@ -1127,41 +1127,6 @@ local function findReactors()
 			   end
 			end
 			
-			-- replaced the below commented code with the above for loop. More sane :D
-			-- if tempTable["ReactorOptions"]["baseControlRodLevel"] ~= nil then
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = tempTable["ReactorOptions"]["baseControlRodLevel"]
-			-- end
-			
-			-- if tempTable["ReactorOptions"]["lastTempPoll"] ~= nil then
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = tempTable["ReactorOptions"]["lastTempPoll"]
-			-- end
-			
-			-- if tempTable["ReactorOptions"]["autoStart"] ~= nil then
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = tempTable["ReactorOptions"]["autoStart"]
-			-- end
-			
-			-- if tempTable["ReactorOptions"]["activeCooled"] ~= nil then
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = tempTable["ReactorOptions"]["activeCooled"]
-			-- end
-			
-			
-			
-			-- if tempTable["ReactorOptions"]["rodOverride"] ~= nil then
-			-- 	printLog("Got value from config file for Rod Override, the value is: "..tostring(tempTable["ReactorOptions"]["rodOverride"]).." EOL")
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = tempTable["ReactorOptions"]["rodOverride"]
-			-- end
-			
-			-- if tempTable["ReactorOptions"]["controlRodAdjustAmount"] ~= nil then
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = tempTable["ReactorOptions"]["controlRodAdjustAmount"]
-			-- end
-			
-			-- if tempTable["ReactorOptions"]["reactorName"] ~= nil then
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = tempTable["ReactorOptions"]["reactorName"]
-			-- end
-			
-			-- if tempTable["ReactorOptions"]["reactorCruising"] ~= nil then
-			-- 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = tempTable["ReactorOptions"]["reactorCruising"]
-			-- end
 			
 
 
@@ -1196,6 +1161,11 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = true
 			else
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"] = false
+			end
+			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["targetForSteam"]) == "true") then
+			   _G[reactorNames[reactorIndex]]["ReactorOptions"]["targetForSteam"] = true
+			else
+			   _G[reactorNames[reactorIndex]]["ReactorOptions"]["targetForSteam"] = false
 			end
 
 			local number_configs = {"integratedError", "proportionalGain", "integralGain", "derivativeGain", "integralMax", "integralMin", "reactorTargetTemp"}
@@ -1287,31 +1257,7 @@ local function findTurbines()
 			end
 
 
-			
-			--load values from tempTable, checking for nil values along the way
-			-- if tempTable["TurbineOptions"]["LastSpeed"] ~= nil then
-			-- 	_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"] = tempTable["TurbineOptions"]["LastSpeed"]
-			-- end
-			
-			-- if tempTable["TurbineOptions"]["BaseSpeed"] ~= nil then
-			-- 	_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"] = tempTable["TurbineOptions"]["BaseSpeed"]
-			-- end
-			
-			-- if tempTable["TurbineOptions"]["autoStart"] ~= nil then
-			-- 	_G[turbineNames[turbineIndex]]["TurbineOptions"]["autoStart"] = tempTable["TurbineOptions"]["autoStart"]
-			-- end
-			
-			-- if tempTable["TurbineOptions"]["LastFlow"] ~= nil then
-			-- 	_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = tempTable["TurbineOptions"]["LastFlow"]
-			-- end
-			
-			-- if tempTable["TurbineOptions"]["flowOverride"] ~= nil then
-			-- 	_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = tempTable["TurbineOptions"]["flowOverride"]
-			-- end
-			
-			-- if tempTable["TurbineOptions"]["turbineName"] ~= nil then
-			-- 	_G[turbineNames[turbineIndex]]["TurbineOptions"]["turbineName"] = tempTable["TurbineOptions"]["turbineName"]
-			-- end
+
 
 
 			local number_configs = {"integratedError", "proportionalGain", "integralGain", "derivativeGain", "integralMax", "integralMin"}
@@ -1510,9 +1456,9 @@ local function temperatureControl(reactorIndex)
 			local target
 			local Error
 			local derivedError
-
+			
 			if _G[reactorNames[reactorIndex]]["ReactorOptions"]["targetForSteam"] then
-			   
+			   printLog("Targeting for steam", WARN)
 			   target = steamRequested
 			   Error = steamDelivered - target
 			   derivedError = reactor.getHotFluidProducedLastTick() - _G[reactorNames[reactorIndex]]["ReactorOptions"]["lastSteamPoll"]
@@ -1546,8 +1492,8 @@ local function temperatureControl(reactorIndex)
 			coefficientsString = "Kp:" .. tostring(Kp) .. " Ki:" .. tostring(Ki) .. " Kd:" .. tostring(Kd)
 			errorsString = "Ep:" .. tostring(Error) .. " Ei:" .. tostring(integratedError) .. " Ed:" .. tostring(derivedError) .. " AA:" .. tostring(adjustAmount)
 
-			--print{coefficientsString, 1, 7, monitorIndex}
-			--print{errorsString, 1, 8, monitorIndex}
+			printLog(coefficientsString, WARN)
+			printLog(errorsString, WARN)
 
 			setLevel = rodPercentage + adjustAmount
 
@@ -1559,7 +1505,9 @@ local function temperatureControl(reactorIndex)
 			end
 
 			-- Prevent Runaway
+			printLog("running temperatureControl    Reactor Temp: "..reactorTemp.."    Target Temp: "..target, WARN)
 			if reactorTemp > 2 * target then
+			   printLog("preventing runaway", WARN)
 			   setLevel = 100
 			end
 
