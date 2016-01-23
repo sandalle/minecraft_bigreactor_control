@@ -650,7 +650,8 @@ UI.handlePossibleClick = function(self)
 					self.turbineIndex = #turbineList
 					self:selectTurbine()
 				else
-					self:selectStatus()
+					self.reactorIndex = 1
+					self:selectReactor()
 				end
 			elseif (xClick == width) then
 				self.reactorIndex = 1
