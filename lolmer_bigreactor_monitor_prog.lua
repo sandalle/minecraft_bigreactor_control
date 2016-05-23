@@ -634,7 +634,11 @@ UI.handlePossibleClick = function(self)
 			elseif (xClick == width) then
 				self:selectNextReactor()
 			elseif (3 <= xClick and xClick <= width - 2) then
-				self:selectTurbine()
+				if (#turbineList > 0) then
+					self:selectTurbine()
+				else
+					self:selectStatus()
+				end
 			end
 		elseif (monitorData.type == "Turbine") then
 			if (xClick == 1) then
@@ -646,8 +650,13 @@ UI.handlePossibleClick = function(self)
 			end
 		elseif (monitorData.type == "Status") then
 			if (xClick == 1) then
-				self.turbineIndex = #turbineList
-				self:selectTurbine()
+				if (#turbineList > 0) then
+					self.turbineIndex = #turbineList
+					self:selectTurbine()
+				else
+					self.reactorIndex = 1
+					self:selectReactor()
+				end
 			elseif (xClick == width) then
 				self.reactorIndex = 1
 				self:selectReactor()
