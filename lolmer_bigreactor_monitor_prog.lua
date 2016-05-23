@@ -808,50 +808,48 @@ UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
 	end -- if (xClick >= (width - string.len(reactorStatus) - 1) and xClick <= (width-1)) and (sideClick == monitorNames[monitorIndex]) then
 
 	-- Allow disabling rod level auto-adjust and only manual rod level control
-	if ((xClick > 23 and xClick < 28 and yClick == 4)
-			or (xClick > 20 and xClick < 27 and yClick == 9))
+	if ((xClick > 20 and xClick < 27 and yClick == 9))
 			and (sideClick == monitorNames[monitorIndex]) then
 		_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = not _G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]
 		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 	end -- if (xClick > 23) and (xClick < 28) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 
-	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
-	local newRodPercentage = rodPercentage
-	if (xClick == 23) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Decreasing Rod Levels in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		--Decrease rod level by amount
-		newRodPercentage = rodPercentage - (5 * controlRodAdjustAmount)
-		if newRodPercentage < 0 then
-			newRodPercentage = 0
+
+	local targetTemp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"]
+	local newTargetTemp = targetTemp
+	-- temporary:
+	local targetTempAdjustAmount = 50
+	if (xClick == 21) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
+		printLog("Decreasing Target Temperature in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		--Decrease target temp by amount
+		newTargetTemp = targetTemp - targetTempAdjustAmount
+		if newTargetTemp < 0 then
+			newTargetTemp = 0
 		end
 		sideClick, xClick, yClick = 0, 0, 0
 
-		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		reactor.setAllControlRodLevels(newRodPercentage)
-		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
+		printLog("Setting reactor["..reactorIndex.."] Target Temperature to "..newTargetTemp.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"] = newTargetTemp
 
-		-- Save updated rod percentage
+		-- Save updated target temp
 		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-		rodPercentage = newRodPercentage
+		targetTemp = newTargetTemp
 	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
-		printLog("Increasing Rod Levels in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		--Increase rod level by amount
-		newRodPercentage = rodPercentage + (5 * controlRodAdjustAmount)
-		if newRodPercentage > 100 then
-			newRodPercentage = 100
-		end
+		printLog("Increasing Target Temperature in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		--Increase Target Temperature by amount
+		newTargetTemp = targetTemp + targetTempAdjustAmount
+
 		sideClick, xClick, yClick = 0, 0, 0
 
-		printLog("Setting reactor["..reactorIndex.."] Rod Levels to "..newRodPercentage.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-		reactor.setAllControlRodLevels(newRodPercentage)
-		_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = newRodPercentage
+		printLog("Setting reactor["..reactorIndex.."] Target Temperature to "..newTargetTemp.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"] = newTargetTemp
 		
-		-- Save updated rod percentage
+		-- Save updated target temp
 		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
-		rodPercentage = round(newRodPercentage,0)
+		targetTemp = newTargetTemp
 	else
-		printLog("No change to Rod Levels requested by "..progName.." GUI in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
+		printLog("No change to Target Temp requested by "..progName.." GUI in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 	end -- if (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 end -- UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
 
@@ -1328,7 +1326,7 @@ local function assignMonitors()
 		end
 	else
 		printLog("No valid monitor configuration found, generating...")
-
+		--print(tostring(monitorNames))
 		-- create assignments that reflect the setup before 0.3.17
 		local monitorIndex = 1
 		monitorAssignments[monitorNames[1]] = {type="Status", index=1}
@@ -1412,8 +1410,7 @@ local function getTurbineStoredEnergyBufferPercent(turbine)
 end -- function getTurbineStoredEnergyBufferPercent(turbine)
 
 
--- Modify reactor control rod levels to keep temperature with defined parameters, but
--- wait an in-game half-hour for the temperature to stabalize before modifying again
+-- Modify reactor control rod levels to keep temperature with defined parameters
 local function temperatureControl(reactorIndex)
 	printLog("Called as temperatureControl(reactorIndex="..reactorIndex..")")
 
@@ -1450,7 +1447,7 @@ local function temperatureControl(reactorIndex)
 --				-- below was 300
 --				localMaxReactorTemp = 420
 --			end
-
+		        -- and I (matthew) got rid of them because of the new control algorithm
 			local lastTempPoll = _G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"]
 
 			local target
@@ -1492,8 +1489,8 @@ local function temperatureControl(reactorIndex)
 			coefficientsString = "Kp:" .. tostring(Kp) .. " Ki:" .. tostring(Ki) .. " Kd:" .. tostring(Kd)
 			errorsString = "Ep:" .. tostring(Error) .. " Ei:" .. tostring(integratedError) .. " Ed:" .. tostring(derivedError) .. " AA:" .. tostring(adjustAmount)
 
-			printLog(coefficientsString, WARN)
-			printLog(errorsString, WARN)
+			printLog(coefficientsString, INFO)
+			printLog(errorsString, INFO)
 
 			setLevel = rodPercentage + adjustAmount
 
@@ -1588,6 +1585,7 @@ local function displayReactorBars(barParams)
 	-- Grab current reactor
 	local reactor = nil
 	reactor = reactorList[reactorIndex]
+	local reactorInfo = _G[reactorNames[reactorIndex]]
 	if not reactor then
 		printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT a valid Big Reactor.")
 		return -- Invalid reactorIndex
@@ -1606,7 +1604,7 @@ local function displayReactorBars(barParams)
 	printLog("Size of monitor is "..width.."w x"..height.."h in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..")")
 
 	for i=3, 5 do
-		monitor.setCursorPos(22, i)
+		monitor.setCursorPos(20, i)
 		monitor.write("|")
 	end
 
@@ -1639,9 +1637,11 @@ local function displayReactorBars(barParams)
 
 	local rodPercentage = math.ceil(reactor.getControlRodLevel(0))
 	printLog("Current Rod Percentage for reactor["..reactorIndex.."] is "..rodPercentage.."% in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
-	print{"Rod (%)",23,3,monitorIndex}
-	print{"<     >",23,4,monitorIndex}
-	print{stringTrim(rodPercentage),25,4,monitorIndex}
+	print{"Target °C",21,3,monitorIndex}
+	print{"<       >",21,4,monitorIndex}
+	--print{stringTrim(rodPercentage),23,4,monitorIndex}
+	local target = tostring(reactorInfo["ReactorOptions"]["reactorTargetTemp"])
+	print{stringTrim(target),23,4,monitorIndex}
 
 
 	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
