@@ -1065,7 +1065,7 @@ end -- local function findMonitors()
 -- Initialize all Big Reactors - Reactors
 local function findReactors()
 	-- Empty out old list of reactors
-	newReactorList = {}
+	local newReactorList = {}
 	printLog("Finding reactors...")
 	newReactorList, reactorNames = getDevices("BigReactors-Reactor")
 
@@ -1195,7 +1195,7 @@ end -- function findReactors()
 -- Initialize all Big Reactors - Turbines
 local function findTurbines()
 	-- Empty out old list of turbines
-	newTurbineList = {}
+	local newTurbineList = {}
 
 	printLog("Finding turbines...")
 	newTurbineList, turbineNames = getDevices("BigReactors-Turbine")
@@ -1495,13 +1495,13 @@ local function temperatureControl(reactorIndex)
 
 
 			local adjustAmount = round(Kp * Error + Ki * integratedError + Kd * derivedError, 0) -- for the control rods
-			coefficientsString = "Kp:" .. tostring(Kp) .. " Ki:" .. tostring(Ki) .. " Kd:" .. tostring(Kd)
-			errorsString = "Ep:" .. tostring(Error) .. " Ei:" .. tostring(integratedError) .. " Ed:" .. tostring(derivedError) .. " AA:" .. tostring(adjustAmount)
+			local coefficientsString = "Kp:" .. tostring(Kp) .. " Ki:" .. tostring(Ki) .. " Kd:" .. tostring(Kd)
+			local errorsString = "Ep:" .. tostring(Error) .. " Ei:" .. tostring(integratedError) .. " Ed:" .. tostring(derivedError) .. " AA:" .. tostring(adjustAmount)
 
 			printLog(coefficientsString, INFO)
 			printLog(errorsString, INFO)
 
-			setLevel = rodPercentage + adjustAmount
+			local setLevel = rodPercentage + adjustAmount
 
 			if setLevel > 100 then
 			   setLevel = 100
@@ -2331,6 +2331,7 @@ function main()
 
 	write(helpText())
 
+	--TODO: this is a global variable set by the event handler!
 	while not finished do
 
 		updateMonitors()
@@ -2388,7 +2389,7 @@ function main()
 		-- Turbine control
 		for turbineIndex = 1, #turbineList do
 
-			turbine = turbineList[turbineIndex]
+			local turbine = turbineList[turbineIndex]
 			if not turbine then
 				printLog("turbine["..turbineIndex.."] in main() is NOT a valid Big Turbine.")
 				break -- Invalid turbineIndex
