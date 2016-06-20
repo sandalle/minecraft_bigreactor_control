@@ -368,7 +368,7 @@ local function round(num, places)
 	end
 
 	local integer, decimal = math.modf(num*mult+addon)
-	newNum = integer/mult
+	local newNum = integer/mult
 	printLog("Called round(num="..num..",places="..places..") returns \""..newNum.."\".")
 	return newNum
 end -- function round(num, places)
