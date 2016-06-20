@@ -247,7 +247,7 @@ local function tprint (tbl, loglevel, indent)
 	if not loglevel then loglevel = DEBUG end
 	if not indent then indent = 0 end
 	for k, v in pairs(tbl) do
-		formatting = string.rep("  ", indent) .. k .. ": "
+		local formatting = string.rep("  ", indent) .. k .. ": "
 		if type(v) == "table" then
 			printLog(formatting, loglevel)
 			tprint(v, loglevel, indent+1)
