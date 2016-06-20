@@ -925,7 +925,7 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Decrease rod level by amount
-		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
+		local newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
 		if newTurbineFlowRate < 0 then
 			newTurbineFlowRate = 0
 		end
@@ -946,7 +946,7 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increase to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Increase rod level by amount
-		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
+		local newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
 		end
@@ -971,8 +971,8 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 
 	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
+		local rpmRateAdjustment = 909
+		local newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
 		if newTurbineBaseSpeed < 908 then
 			newTurbineBaseSpeed = 908
 		end
@@ -981,8 +981,8 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increase to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
+		local rpmRateAdjustment = 909
+		local newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
 		if newTurbineBaseSpeed > 2726 then
 			newTurbineBaseSpeed = 2726
 		end
