@@ -1022,6 +1022,7 @@ local function findMonitors()
 				end -- if monitorIndex == #monitorList then
 				break -- Invalid monitorIndex
 			else -- valid monitor
+				monitor.setTextScale(2) -- Reset scale, see Issue #68
 				monitor.setTextScale(1.0) -- Make sure scale is correct
 				monitorX, monitorY = monitor.getSize()
 
