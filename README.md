@@ -103,7 +103,11 @@ Resources
 ChangeLog
 ============================
 - 0.3.18
-	- Fix Issue #61 (Reactor Online/Offline input non-responsive when reactor is converted from passive to active cooled).
+	- Fix Reactor Online/Offline input non-responsive when reactor is converted from passive to active cooled (Issue #61).
+	- Fix setTextScale reset to fix monitor bug in CC (Issue #68) thanks to @emp3d and @Slacker101).
+	- Fix GUI crash with no turbines, switch Status and Reactor screens with no turbines (Pull #69) thanks @Tsudico.
+	- New control algorithms using PID controllers (Pull #74) thanks to @mattsoulanille.
+	- Tiny fixes for variable leaking (Pull #75) thanks to @dkowis.
 
 - 0.3.17
 	- Display how much steam (in mB/t) a Turbine is receiving on that Turbine's monitor.
