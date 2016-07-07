@@ -204,7 +204,7 @@ local function printLog(printStr, logLevel)
 					termRestore()
 				end
 			end
-		end -- for 
+		end -- for
 
 		local logFile = fs.open("reactorcontrol.log", "a") -- See http://computercraft.info/wiki/Fs.open
 		if logFile then
@@ -247,12 +247,12 @@ local function tprint (tbl, loglevel, indent)
 	if not loglevel then loglevel = DEBUG end
 	if not indent then indent = 0 end
 	for k, v in pairs(tbl) do
-		formatting = string.rep("  ", indent) .. k .. ": "
+		local formatting = string.rep("  ", indent) .. k .. ": "
 		if type(v) == "table" then
 			printLog(formatting, loglevel)
 			tprint(v, loglevel, indent+1)
 		elseif type(v) == 'boolean' or type(v) == "function" then
-			printLog(formatting .. tostring(v), loglevel)      
+			printLog(formatting .. tostring(v), loglevel)
 		else
 			printLog(formatting .. v, loglevel)
 		end
@@ -286,7 +286,7 @@ config.save = function(path, tab)
 			key2 = key2:gsub(";", "\\;")
 			key2 = key2:gsub("=", "\\=")
 			value2 = value2:gsub(";", "\\;")
-			value2 = value2:gsub("=", "\\=")	
+			value2 = value2:gsub("=", "\\=")
 			f:write(key2.."="..value2.."\n")
 		end
 		i = i + 1
@@ -310,44 +310,44 @@ config.load = function(path)
 		local found = false
 		local pos = 0
 		while line ~= nil do
-			found = false		
+			found = false
 			line = line:gsub("\\;", "#_!36!_#") -- to keep \;
 			line = line:gsub("\\=", "#_!71!_#") -- to keep \=
 			if line ~= "" then
 				-- Delete comments
 				newLine = line
 				line = ""
-				for i=1, string.len(newLine) do				
+				for i=1, string.len(newLine) do
 					if string.sub(newLine, i, i) ~= ";" then
-						line = line..newLine:sub(i, i)						
-					else				
+						line = line..newLine:sub(i, i)
+					else
 						break
 					end
 				end
 				line = stringTrim(line)
-				-- Find tag			
+				-- Find tag
 				if line:sub(1, 1) == "[" and line:sub(line:len(), line:len()) == "]" then
 					currentTag = stringTrim(line:sub(2, line:len()-1))
 					tab[currentTag] = {}
-					found = true							
+					found = true
 				end
 				-- Find key and values
-				if not found and line ~= "" then				
-					pos = line:find("=")				
+				if not found and line ~= "" then
+					pos = line:find("=")
 					if pos == nil then
 						error("Bad INI file structure")
 					end
 					line = line:gsub("#_!36!_#", ";")
 					line = line:gsub("#_!71!_#", "=")
 					tab[currentTag][stringTrim(line:sub(1, pos-1))] = stringTrim(line:sub(pos+1, line:len()))
-					found = true			
-				end			
+					found = true
+				end
 			end
 			line = f.readLine()
 		end
-		
+
 		f:close()
-		
+
 		return tab
 	else
 		printLog("Could NOT opened "..path.." for reading! EOL")
@@ -368,7 +368,7 @@ local function round(num, places)
 	end
 
 	local integer, decimal = math.modf(num*mult+addon)
-	newNum = integer/mult
+	local newNum = integer/mult
 	printLog("Called round(num="..num..",places="..places..") returns \""..newNum.."\".")
 	return newNum
 end -- function round(num, places)
@@ -695,14 +695,14 @@ UI.selectNextMonitor = function(self)
 	self:logChange(messageText)
 end -- UI.selectNextMonitor()
 
-	
+
 UI.selectReactor = function(self)
 	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Reactor", index=self.monitorIndex, reactorName=reactorNames[self.reactorIndex], reactorIndex=self.reactorIndex}
 	saveMonitorAssignments()
 	local messageText = "Selected reactor "..reactorNames[self.reactorIndex].." for display on "..monitorNames[self.monitorIndex]
 	self:logChange(messageText)
 end -- UI.selectReactor()
-	
+
 UI.selectPrevReactor = function(self)
 	if self.reactorIndex <= 1 then
 		self.reactorIndex = #reactorList
@@ -731,7 +731,7 @@ UI.selectTurbine = function(self)
 	local messageText = "Selected turbine "..turbineNames[self.turbineIndex].." for display on "..monitorNames[self.monitorIndex]
 	self:logChange(messageText)
 end -- UI.selectTurbine()
-	
+
 UI.selectPrevTurbine = function(self)
 	if self.turbineIndex <= 1 then
 		self.turbineIndex = #turbineList
@@ -742,7 +742,7 @@ UI.selectPrevTurbine = function(self)
 		self:selectTurbine()
 	end
 end -- UI.selectPrevTurbine()
-	
+
 UI.selectNextTurbine = function(self)
 	if self.turbineIndex >= #turbineList then
 		self.turbineIndex = 1
@@ -752,7 +752,7 @@ UI.selectNextTurbine = function(self)
 		self:selectTurbine()
 	end
 end -- UI.selectNextTurbine()
-	
+
 
 UI.selectStatus = function(self)
 	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Status", index=self.monitorIndex}
@@ -760,7 +760,7 @@ UI.selectStatus = function(self)
 	local messageText = "Selected status summary for display on "..monitorNames[self.monitorIndex]
 	self:logChange(messageText)
 end -- UI.selectStatus()
-	
+
 UI.selectDebug = function(self)
 	monitorAssignments[monitorNames[self.monitorIndex]] = {type="Debug", index=self.monitorIndex}
 	saveMonitorAssignments()
@@ -768,7 +768,7 @@ UI.selectDebug = function(self)
 	local messageText = "Selected debug output for display on "..monitorNames[self.monitorIndex]
 	self:logChange(messageText)
 end -- UI.selectDebug()
-	
+
 -- Allow controlling Reactor Control Rod Level from GUI
 UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
 
@@ -853,7 +853,7 @@ UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
 
 		printLog("Setting reactor["..reactorIndex.."] Target Temperature to "..newTargetTemp.."% in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 		_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"] = newTargetTemp
-		
+
 		-- Save updated target temp
 		config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 		targetTemp = newTargetTemp
@@ -912,7 +912,7 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 		_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = true
 		sideClick, xClick, yClick = 0, 0, 0 -- Reset click after we register it
 	elseif (xClick > 20 and xClick < 27 and yClick == 10) and (sideClick == monitorNames[monitorIndex]) then
-		
+
 		if ((_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "true")) then
 			_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] = false
 		else
@@ -925,7 +925,7 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 	if (xClick == 22) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Decrease rod level by amount
-		newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
+		local newTurbineFlowRate = turbineFlowRate - flowRateAdjustAmount
 		if newTurbineFlowRate < 0 then
 			newTurbineFlowRate = 0
 		end
@@ -946,7 +946,7 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 	elseif (xClick == 29) and (yClick == 4) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increase to Flow Rate requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
 		--Increase rod level by amount
-		newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
+		local newTurbineFlowRate = turbineFlowRate + flowRateAdjustAmount
 		if newTurbineFlowRate > 2000 then
 			newTurbineFlowRate = 2000
 		end
@@ -960,7 +960,7 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 		end
 
 		turbine.setFluidFlowRateMax(newTurbineFlowRate)
-		
+
 		-- Save updated Turbine Flow Rate
 		turbineFlowRate = math.ceil(newTurbineFlowRate)
 		_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastFlow"] = turbineFlowRate
@@ -971,8 +971,8 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 
 	if (xClick == 22) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Decrease to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
+		local rpmRateAdjustment = 909
+		local newTurbineBaseSpeed = turbineBaseSpeed - rpmRateAdjustment
 		if newTurbineBaseSpeed < 908 then
 			newTurbineBaseSpeed = 908
 		end
@@ -981,8 +981,8 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 		config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 	elseif (xClick == 29) and (yClick == 6) and (sideClick == monitorNames[monitorIndex]) then
 		printLog("Increase to Turbine RPM requested by "..progName.." GUI in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..").")
-		rpmRateAdjustment = 909
-		newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
+		local rpmRateAdjustment = 909
+		local newTurbineBaseSpeed = turbineBaseSpeed + rpmRateAdjustment
 		if newTurbineBaseSpeed > 2726 then
 			newTurbineBaseSpeed = 2726
 		end
@@ -1065,7 +1065,7 @@ end -- local function findMonitors()
 -- Initialize all Big Reactors - Reactors
 local function findReactors()
 	-- Empty out old list of reactors
-	newReactorList = {}
+	local newReactorList = {}
 	printLog("Finding reactors...")
 	newReactorList, reactorNames = getDevices("BigReactors-Reactor")
 
@@ -1107,7 +1107,7 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["integralMin"] = -200
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"] = 200
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["targetForSteam"] = false
-				
+
 				if reactor.getConnected() then
 					printLog("reactor["..reactorIndex.."] in findReactors() is connected.")
 				else
@@ -1115,7 +1115,7 @@ local function findReactors()
 					return -- Disconnected reactor
 				end
 			end
-			
+
 			--failsafe
 			local tempTable = _G[reactorNames[reactorIndex]]
 
@@ -1125,35 +1125,35 @@ local function findReactors()
 			else
 				--if we don't have a valid config from disk, make a valid config
 				config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])			end
-			
+
 			--load values from tempTable, checking for nil values along the way
-			
+
 			for k, v in pairs(_G[reactorNames[reactorIndex]]["ReactorOptions"]) do
 			   if tempTable["ReactorOptions"][k] ~= nil then
 			      _G[reactorNames[reactorIndex]]["ReactorOptions"][k] = tempTable["ReactorOptions"][k]
 			   end
 			end
-			
-			
+
+
 
 
 			--stricter typing, let's set these puppies up with the right type of value.
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["baseControlRodLevel"])
-			
+
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"])
-			
+
 			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"]) == "true") then
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = true
 			else
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = false
 			end
-			
+
 			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"]) == "true") then
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = true
 			else
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = false
 			end
-			
+
 			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]) == "true") then
 				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to true because value was "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = true
@@ -1161,7 +1161,7 @@ local function findReactors()
 				printLog("Setting Rod Override for  "..reactorNames[reactorIndex].." to false because value was "..tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"]).." EOL")
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
 			end
-			
+
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"])
 
 			if (tostring(_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorCruising"]) == "true") then
@@ -1179,7 +1179,7 @@ local function findReactors()
 			for k, v in pairs(number_configs) do
 			   _G[reactorNames[reactorIndex]]["ReactorOptions"][v] = tonumber(_G[reactorNames[reactorIndex]]["ReactorOptions"][v])
 			end
-						
+
 			--save one more time, in case we didn't have a complete config file before
 			config.save(reactorNames[reactorIndex]..".options", _G[reactorNames[reactorIndex]])
 		end -- for reactorIndex = 1, #newReactorList do
@@ -1195,7 +1195,7 @@ end -- function findReactors()
 -- Initialize all Big Reactors - Turbines
 local function findTurbines()
 	-- Empty out old list of turbines
-	newTurbineList = {}
+	local newTurbineList = {}
 
 	printLog("Finding turbines...")
 	newTurbineList, turbineNames = getDevices("BigReactors-Turbine")
@@ -1217,7 +1217,7 @@ local function findTurbines()
 
 				return -- Invalid turbineIndex
 			else
-			
+
 				_G[turbineNames[turbineIndex]] = {}
 				_G[turbineNames[turbineIndex]]["TurbineOptions"] = {}
 				_G[turbineNames[turbineIndex]]["TurbineOptions"]["LastSpeed"] = 0
@@ -1244,10 +1244,10 @@ local function findTurbines()
 					return -- Disconnected turbine
 				end
 			end
-			
+
 			--failsafe
 			local tempTable = _G[turbineNames[turbineIndex]]
-			
+
 			--check to make sure we get a valid config
 			if (config.load(turbineNames[turbineIndex]..".options")) ~= nil then
 				tempTable = config.load(turbineNames[turbineIndex]..".options")
@@ -1272,7 +1272,7 @@ local function findTurbines()
 			   _G[turbineNames[turbineIndex]]["TurbineOptions"][v] = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"][v])
 			end
 
-			
+
 			--save once more just to make sure we got it
 			config.save(turbineNames[turbineIndex]..".options", _G[turbineNames[turbineIndex]])
 		end -- for turbineIndex = 1, #newTurbineList do
@@ -1293,7 +1293,7 @@ local function assignMonitors()
 
 	printLog("Assigning monitors...")
 
-	local m = config.load(monitorOptionFileName) 
+	local m = config.load(monitorOptionFileName)
 	if (m ~= nil) then
 		-- first, merge the detected and the configured monitor lists
 		-- this is to ensure we pick up new additions to the network
@@ -1305,7 +1305,7 @@ local function assignMonitors()
 			printLog("Looking for monitor and device named "..monitorName.." and "..assignedName)
 			for monitorIndex = 1, #monitorNames do
 				printLog("if "..monitorName.." == "..monitorNames[monitorIndex].." then", DEBUG)
-				
+
 				if monitorName == monitorNames[monitorIndex] then
 					printLog("Found "..monitorName.." at index "..monitorIndex, DEBUG)
 					if assignedName == "Status" then
@@ -1462,7 +1462,7 @@ local function temperatureControl(reactorIndex)
 			local target
 			local Error
 			local derivedError
-			
+
 			if _G[reactorNames[reactorIndex]]["ReactorOptions"]["targetForSteam"] then
 			   printLog("Targeting for steam", WARN)
 			   target = steamRequested
@@ -1487,21 +1487,21 @@ local function temperatureControl(reactorIndex)
 
 			_G[reactorNames[reactorIndex]]["ReactorOptions"]["integratedError"] = integratedError
 
-			
+
 			-- Coefficients (gains)
 			local Kp = _G[reactorNames[reactorIndex]]["ReactorOptions"]["proportionalGain"]
 			local Ki = _G[reactorNames[reactorIndex]]["ReactorOptions"]["integralGain"]
 			local Kd = _G[reactorNames[reactorIndex]]["ReactorOptions"]["derivativeGain"]
-			
+
 
 			local adjustAmount = round(Kp * Error + Ki * integratedError + Kd * derivedError, 0) -- for the control rods
-			coefficientsString = "Kp:" .. tostring(Kp) .. " Ki:" .. tostring(Ki) .. " Kd:" .. tostring(Kd)
-			errorsString = "Ep:" .. tostring(Error) .. " Ei:" .. tostring(integratedError) .. " Ed:" .. tostring(derivedError) .. " AA:" .. tostring(adjustAmount)
+			local coefficientsString = "Kp:" .. tostring(Kp) .. " Ki:" .. tostring(Ki) .. " Kd:" .. tostring(Kd)
+			local errorsString = "Ep:" .. tostring(Error) .. " Ei:" .. tostring(integratedError) .. " Ed:" .. tostring(derivedError) .. " AA:" .. tostring(adjustAmount)
 
 			printLog(coefficientsString, INFO)
 			printLog(errorsString, INFO)
 
-			setLevel = rodPercentage + adjustAmount
+			local setLevel = rodPercentage + adjustAmount
 
 			if setLevel > 100 then
 			   setLevel = 100
@@ -2076,7 +2076,7 @@ end -- function function turbineStatus(turbineIndex, monitorIndex)
 -- Adjust Turbine flow rate to maintain 900 or 1,800 RPM, and disengage coils when buffer full
 local function flowRateControl(turbineIndex)
 	if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
-		
+
 		printLog("Called as flowRateControl(turbineIndex="..turbineIndex..").")
 
 		-- Grab current turbine
@@ -2118,7 +2118,7 @@ local function flowRateControl(turbineIndex)
 			end
 			if currentStoredEnergyPercent > 85 or turbineBaseSpeed - rotorSpeed > 50 then
 			   coilsEngaged = false
-			   
+
 			end
 
 
@@ -2143,19 +2143,19 @@ local function flowRateControl(turbineIndex)
 			end
 
 			_G[turbineNames[turbineIndex]]["TurbineOptions"]["integratedError"] = integratedError
-			
-			
-			
-			
+
+
+
+
 			local Kp = _G[turbineNames[turbineIndex]]["TurbineOptions"]["proportionalGain"]
 			local Ki = _G[turbineNames[turbineIndex]]["TurbineOptions"]["integralGain"]
 			local Kd = _G[turbineNames[turbineIndex]]["TurbineOptions"]["derivativeGain"]
-			
+
 			local adjustAmount = round(Kp * Error + Ki * integratedError + Kd * derivedError, 0) -- for the turbine flow rate
-			
+
 			newFlowRate = flowRate + adjustAmount
-			
-			
+
+
 
 
 			-- Failsafe to prevent explosions
@@ -2267,7 +2267,7 @@ local function updateMonitors()
 			for reactorIndex = 1, #reactorList do
 
 				if deviceData.reactorName == reactorNames[reactorIndex] then
-				   
+
 					printLog("Attempting to display reactor["..reactorIndex.."] on monitor["..monitorIndex.."]...", DEBUG)
 					-- Only attempt to assign a monitor if we have a monitor for this reactor
 					if (reactorMonitorIndex <= #monitorList) then
@@ -2331,6 +2331,7 @@ function main()
 
 	write(helpText())
 
+	--TODO: this is a global variable set by the event handler!
 	while not finished do
 
 		updateMonitors()
@@ -2388,7 +2389,7 @@ function main()
 		-- Turbine control
 		for turbineIndex = 1, #turbineList do
 
-			turbine = turbineList[turbineIndex]
+			local turbine = turbineList[turbineIndex]
 			if not turbine then
 				printLog("turbine["..turbineIndex.."] in main() is NOT a valid Big Turbine.")
 				break -- Invalid turbineIndex
