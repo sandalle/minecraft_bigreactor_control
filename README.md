@@ -5,7 +5,18 @@ Description
 ----------------------------
 This program controls a Big Reactors nuclear reactor in Minecraft with a Computercraft computer, using Computercraft's own wired modem connected to the reactors computer control port. It uses a PID (en.wikipedia.org/wiki/PID_controller) for each device controlled.
 
-This program was designed to work with the mods and versions installed on FTB Infinity 1.7.0 (http://www.feed-the-beast.com/modpacks/FTBInfinity)
+These scripts are known to run on:
+- Minecraft 1.6.4
+	- NST Diet (https://www.technicpack.net/modpack/never-stop-toasting-diet.254882)
+	- NST Maxx (https://www.technicpack.net/modpack/nstmaxx.398172)
+
+- Minecraft 1.7.10
+	- FTB Infinity (http://www.feed-the-beast.com/modpacks/FTBInfinity)
+	- Modderation: Permabanned (https://www.technicpack.net/modpack/modderation-permabanned-edition.449941)
+	- Modderation: FYAD (https://www.technicpack.net/modpack/modderation-fyad-edition.696257)
+
+- Minecraft 1.12:
+	- All the Mods 3 (https://minecraft.curseforge.com/projects/all-the-mods-3)
 
 To simplify the code and guesswork, I assume the following monitor layout, where each "monitor" listed below is a collection of three wide by two high Advanced Monitors:
 - One Advanced Monitor for overall status display plus
@@ -74,8 +85,8 @@ Requirements
 - Advanced Monitor size is X: 29, Y: 12 with a 3x2 size
 - Computer or Advanced Computer
 - Modems (not wireless) connecting each of the Computer to both the Advanced Monitor and Reactor Computer Port.
-- Big Reactors (http://www.big-reactors.com/) 0.3.2A+
-- Computercraft (http://computercraft.info/) 1.58, 1.63+, or 1.73+
+- Big Reactors (http://www.big-reactors.com/) 0.3.2A+ or Extreme Reactors (https://minecraft.curseforge.com/projects/extreme-reactors)
+- Computercraft (http://computercraft.info/) 1.58, 1.63+, 1.73+, or 1.80pr1+
 - Reset the computer any time number of connected devices change.
 
 Resources
