@@ -1429,8 +1429,7 @@ local function getTurbineStoredEnergyBufferPercent(turbine)
 		printLog("getTurbineStoredEnergyBufferPercent() did receive a valid Big Reactor Turbine.")
 	end
 
-	local energyBufferStorage = turbine.getEnergyStored()
-	return round(energyBufferStorage/10000, 1) -- (buffer/1000000 RF)*100%
+	return round(100*turbine.getEnergyStored()/turbine.getEnergyCapacity(), 1) -- (buffer/capacity RF)*100%
 end -- function getTurbineStoredEnergyBufferPercent(turbine)
 
 
