@@ -243,7 +243,7 @@ local function formatReadableSIUnit(num)
 	num = tonumber(num)
 	if(num < 1000) then return tostring(num) end
 	local sizes = {"", "k", "M", "G", "T", "P", "E"}
-	local exponent = math.floor(math.log10(num))
+	local exponent = math.floor(math.log(num,10))
 	local group = math.floor(exponent / 3)
 	if group > #sizes then
 		return string.format("%e", num)
@@ -727,8 +727,12 @@ end -- UI.selectPrevReactor()
 UI.selectNextReactor = function(self)
 	if self.reactorIndex >= #reactorList then
 		self.reactorIndex = 1
-		self.turbineIndex = 1
-		self:selectTurbine()
+		if #turbineList > 0 then
+			self.turbineIndex = 1
+			self:selectTurbine()
+		else
+			self:selectStatus()
+		end
 	else
 		self.reactorIndex = self.reactorIndex + 1
 		self:selectReactor()
@@ -802,12 +806,12 @@ UI.handleReactorMonitorClick = function(self, reactorIndex, monitorIndex)
 		return -- Invalid reactorIndex
 	else
 		printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is a valid Big Reactor.")
-		if reactor.getConnected() then
+		if reactor.mbIsConnected() then
 			printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is connected.")
 		else
 			printLog("reactor["..reactorIndex.."] in handleReactorMonitorClick(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 			return -- Disconnected reactor
-		end -- if reactor.getConnected() then
+		end -- if reactor.mbIsConnected() then
 	end -- if not reactor then
 
 	local reactorStatus = _G[reactorNames[reactorIndex]]["ReactorOptions"]["Status"]
@@ -895,12 +899,12 @@ UI.handleTurbineMonitorClick = function(self, turbineIndex, monitorIndex)
 		return -- Invalid turbineIndex
 	else
 		printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is a valid Big Turbine.")
-		if turbine.getConnected() then
+		if turbine.mbIsConnected() then
 			printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is connected.")
 		else
 			printLog("turbine["..turbineIndex.."] in handleTurbineMonitorClick(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 			return -- Disconnected turbine
-		end -- if turbine.getConnected() then
+		end -- if turbine.mbIsConnected() then
 	end
 
 	local turbineBaseSpeed = tonumber(_G[turbineNames[turbineIndex]]["TurbineOptions"]["BaseSpeed"])
@@ -1106,7 +1110,7 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastTempPoll"] = 0
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["lastSteamPoll"] = 0
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["autoStart"] = true
-				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = true
+				_G[reactorNames[reactorIndex]]["ReactorOptions"]["activeCooled"] = reactor.isActivelyCooled()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["rodOverride"] = false
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["controlRodAdjustAmount"] = controlRodAdjustAmount
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorName"] = reactorNames[reactorIndex]
@@ -1120,7 +1124,7 @@ local function findReactors()
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["reactorTargetTemp"] = 200
 				_G[reactorNames[reactorIndex]]["ReactorOptions"]["targetForSteam"] = false
 
-				if reactor.getConnected() then
+				if reactor.mbIsConnected() then
 					printLog("reactor["..reactorIndex.."] in findReactors() is connected.")
 				else
 					printLog("reactor["..reactorIndex.."] in findReactors() is NOT connected.")
@@ -1249,7 +1253,7 @@ local function findTurbines()
 
 
 				printLog("turbineList["..turbineIndex.."] in findTurbines() is a valid Big Reactors Turbine.")
-				if turbine.getConnected() then
+				if turbine.mbIsConnected() then
 					printLog("turbine["..turbineIndex.."] in findTurbines() is connected.")
 				else
 					printLog("turbine["..turbineIndex.."] in findTurbines() is NOT connected.")
@@ -1410,8 +1414,7 @@ local function getReactorStoredEnergyBufferPercent(reactor)
 		printLog("getReactorStoredEnergyBufferPercent() did receive a valid Big Reactor Reactor.")
 	end
 
-	local energyBufferStorage = reactor.getEnergyStored()
-	return round(energyBufferStorage/100000, 1) -- (buffer/10000000 RF)*100%
+	return round(100*reactor.getEnergyStored()/reactor.getEnergyCapacity(), 1) -- (buffer/capacity RF)*100%
 end -- function getReactorStoredEnergyBufferPercent(reactor)
 
 
@@ -1443,12 +1446,12 @@ local function temperatureControl(reactorIndex)
 	else
 		printLog("reactor["..reactorIndex.."] in temperatureControl(reactorIndex="..reactorIndex..") is a valid Big Reactor.")
 
-		if reactor.getConnected() then
+		if reactor.mbIsConnected() then
 			printLog("reactor["..reactorIndex.."] in temperatureControl(reactorIndex="..reactorIndex..") is connected.")
 		else
 			printLog("reactor["..reactorIndex.."] in temperatureControl(reactorIndex="..reactorIndex..") is NOT connected.")
 			return -- Disconnected reactor
-		end -- if reactor.getConnected() then
+		end -- if reactor.mbIsConnected() then
 	end
 
 	local reactorNum = reactorIndex
@@ -1612,12 +1615,12 @@ local function displayReactorBars(barParams)
 		return -- Invalid reactorIndex
 	else
 		printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is a valid Big Reactor.")
-		if reactor.getConnected() then
+		if reactor.mbIsConnected() then
 			printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is connected.")
 		else
 			printLog("reactor["..reactorIndex.."] in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 			return -- Disconnected reactor
-		end -- if reactor.getConnected() then
+		end -- if reactor.mbIsConnected() then
 	end -- if not reactor then
 
 	-- Draw border lines
@@ -1765,7 +1768,7 @@ local function reactorStatus(statusParams)
 	local width, height = monitor.getSize()
 	local reactorStatus = ""
 
-	if reactor.getConnected() then
+	if reactor.mbIsConnected() then
 		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is connected.")
 
 		if reactor.getActive() then
@@ -1786,7 +1789,7 @@ local function reactorStatus(statusParams)
 		printLog("reactor["..reactorIndex.."] in reactorStatus(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		reactorStatus = "DISCONNECTED"
 		monitor.setTextColor(colors.red)
-	end -- if reactor.getConnected() then
+	end -- if reactor.mbIsConnected() then
 	_G[reactorNames[reactorIndex]]["ReactorOptions"]["Status"] = reactorStatus
 	print{reactorStatus, width - string.len(reactorStatus) - 1, 1, monitorIndex}
 	monitor.setTextColor(colors.white)
@@ -1801,8 +1804,15 @@ local function displayAllStatus(monitorIndex)
 	local totalReactorRF, totalReactorSteam, totalTurbineRF = 0, 0, 0
 	local totalReactorFuelConsumed = 0
 	local totalCoolantStored, totalSteamStored, totalEnergy, totalMaxEnergyStored = 0, 0, 0, 0 -- Total turbine and reactor energy buffer and overall capacity
-	local maxSteamStored = (2000*#turbineList)+(5000*#reactorList)
-	local maxCoolantStored = (2000*#turbineList)+(5000*#reactorList)
+	local maxSteamStored, maxCoolantStored = 0, 0
+	if #reactorList > 0 then
+		maxCoolantStored = maxCoolantStored + reactorList[1].getCoolantAmountMax()*#reactorList
+		maxSteamStored = maxSteamStored + reactorList[1].getHotFluidAmountMax()*#reactorList
+	end
+	if #turbineList > 0 then
+		maxCoolantStored = maxCoolantStored + turbineList[1].getFluidAmountMax()*#turbineList
+		maxSteamStored = maxSteamStored + turbineList[1].getFluidAmountMax()*#turbineList
+	end
 
 	local monitor = monitorList[monitorIndex]
 	if not monitor then
@@ -1819,7 +1829,7 @@ local function displayAllStatus(monitorIndex)
 			printLog("reactor["..reactorIndex.."] in displayAllStatus() is a valid Big Reactor.")
 		end -- if not reactor then
 
-		if reactor.getConnected() then
+		if reactor.mbIsConnected() then
 			printLog("reactor["..reactorIndex.."] in displayAllStatus() is connected.")
 			if reactor.getActive() then
 				onlineReactor = onlineReactor + 1
@@ -1828,7 +1838,7 @@ local function displayAllStatus(monitorIndex)
 
 			-- Actively cooled reactors do not produce or store energy
 			if not reactor.isActivelyCooled() then
-				totalMaxEnergyStored = totalMaxEnergyStored + 10000000 -- Reactors store 10M RF
+				totalMaxEnergyStored = totalMaxEnergyStored + reactor.getEnergyCapacity() -- Reactors store 3.9M RF
 				totalEnergy = totalEnergy + reactor.getEnergyStored()
 				totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
 			else
@@ -1838,7 +1848,7 @@ local function displayAllStatus(monitorIndex)
 			end -- if not reactor.isActivelyCooled() then
 		else
 			printLog("reactor["..reactorIndex.."] in displayAllStatus() is NOT connected.")
-		end -- if reactor.getConnected() then
+		end -- if reactor.mbIsConnected() then
 	end -- for reactorIndex = 1, #reactorList do
 
 	for turbineIndex = 1, #turbineList do
@@ -1850,20 +1860,20 @@ local function displayAllStatus(monitorIndex)
 			printLog("turbine["..turbineIndex.."] in displayAllStatus() is a valid Turbine.")
 		end -- if not turbine then
 
-		if turbine.getConnected() then
+		if turbine.mbIsConnected() then
 			printLog("turbine["..turbineIndex.."] in displayAllStatus() is connected.")
 			if turbine.getActive() then
 				onlineTurbine = onlineTurbine + 1
 			end
 
-			totalMaxEnergyStored = totalMaxEnergyStored + 1000000 -- Turbines store 1M RF
+			totalMaxEnergyStored = totalMaxEnergyStored + turbine.getEnergyCapacity()
 			totalEnergy = totalEnergy + turbine.getEnergyStored()
 			totalTurbineRF = totalTurbineRF + turbine.getEnergyProducedLastTick()
 			totalSteamStored = totalSteamStored + turbine.getInputAmount()
 			totalCoolantStored = totalCoolantStored + turbine.getOutputAmount()
 		else
 			printLog("turbine["..turbineIndex.."] in displayAllStatus() is NOT connected.")
-		end -- if turbine.getConnected() then
+		end -- if turbine.mbIsConnected() then
 	end -- for turbineIndex = 1, #turbineList do
 
 	print{"Reactors online/found: "..onlineReactor.."/"..#reactorList, 2, 3, monitorIndex}
@@ -1927,12 +1937,12 @@ local function displayTurbineBars(turbineIndex, monitorIndex)
 		return -- Invalid turbineIndex
 	else
 		printLog("turbine["..turbineIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is a valid Big Turbine.")
-		if turbine.getConnected() then
+		if turbine.mbIsConnected() then
 			printLog("turbine["..turbineIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is connected.")
 		else
 			printLog("turbine["..turbineIndex.."] in displayTurbineBars(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 			return -- Disconnected turbine
-		end -- if turbine.getConnected() then
+		end -- if turbine.mbIsConnected() then
 	end -- if not turbine then
 
 	--local variable to match the view on the monitor
@@ -2064,7 +2074,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 	local width, height = monitor.getSize()
 	local turbineStatus = ""
 
-	if turbine.getConnected() then
+	if turbine.mbIsConnected() then
 		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is connected.")
 		if turbine.getActive() then
 			turbineStatus = "ONLINE"
@@ -2078,7 +2088,7 @@ local function turbineStatus(turbineIndex, monitorIndex)
 		printLog("turbine["..turbineIndex.."] in turbineStatus(turbineIndex="..turbineIndex..",monitorIndex="..monitorIndex..") is NOT connected.")
 		turbineStatus = "DISCONNECTED"
 		monitor.setTextColor(colors.red)
-	end -- if turbine.getConnected() then
+	end -- if turbine.mbIsConnected() then
 
 	print{turbineStatus, width - string.len(turbineStatus) - 1, 1, monitorIndex}
 	monitor.setTextColor(colors.white)
@@ -2106,11 +2116,11 @@ local function flowRateControl(turbineIndex)
 		else
 			printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is a valid Big Turbine.")
 
-			if turbine.getConnected() then
+			if turbine.mbIsConnected() then
 				printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is connected.")
 			else
 				printLog("turbine["..turbineIndex.."] in flowRateControl(turbineIndex="..turbineIndex..") is NOT connected.")
-			end -- if turbine.getConnected() then
+			end -- if turbine.mbIsConnected() then
 		end -- if not turbine then
 
 		-- No point modifying control rod levels for temperature if the turbine is offline
@@ -2363,7 +2373,7 @@ function main()
 				printLog("reactor["..reactorIndex.."] in main() is a valid Big Reactor.")
 			end --  if not reactor then
 
-			if reactor.getConnected() then
+			if reactor.mbIsConnected() then
 				printLog("reactor["..reactorIndex.."] is connected.")
 
 				-- Collect steam production data
@@ -2389,7 +2399,7 @@ function main()
 
 			else
 				printLog("reactor["..reactorIndex.."] is NOT connected.")
-			end -- if reactor.getConnected() then
+			end -- if reactor.mbIsConnected() then
 		end -- for reactorIndex = 1, #reactorList do
 
 		-- Now that temperatureControl() had a chance to use it, reset/calculate steam data for next iteration
@@ -2409,7 +2419,7 @@ function main()
 				printLog("turbine["..turbineIndex.."] in main() is a valid Big Turbine.")
 			end -- if not turbine then
 
-			if turbine.getConnected() then
+			if turbine.mbIsConnected() then
 				printLog("turbine["..turbineIndex.."] is connected.")
 
 				if ((not _G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"]) or (_G[turbineNames[turbineIndex]]["TurbineOptions"]["flowOverride"] == "false")) then
@@ -2422,7 +2432,7 @@ function main()
 				end
 			else
 				printLog("turbine["..turbineIndex.."] is NOT connected.")
-			end -- if turbine.getConnected() then
+			end -- if turbine.mbIsConnected() then
 		end -- for reactorIndex = 1, #reactorList do
 
 		wait(loopTime) -- Sleep. No, wait...
