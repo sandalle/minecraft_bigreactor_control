@@ -1667,8 +1667,13 @@ local function displayReactorBars(barParams)
 	print{stringTrim(target),23,4,monitorIndex}
 
 
-	-- getEnergyProducedLastTick() is used for both RF/t (passively cooled) and mB/t (actively cooled)
-	local energyBuffer = reactor.getEnergyProducedLastTick()
+	-- Extreme Reactors is now using two separate functions for RF/t (passively cooled) and mB/t (actively cooled)
+	local energyBuffer
+	if reactor.isActivelyCooled() then 
+		energyBuffer = reactor.getHotFluidProducedLastTick()
+	else 
+		energyBuffer = reactor.getEnergyProducedLastTick()
+	end
 	if reactor.isActivelyCooled() then
 		printLog("reactor["..reactorIndex.."] produced "..energyBuffer.." mB last tick in displayReactorBars(reactorIndex="..reactorIndex..",monitorIndex="..monitorIndex..").")
 	else
@@ -1841,7 +1846,7 @@ local function displayAllStatus(monitorIndex)
 				totalEnergy = totalEnergy + reactor.getEnergyStored()
 				totalReactorRF = totalReactorRF + reactor.getEnergyProducedLastTick()
 			else
-				totalReactorSteam = totalReactorSteam + reactor.getEnergyProducedLastTick()
+				totalReactorSteam = totalReactorSteam + reactor.getHotFluidProducedLastTick()
 				totalSteamStored = totalSteamStored + reactor.getHotFluidAmount()
 				totalCoolantStored = totalCoolantStored + reactor.getCoolantAmount()
 			end -- if not reactor.isActivelyCooled() then
