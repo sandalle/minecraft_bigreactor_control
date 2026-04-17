@@ -1,6 +1,6 @@
 --[[
 Program name: Lolmer's EZ-NUKE reactor control system
-Version: v0.3.18
+Version: v0.3.19
 Programmer: Lolmer
 With great assistance from @mechaet and @thetaphi
 Last update: 2015-05-11
@@ -125,7 +125,7 @@ See https://github.com/sandalle/minecraft_bigreactor_control/issues?q=is%3Aopen+
 
 
 -- Some global variables
-local progVer = "0.3.18"
+local progVer = "0.3.19"
 local progName = "EZ-NUKE"
 local sideClick, xClick, yClick = nil, 0, 0
 local loopTime = 2
@@ -143,9 +143,10 @@ local turbineList = {} -- Empty turbine array
 local turbineNames = {} -- Empty array of turbine names
 local monitorAssignments = {} -- Empty array of monitor - "what to display" assignments
 local monitorOptionFileName = "monitors.options" -- File for saving the monitor assignments
-local knowlinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
+local knowinglyOverride = false -- Issue #39 Allow the user to override safe values, currently only enabled for actively cooled reactor min/max temperature
 local steamRequested = 0 -- Sum of Turbine Flow Rate in mB
-local steamDelivered = 0 -- Sum of Active Reactor steam output in mB
+local steamDelivered = 0 -- Sum of Active Reactor steam output in mB (reset each loop)
+local peripheralReinitPending = false -- Debounce flag for peripheral re-initialization
 
 -- Log levels
 local FATAL = 16
@@ -166,7 +167,8 @@ if logFile then
 	logFile.writeLine("Minecraft time: Day "..os.day().." at "..textutils.formatTime(os.time(),true))
 	logFile.close()
 else
-	error("Could not open file reactorcontrol.log for writing.")
+		-- Non-fatal: fall back to console-only mode
+		write("WARNING: Could not open reactorcontrol.log for writing. Logging to console only.\n")
 end
 
 
@@ -176,7 +178,7 @@ local function termRestore()
 	local ccVersion = nil
 	ccVersion = os.version()
 
-	if ccVersion == "CraftOS 1.6" or "CraftOS 1.7" then
+	if ccVersion == "CraftOS 1.6" or ccVersion == "CraftOS 1.7" then
 		term.redirect(term.native())
 	elseif ccVersion == "CraftOS 1.5" then
 		term.restore()
@@ -230,7 +232,7 @@ end -- function printLog(printStr)
 
 
 -- Trim a string
-function stringTrim(s)
+local function stringTrim(s)
 	assert(s ~= nil, "String can't be nil")
 	return(string.gsub(s, "^%s*(.-)%s*$", "%1"))
 end
@@ -254,7 +256,7 @@ local function formatReadableSIUnit(num)
 end -- local function formatReadableSIUnit(num)
 
 -- pretty printLog() a table
-local function tprint (tbl, loglevel, indent)
+	local function tprint (tbl, loglevel, indent)
 	if not loglevel then loglevel = DEBUG end
 	if not indent then indent = 0 end
 	for k, v in pairs(tbl) do
@@ -279,7 +281,17 @@ config.save = function(path, tab)
 	printLog("Save function called for config for "..path.." EOL")
 	assert(path ~= nil, "Path can't be nil")
 	assert(type(tab) == "table", "Second parameter must be a table")
-	local f = io.open(path, "w")
+	-- Atomic write: write to temp file, then rename to avoid partial writes
+	local tmpPath = path .. ".tmp"
+	local f = io.open(tmpPath, "w")
+	if not f then
+		printLog("Failed to open "..tmpPath.." for writing, attempting direct write", ERROR)
+		f = io.open(path, "w")
+		if not f then
+			printLog("Failed to write config file "..path, ERROR)
+			return
+		end
+	end
 	local i = 0
 	for key, value in pairs(tab) do
 		if i ~= 0 then
@@ -288,11 +300,10 @@ config.save = function(path, tab)
 		f:write("["..key.."]".."\n")
 		for key2, value2 in pairs(tab[key]) do
 			key2 = stringTrim(key2)
-			--doesn't like boolean values
-			if (type(value2) ~= "boolean") then
-			value2 = stringTrim(value2)
+			if (type(value2) == "boolean") then
+				value2 = tostring(value2)
 			else
-			value2 = tostring(value2)
+				value2 = stringTrim(value2)
 			end
 			key2 = key2:gsub(";", "\\;")
 			key2 = key2:gsub("=", "\\=")
@@ -303,6 +314,9 @@ config.save = function(path, tab)
 		i = i + 1
 	end
 	f:close()
+	-- Rename temp file to final path (atomic on most filesystems)
+	os.remove(path)
+	os.rename(tmpPath, path)
 end --config.save = function(path, tab)
 
 -- Load a config file
@@ -346,7 +360,9 @@ config.load = function(path)
 				if not found and line ~= "" then
 					pos = line:find("=")
 					if pos == nil then
-						error("Bad INI file structure")
+						printLog("Skipping malformed line in "..path..": "..line, WARN)
+						found = true
+						continue
 					end
 					line = line:gsub("#_!36!_#", ";")
 					line = line:gsub("#_!71!_#", "=")
@@ -1084,6 +1100,10 @@ local function findReactors()
 	local newReactorList = {}
 	printLog("Finding reactors...")
 	newReactorList, reactorNames = getDevices("BigReactors-Reactor")
+	-- Also check for Extreme Reactors compatibility
+	if #newReactorList == 0 then
+		newReactorList, reactorNames = getDevices("ExtremeReactors-Reactor")
+	end
 
 	if #newReactorList == 0 then
 		printLog("No reactors found!")
@@ -1215,6 +1235,10 @@ local function findTurbines()
 
 	printLog("Finding turbines...")
 	newTurbineList, turbineNames = getDevices("BigReactors-Turbine")
+	-- Also check for Extreme Reactors compatibility
+	if #newTurbineList == 0 then
+		newTurbineList, turbineNames = getDevices("ExtremeReactors-Turbine")
+	end
 
 	if #newTurbineList == 0 then
 		printLog("No turbines found") -- Not an error
@@ -1424,7 +1448,7 @@ local function getTurbineStoredEnergyBufferPercent(turbine)
 
 	if not turbine then
 		printLog("getTurbineStoredEnergyBufferPercent() did NOT receive a valid Big Reactor Turbine.")
-		return -- Invalid reactorIndex
+		return 0 -- Safe default for missing turbine
 	else
 		printLog("getTurbineStoredEnergyBufferPercent() did receive a valid Big Reactor Turbine.")
 	end
@@ -2164,7 +2188,7 @@ local function flowRateControl(turbineIndex)
 			if integratedError > _G[turbineNames[turbineIndex]]["TurbineOptions"]["integralMax"] then
 			   integratedError = _G[turbineNames[turbineIndex]]["TurbineOptions"]["integralMax"]
 			end
-			if integratedError > _G[turbineNames[turbineIndex]]["TurbineOptions"]["integralMin"] then
+			if integratedError < _G[turbineNames[turbineIndex]]["TurbineOptions"]["integralMin"] then
 			   integratedError = _G[turbineNames[turbineIndex]]["TurbineOptions"]["integralMin"]
 			end
 
@@ -2411,6 +2435,25 @@ function main()
 		printLog("Steam delivered: "..steamDelivered.." mB")
 		steamDelivered = sd
 		steamRequested = 0
+		steamDelivered = 0 -- Reset steam delivered counter each iteration
+
+		-- Perform deferred peripheral re-initialization
+		if peripheralReinitPending then
+			peripheralReinitPending = false
+			initializePeripherals()
+		end
+
+		-- Telemetry: log efficiency metrics
+		if #reactorList > 0 then
+			local totalPowerOut = 0
+			for ri = 1, #reactorList do
+				if reactorList[ri].mbIsConnected() then
+					totalPowerOut = totalPowerOut + reactorList[ri].getPowerOutput()
+				end
+			end
+			local steamBalance = steamDelivered > 0 and (steamRequested / steamDelivered * 100) or 100
+			printLog(string.format("[TELEMETRY] Power output: %d RF/t | Steam demand: %.0f/%.0f mB (%.0f%%) | Reactors: %d | Turbines: %d", totalPowerOut, steamRequested, steamDelivered, steamBalance, #reactorList, #turbineList), INFO)
+		end
 
 		-- Turbine control
 		for turbineIndex = 1, #turbineList do
@@ -2453,8 +2496,11 @@ eventHandler = function(event, arg1, arg2, arg3)
 			sideClick, xClick, yClick = arg1, math.floor(arg2), math.floor(arg3)
 			UI:handlePossibleClick()
 		elseif (event == "peripheral") or (event == "peripheral_detach") then
-			printLog("Change in network detected. Reinitializing peripherals. We will be back shortly.", WARN)
-			initializePeripherals()
+			-- Debounce: only schedule re-init, not every event triggers it
+			if not peripheralReinitPending then
+				printLog("Change in network detected. Reinitializing peripherals. We will be back shortly.", WARN)
+				peripheralReinitPending = true
+			end
 		elseif event == "char" and not inManualMode then
 			local ch = string.lower(arg1)
 			-- remember to update helpText() when you edit these
